@@ -1,103 +1,61 @@
-## fullstack-forge-frontend
+## 全栈上下文编排器前端
 
-`fullstack-forge` 项目的前端工程，基于 `Next.js + React + TypeScript + Tailwind CSS 4 + shadcn/ui + pnpm` 构建，覆盖官网、登录页、后台控制台与业务系统场景。
+基于 `Next.js + React + TypeScript + Tailwind CSS 4 + shadcn/ui + pnpm` 构建的可联调前端工作台。
 
-## 技术栈
+## 当前能力
 
-- Next.js 16（App Router）
-- React 19
-- TypeScript 5
-- Tailwind CSS 4
-- shadcn/ui 风格基础配置
-- pnpm
-- next-themes
-- @tanstack/react-query
-- Zustand
-- Zod
-- React Hook Form
-- Sonner
+- 首页产品介绍
+- 项目列表与创建项目
+- 项目工作台与项目内导航
+- 需求输入与需求历史
+- 调用后端占位接口生成 Project Blueprint
+- 查看和复制格式化 Blueprint JSON
+- 生成、查看、复制 API 契约草案
+- 生成、查看、复制数据库模型草案
+- 生成 Context Packs / Codex Prompts
+- 复制 prompt_text，并导出 Markdown
+- 查看一致性检查结果
 
-## 启动项目
+## 环境变量
 
-先准备环境变量：
-
-```bash
-cp .env.example .env.local
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-然后启动开发环境：
+如果需要覆盖前端地址，也可以设置：
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=全栈上下文编排器
+```
+
+## 启动
 
 ```bash
 pnpm dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000) 查看页面。
+打开 [http://localhost:3000](http://localhost:3000)。
+
+## 联调流程
+
+1. 启动后端服务，确保接口前缀为 `http://localhost:8000/api/v1`。
+2. 启动前端：`pnpm dev`。
+3. 打开首页，进入项目列表。
+4. 创建或进入一个项目。
+5. 保存自然语言需求。
+6. 点击“生成蓝图草案”。
+7. 点击“生成 API 契约草案”，进入 API 契约页面查看 endpoint 表格和 JSON。
+8. 点击“生成数据库模型草案”，进入数据库模型页面查看 entities、fields、relationships 和 JSON。
+9. 点击“生成 Context Packs”，进入 Prompts 页面查看、复制 prompt_text，并导出 Markdown。
+10. 进入一致性检查页面，查看检查结果。
 
 ## 常用命令
 
 ```bash
 pnpm dev
 pnpm lint
+pnpm exec tsc --noEmit
 pnpm build
 pnpm start
 ```
-
-## 目录结构
-
-```text
-src
-├─ app
-│  ├─ (marketing)       # 官网/落地页
-│  ├─ (dashboard)       # 后台控制台
-│  ├─ (auth)            # 登录等认证页面
-│  ├─ api               # Next.js route handlers
-│  ├─ error.tsx         # 全局错误边界
-│  └─ not-found.tsx     # 404 页面
-├─ components
-│  ├─ dashboard         # 后台列表等组合组件
-│  ├─ demo              # 可替换的示例组件
-│  ├─ layout            # 布局类组件
-│  ├─ theme             # 主题切换相关
-│  └─ ui                # 可复用 UI 基础组件
-├─ config               # 站点配置、导航配置
-├─ features             # 按业务域组织模块
-├─ lib
-│  ├─ api               # 请求封装
-│  ├─ auth              # session、鉴权工具
-│  ├─ env.ts            # 环境变量解析与校验
-│  └─ utils.ts          # 通用工具函数
-├─ store                # Zustand 状态管理
-└─ types                # 公共类型定义
-```
-
-## 已完成的基础能力
-
-- TypeScript 与路径别名 `@/*`
-- Tailwind CSS 4 主题变量
-- `components.json` 与 shadcn/ui 兼容结构
-- `Button` 基础组件与 `cn` 工具函数
-- `Input`、`Card`、`Dialog`、`Sheet`、`Toast` 等通用 UI 组件
-- `Table`、`Pagination`、`EmptyState`、`Skeleton` 等后台常用基础件
-- 明暗主题切换
-- React Query Provider
-- 环境变量校验
-- 统一请求函数 `apiRequest` 与 `ApiError` 错误约定
-- Zustand 全局状态示例
-- `features` 分层示例
-- 官网与后台控制台双场景基础结构
-- `loading.tsx`、`error.tsx`、`not-found.tsx` 页面边界
-- 登录页、`middleware.ts`、session cookie 与受保护路由实现
-
-## 下一步建议
-
-- 接入真实鉴权、用户信息、权限控制与路由守卫
-- 将 `dashboard` 示例页替换成具体业务模块
-- 补充表格、筛选器、分页、空状态和 skeleton 组件
-- 增加测试、CI、国际化、RBAC 与部署配置
-- 增加测试、CI 和部署配置
-
-## 参考文档
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [shadcn/ui Documentation](https://ui.shadcn.com/docs)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)

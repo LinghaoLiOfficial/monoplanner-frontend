@@ -2,10 +2,6 @@ import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 
-export default function MarketingLayout({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) {
+export default function ProjectsLayout({ children }: { children: ReactNode }) {
   return <AppShell>{children}</AppShell>;
 }

@@ -17,43 +17,84 @@ type RequestOptions = Omit<RequestInit, "body"> & {
   query?: Record<string, string | number | boolean | undefined | null>;
 };
 
-function buildUrl(path: string, query?: RequestOptions["query"]) {
-  const base =
-    path.startsWith("/api/") || path.startsWith("/api")
-      ? env.NEXT_PUBLIC_APP_URL
-      : env.NEXT_PUBLIC_API_BASE_URL;
-  const url = new URL(path, base);
+function joinUrl(base: string, path: string) {
+  return `${base.replace(/\/$/, "")}/${path.replace(/^\/+/, "")}`;
+}
 
-  if (!query) {
-    return url.toString();
+function buildUrl(path: string, query?: RequestOptions["query"]) {
+  const base = path.startsWith("/api") ? env.NEXT_PUBLIC_APP_URL : env.NEXT_PUBLIC_API_BASE_URL;
+  const url = new URL(joinUrl(base, path));
+
+  if (query) {
+    Object.entries(query).forEach(([key, value]) => {
+      if (value === undefined || value === null) {
+        return;
+      }
+
+      url.searchParams.set(key, String(value));
+    });
   }
 
-  Object.entries(query).forEach(([key, value]) => {
-    if (value === undefined || value === null) {
-      return;
+  return url.toString();
+}
+
+function getErrorMessage(payload: unknown, fallback: string) {
+  if (typeof payload === "string" && payload.trim()) {
+    return payload;
+  }
+
+  if (typeof payload === "object" && payload !== null) {
+    if ("message" in payload && typeof payload.message === "string") {
+      return payload.message;
     }
 
-    url.searchParams.set(key, String(value));
-  });
+    if ("detail" in payload) {
+      if (typeof payload.detail === "string") {
+        return payload.detail;
+      }
 
-  return url.toString();
+      if (Array.isArray(payload.detail)) {
+        return payload.detail
+          .map((item) => {
+            if (typeof item === "object" && item !== null && "msg" in item && typeof item.msg === "string") {
+              return item.msg;
+            }
+
+            return JSON.stringify(item);
+          })
+          .join("；");
+      }
+    }
+  }
+
+  return fallback;
 }
 
 export async function apiRequest<T>(
   path: string,
   { body, headers, query, ...init }: RequestOptions = {}
 ) {
-  const response = await fetch(buildUrl(path, query), {
-    ...init,
-    headers: {
-      ...(body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-      ...headers,
-    },
-    body:
-      body && typeof body === "object" && !(body instanceof FormData)
-        ? JSON.stringify(body)
-        : body,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(buildUrl(path, query), {
+      ...init,
+      headers: {
+        ...(body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+        ...headers,
+      },
+      body:
+        body && typeof body === "object" && !(body instanceof FormData)
+          ? JSON.stringify(body)
+          : body,
+    });
+  } catch (error) {
+    throw new ApiError(
+      "无法连接后端服务，请确认 API 服务已启动并检查 NEXT_PUBLIC_API_BASE_URL。",
+      0,
+      error
+    );
+  }
 
   if (!response.ok) {
     const text = await response.text();
@@ -65,15 +106,11 @@ export async function apiRequest<T>(
       payload = text;
     }
 
-    const message =
-      typeof payload === "object" &&
-      payload !== null &&
-      "message" in payload &&
-      typeof payload.message === "string"
-        ? payload.message
-        : text || `Request failed with status ${response.status}`;
-
-    throw new ApiError(message, response.status, payload);
+    throw new ApiError(
+      getErrorMessage(payload, text || `Request failed with status ${response.status}`),
+      response.status,
+      payload
+    );
   }
 
   if (response.status === 204) {

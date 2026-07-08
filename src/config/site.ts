@@ -1,13 +1,4 @@
-import {
-  Bell,
-  CreditCard,
-  LayoutDashboard,
-  List,
-  FileBarChart,
-  Settings,
-  Shield,
-  type LucideIcon,
-} from "lucide-react";
+import { FolderKanban, Home, Plus, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   label: string;
@@ -17,10 +8,10 @@ export type NavItem = {
 };
 
 export const siteConfig = {
-  name: "fullstack-forge-frontend",
+  name: "全栈上下文编排器",
   description:
-    "The frontend application for fullstack-forge, built with Next.js, React, TypeScript, Tailwind CSS 4, shadcn/ui, and pnpm.",
-  tagline: "fullstack-forge 的前端应用，面向产品官网、控制台与业务系统场景",
+    "将自然语言业务需求转化为适合 vibe coding 工具使用的结构化开发上下文和提示词包。",
+  tagline: "面向全栈开发的上下文编排工作台",
   links: {
     docs: "https://nextjs.org/docs",
     ui: "https://ui.shadcn.com/docs",
@@ -28,63 +19,23 @@ export const siteConfig = {
   },
   marketingNav: [
     {
-      label: "项目特性",
-      href: "/#features",
-      description: "查看项目基础能力",
+      label: "首页",
+      href: "/",
+      icon: Home,
+      description: "查看产品介绍",
     },
     {
-      label: "目录结构",
-      href: "/#structure",
-      description: "了解项目组织方式",
+      label: "项目列表",
+      href: "/projects",
+      icon: FolderKanban,
+      description: "查看和进入项目工作台",
     },
     {
-      label: "控制台",
-      href: "/dashboard",
-      description: "查看项目控制台页面",
+      label: "新建项目",
+      href: "/projects/new",
+      icon: Plus,
+      description: "创建新的上下文编排项目",
     },
   ] satisfies NavItem[],
-  dashboardNav: [
-    {
-      label: "概览",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      description: "统计概览与业务入口",
-    },
-    {
-      label: "账单",
-      href: "/dashboard/billing",
-      icon: CreditCard,
-      description: "订阅与费用管理",
-    },
-    {
-      label: "通知",
-      href: "/dashboard/notifications",
-      icon: Bell,
-      description: "站内消息与提醒",
-    },
-    {
-      label: "成员",
-      href: "/dashboard/users",
-      icon: List,
-      description: "成员管理、筛选与分页",
-    },
-    {
-      label: "报表",
-      href: "/dashboard/reports",
-      icon: FileBarChart,
-      description: "报表中心与空状态引导",
-    },
-    {
-      label: "权限",
-      href: "/dashboard/access",
-      icon: Shield,
-      description: "角色与权限控制",
-    },
-    {
-      label: "设置",
-      href: "/dashboard/settings",
-      icon: Settings,
-      description: "系统配置与偏好设置",
-    },
-  ] satisfies NavItem[],
+  dashboardNav: [] as NavItem[],
 };

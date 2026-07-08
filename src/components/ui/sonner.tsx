@@ -1,14 +1,15 @@
 "use client";
 
 import { Toaster } from "sonner";
-import { useTheme } from "next-themes";
+
+import { useTheme } from "@/components/theme/theme-provider";
 
 export function Sonner() {
-  const { resolvedTheme = "system" } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   return (
     <Toaster
-      theme={resolvedTheme as "light" | "dark" | "system"}
+      theme={resolvedTheme ?? "system"}
       richColors
       closeButton
       position="top-right"
