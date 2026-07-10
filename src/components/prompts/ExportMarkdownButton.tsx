@@ -25,7 +25,7 @@ export function ExportMarkdownButton({ contextPackId }: { contextPackId: string 
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "导出 Markdown 失败。 请稍后重试。");
+      setError(err instanceof Error ? err.message : "导出 Markdown 失败 请稍后重试");
     } finally {
       setLoading(false);
     }

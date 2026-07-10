@@ -22,7 +22,7 @@ export function RequirementList({ requirements }: { requirements: Requirement[] 
       <EmptyState
         icon={MessageSquareText}
         title="当前项目还没有需求"
-        description="输入一段自然语言业务需求，保存后即可触发 blueprint 草案生成。"
+        description="输入一段自然语言业务需求，保存后即可触发 blueprint 草案生成"
       />
     );
   }
@@ -32,9 +32,11 @@ export function RequirementList({ requirements }: { requirements: Requirement[] 
       {requirements.map((requirement) => (
         <Card key={requirement.id}>
           <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{requirement.language}</Badge>
-              <Badge variant="secondary">{requirement.source_type}</Badge>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{requirement.language}</Badge>
+                <Badge variant="secondary">{requirement.source_type}</Badge>
+              </div>
               <span className="text-xs text-muted-foreground">{formatDate(requirement.created_at)}</span>
             </div>
           </CardHeader>

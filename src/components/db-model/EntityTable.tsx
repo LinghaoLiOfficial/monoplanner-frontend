@@ -9,7 +9,7 @@ function formatRelationship(relationship: DbRelationship) {
 
 export function EntityTable({ entities }: { entities: DbEntity[] }) {
   if (entities.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 entities。</p>;
+    return <p className="text-sm text-muted-foreground">暂无 entities</p>;
   }
 
   return (

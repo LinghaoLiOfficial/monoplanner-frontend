@@ -11,7 +11,6 @@ export type Project = {
 
 export type CreateProjectPayload = {
   name: string;
-  description?: string | null;
 };
 
 export type UpdateProjectPayload = {

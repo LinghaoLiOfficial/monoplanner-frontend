@@ -42,40 +42,40 @@ const actions: Array<{
   {
     key: "api-contract",
     title: "API 契约草案",
-    description: "从最新 Blueprint 生成接口资源、endpoint 和 schema 草案。",
+    description: "从最新 Blueprint 生成接口资源、endpoint 和 schema 草案",
     buttonLabel: "生成 API 契约草案",
     loadingLabel: "正在生成 API 契约...",
-    successLabel: "API 契约草案已生成。",
+    successLabel: "API 契约草案已生成",
     href: "api-contract",
     viewLabel: "查看 API 契约",
   },
   {
     key: "db-model",
     title: "数据库模型草案",
-    description: "生成实体、字段、关系、索引与迁移说明。",
+    description: "生成实体、字段、关系、索引与迁移说明",
     buttonLabel: "生成数据库模型草案",
     loadingLabel: "正在生成数据库模型...",
-    successLabel: "数据库模型草案已生成。",
+    successLabel: "数据库模型草案已生成",
     href: "db-model",
     viewLabel: "查看数据库模型",
   },
   {
     key: "prompts",
     title: "Context Packs",
-    description: "生成面向前端、后端和联调角色的 Codex Prompt。",
+    description: "生成面向前端、后端和联调角色的 Codex Prompt",
     buttonLabel: "生成 Context Packs",
     loadingLabel: "正在生成 Context Packs...",
-    successLabel: "Context Packs 已生成。",
+    successLabel: "Context Packs 已生成",
     href: "prompts",
-    viewLabel: "查看 Prompts",
+    viewLabel: "查看指令集合",
   },
   {
     key: "consistency",
     title: "一致性检查",
-    description: "检查 Blueprint、契约、模型和 Prompt Pack 之间的一致性。",
+    description: "检查 Blueprint、契约、模型和 Prompt Pack 之间的一致性",
     buttonLabel: "运行一致性检查",
     loadingLabel: "正在检查...",
-    successLabel: "一致性检查已完成。",
+    successLabel: "一致性检查已完成",
     href: "consistency",
     viewLabel: "查看检查结果",
   },
@@ -114,11 +114,11 @@ export function GenerationActionPanel({
       }
 
       const action = actions.find((item) => item.key === key);
-      setActionState(key, { success: action?.successLabel ?? "操作已完成。" });
+      setActionState(key, { success: action?.successLabel ?? "操作已完成" });
       await onGenerated?.();
     } catch (err) {
       setActionState(key, {
-        error: err instanceof Error ? err.message : "操作失败，请稍后重试。",
+        error: err instanceof Error ? err.message : "操作失败，请稍后重试",
       });
     } finally {
       setActionState(key, { loading: false });
@@ -130,7 +130,7 @@ export function GenerationActionPanel({
       <EmptyState
         icon={FileJson}
         title="先生成 Project Blueprint"
-        description="API 契约、数据库模型、Context Packs 和一致性检查都需要基于已有 Blueprint。"
+        description="API 契约、数据库模型、Context Packs 和一致性检查都需要基于已有 Blueprint"
         action={
           <Button asChild variant="outline">
             <Link href={`/projects/${projectId}/blueprint`}>查看蓝图</Link>
@@ -146,7 +146,7 @@ export function GenerationActionPanel({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <CardTitle>第二批生成操作</CardTitle>
-            <CardDescription>按产物独立触发后端占位生成接口，成功后进入对应页面查看。</CardDescription>
+            <CardDescription>按产物独立触发后端占位生成接口，成功后进入对应页面查看</CardDescription>
           </div>
           <Badge variant="outline">Blueprint ready</Badge>
         </div>

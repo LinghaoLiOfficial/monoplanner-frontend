@@ -9,7 +9,7 @@ const levelVariant: Record<ConsistencyCheckItem["level"], "default" | "secondary
 
 export function ConsistencyItemList({ items }: { items: ConsistencyCheckItem[] }) {
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无检查项。</p>;
+    return <p className="text-sm text-muted-foreground">暂无检查项</p>;
   }
 
   return (

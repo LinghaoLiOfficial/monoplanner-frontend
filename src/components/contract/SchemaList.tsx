@@ -4,7 +4,7 @@ import type { ApiSchema } from "@/lib/types/api-contract";
 
 export function SchemaList({ schemas }: { schemas: ApiSchema[] }) {
   if (schemas.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 schemas。</p>;
+    return <p className="text-sm text-muted-foreground">暂无 schemas</p>;
   }
 
   return (

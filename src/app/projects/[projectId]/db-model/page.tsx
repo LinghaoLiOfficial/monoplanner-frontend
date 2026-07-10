@@ -49,7 +49,7 @@ export default function DbModelPage() {
       setModels(sorted);
       setSelectedId(sorted[0]?.id ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载数据库模型失败。");
+      setError(err instanceof Error ? err.message : "加载数据库模型失败");
     } finally {
       setLoading(false);
     }
@@ -62,9 +62,9 @@ export default function DbModelPage() {
     try {
       await generateDbModel(projectId);
       await loadData();
-      setSuccess("数据库模型草案已生成。");
+      setSuccess("数据库模型草案已生成");
     } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : "生成数据库模型草案失败。");
+      setGenerateError(err instanceof Error ? err.message : "生成数据库模型草案失败");
     } finally {
       setGenerating(false);
     }
@@ -82,10 +82,9 @@ export default function DbModelPage() {
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Database Model</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">数据库模型草案</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">数据库模型草案</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            查看实体、字段、关系、索引和迁移说明草案。
+            查看实体、字段、关系、索引和迁移说明草案
           </p>
         </div>
         <Button asChild variant="outline">
@@ -99,7 +98,7 @@ export default function DbModelPage() {
         <EmptyState
           icon={Database}
           title="先生成 Project Blueprint"
-          description="数据库模型草案需要基于已有 Blueprint 生成。"
+          description="数据库模型草案需要基于已有 Blueprint 生成"
           action={<Button asChild><Link href={`/projects/${projectId}/blueprint`}>前往蓝图页</Link></Button>}
         />
       ) : null}
@@ -108,7 +107,7 @@ export default function DbModelPage() {
           <Card>
             <CardHeader>
               <CardTitle>模型版本</CardTitle>
-              <CardDescription>默认展示最新版本。</CardDescription>
+              <CardDescription>默认展示最新版本</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {generateError ? <ErrorState message={generateError} /> : null}
@@ -116,7 +115,7 @@ export default function DbModelPage() {
               <Button type="button" size="sm" onClick={handleGenerate} disabled={generating}>
                 {generating ? "正在生成..." : "生成数据库模型草案"}
               </Button>
-              {sortedModels.length === 0 ? <p className="text-sm leading-7 text-muted-foreground">当前项目还没有 DB model。</p> : null}
+              {sortedModels.length === 0 ? <p className="text-sm leading-7 text-muted-foreground">当前项目还没有 DB model</p> : null}
               {sortedModels.map((model) => (
                 <button
                   key={model.id}

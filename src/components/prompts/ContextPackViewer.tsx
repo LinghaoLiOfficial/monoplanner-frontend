@@ -22,7 +22,7 @@ export function ContextPackViewer({ pack }: { pack: ContextPack | null }) {
       <EmptyState
         icon={FileText}
         title="请选择一个 Context Pack"
-        description="左侧列表展示当前项目生成的 Prompt Pack。"
+        description="左侧列表展示当前项目生成的 Prompt Pack"
       />
     );
   }

@@ -21,7 +21,7 @@ export function DbModelViewer({ model }: { model: DbModelDraft | null }) {
       <EmptyState
         icon={Database}
         title="当前项目还没有数据库模型草案"
-        description="先在工作台或本页触发生成，随后可查看实体、字段、关系和完整 JSON。"
+        description="先在工作台或本页触发生成，随后可查看实体、字段、关系和完整 JSON"
       />
     );
   }
@@ -55,7 +55,7 @@ export function DbModelViewer({ model }: { model: DbModelDraft | null }) {
       <Card>
         <CardHeader>
           <CardTitle>Entities</CardTitle>
-          <CardDescription>核心数据实体与字段草案。</CardDescription>
+          <CardDescription>核心数据实体与字段草案</CardDescription>
         </CardHeader>
         <CardContent>
           <EntityTable entities={entities} />

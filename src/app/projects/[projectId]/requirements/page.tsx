@@ -27,7 +27,7 @@ export default function ProjectRequirementsPage() {
     try {
       setRequirements(await getProjectRequirements(projectId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载需求历史失败。");
+      setError(err instanceof Error ? err.message : "加载需求历史失败");
     } finally {
       setLoading(false);
     }
@@ -55,10 +55,9 @@ export default function ProjectRequirementsPage() {
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Requirements</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">需求历史</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">原始用户需求</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            查看当前项目的需求记录，也可以继续追加新的自然语言需求。
+            查看当前项目的需求记录，也可以继续追加新的自然语言需求
           </p>
         </div>
         <Button asChild variant="outline">
@@ -66,12 +65,12 @@ export default function ProjectRequirementsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <RequirementEditor onSave={handleSaveRequirement} />
+      <div className="space-y-4">
+        <RequirementEditor title="新用户需求" hideLabel submitButton="icon" onSave={handleSaveRequirement} />
         <Card>
           <CardHeader>
-            <CardTitle>已保存需求</CardTitle>
-            <CardDescription>每条需求展示文本摘要、语言、来源和创建时间。</CardDescription>
+            <CardTitle>用户需求历史</CardTitle>
+            <CardDescription>每条需求展示文本摘要、语言、来源和创建时间</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? <LoadingState label="正在加载需求..." /> : null}

@@ -8,7 +8,7 @@ function display(value?: string | null) {
 
 export function EndpointTable({ endpoints }: { endpoints: ApiEndpoint[] }) {
   if (endpoints.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 endpoints。</p>;
+    return <p className="text-sm text-muted-foreground">暂无 endpoints</p>;
   }
 
   return (

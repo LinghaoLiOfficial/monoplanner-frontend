@@ -1,8 +1,16 @@
 import { apiRequest } from "@/lib/api/client";
 import type { CreateProjectPayload, Project, UpdateProjectPayload } from "@/lib/types/project";
 
+export function listProjects(q?: string) {
+  const keyword = q?.trim();
+
+  return apiRequest<Project[]>("/projects", {
+    query: keyword ? { q: keyword } : undefined,
+  });
+}
+
 export function getProjects() {
-  return apiRequest<Project[]>("/projects");
+  return listProjects();
 }
 
 export function createProject(payload: CreateProjectPayload) {

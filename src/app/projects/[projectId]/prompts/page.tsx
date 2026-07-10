@@ -49,7 +49,7 @@ export default function PromptsPage() {
       setPacks(sorted);
       setSelectedId(sorted[0]?.id ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载 Context Packs 失败。");
+      setError(err instanceof Error ? err.message : "加载 Context Packs 失败");
     } finally {
       setLoading(false);
     }
@@ -62,9 +62,9 @@ export default function PromptsPage() {
     try {
       await generateContextPacks(projectId);
       await loadData();
-      setSuccess("Context Packs 已生成。");
+      setSuccess("Context Packs 已生成");
     } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : "生成 Context Packs 失败。");
+      setGenerateError(err instanceof Error ? err.message : "生成 Context Packs 失败");
     } finally {
       setGenerating(false);
     }
@@ -82,10 +82,9 @@ export default function PromptsPage() {
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Context Packs</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Context Packs / Codex Prompts</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">指令集合</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            查看不同工程角色的 Codex prompt_text，复制或导出 Markdown。
+            查看不同工程角色的 Codex prompt_text，复制或导出 Markdown
           </p>
         </div>
         <Button asChild variant="outline">
@@ -99,7 +98,7 @@ export default function PromptsPage() {
         <EmptyState
           icon={FileText}
           title="先生成 Project Blueprint"
-          description="Context Packs 需要基于已有 Blueprint 生成。"
+          description="Context Packs 需要基于已有 Blueprint 生成"
           action={<Button asChild><Link href={`/projects/${projectId}/blueprint`}>前往蓝图页</Link></Button>}
         />
       ) : null}
@@ -108,7 +107,7 @@ export default function PromptsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Prompt Pack 列表</CardTitle>
-              <CardDescription>选择角色查看 prompt_text 和 JSON 内容。</CardDescription>
+              <CardDescription>选择角色查看 prompt_text 和 JSON 内容</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {generateError ? <ErrorState message={generateError} /> : null}

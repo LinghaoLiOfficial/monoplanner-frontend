@@ -34,7 +34,7 @@ export default function ConsistencyPage() {
         setCheck(await getConsistencyCheck(projectId));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载一致性检查失败。");
+      setError(err instanceof Error ? err.message : "加载一致性检查失败");
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export default function ConsistencyPage() {
     try {
       setCheck(await getConsistencyCheck(projectId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "运行一致性检查失败。");
+      setError(err instanceof Error ? err.message : "运行一致性检查失败");
     } finally {
       setChecking(false);
     }
@@ -64,10 +64,9 @@ export default function ConsistencyPage() {
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Consistency</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">一致性检查</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">一致性检查</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            检查 Blueprint、API 契约、数据库模型和 Context Packs 的一致性。
+            检查 Blueprint、API 契约、数据库模型和 Context Packs 的一致性
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -86,7 +85,7 @@ export default function ConsistencyPage() {
         <EmptyState
           icon={ShieldCheck}
           title="先生成 Project Blueprint"
-          description="一致性检查需要基于已有 Blueprint 运行。"
+          description="一致性检查需要基于已有 Blueprint 运行"
           action={<Button asChild><Link href={`/projects/${projectId}/blueprint`}>前往蓝图页</Link></Button>}
         />
       ) : null}

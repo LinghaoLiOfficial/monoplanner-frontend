@@ -52,7 +52,7 @@ export default function ProjectWorkspacePage() {
       setRequirements(requirementsData);
       setBlueprints(blueprintsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载项目工作台失败。");
+      setError(err instanceof Error ? err.message : "加载项目工作台失败");
     } finally {
       setLoading(false);
     }
@@ -83,9 +83,9 @@ export default function ProjectWorkspacePage() {
     try {
       await generateProjectBlueprint(projectId);
       await refreshBlueprints();
-      setGenerateSuccess("蓝图草案已生成。");
+      setGenerateSuccess("蓝图草案已生成");
     } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : "生成 blueprint 草案失败。");
+      setGenerateError(err instanceof Error ? err.message : "生成 blueprint 草案失败");
     } finally {
       setGenerating(false);
     }
@@ -102,7 +102,7 @@ export default function ProjectWorkspacePage() {
   }
 
   if (error || !project) {
-    return <ErrorState title="项目不可用" message={error || "项目不存在。"} actionLabel="重新加载" onAction={loadWorkspace} />;
+    return <ErrorState title="项目不可用" message={error || "项目不存在"} actionLabel="重新加载" onAction={loadWorkspace} />;
   }
 
   return (
@@ -111,14 +111,10 @@ export default function ProjectWorkspacePage() {
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Project Workspace</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
             <ProjectStatusBadge status={project.status} />
           </div>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-            {project.description || "暂无项目描述"}
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
@@ -138,7 +134,7 @@ export default function ProjectWorkspacePage() {
           <Card>
             <CardHeader>
               <CardTitle>需求历史</CardTitle>
-              <CardDescription>最近保存的自然语言需求。</CardDescription>
+              <CardDescription>最近保存的自然语言需求</CardDescription>
             </CardHeader>
             <CardContent>
               <RequirementList requirements={requirements} />
@@ -150,7 +146,7 @@ export default function ProjectWorkspacePage() {
           <Card>
             <CardHeader>
               <CardTitle>Project Blueprint 预览</CardTitle>
-              <CardDescription>调用后端占位接口生成并展示最新 JSON 草案。</CardDescription>
+              <CardDescription>调用后端占位接口生成并展示最新 JSON 草案</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {generateError ? <ErrorState message={generateError} /> : null}

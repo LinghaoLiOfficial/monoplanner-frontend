@@ -18,7 +18,7 @@ export function ConsistencyCheckPanel({ check }: { check: ConsistencyCheck | nul
       <EmptyState
         icon={ShieldCheck}
         title="暂无一致性检查结果"
-        description="运行一致性检查后，可查看 Blueprint、API 契约、数据库模型和 Prompt Pack 之间的问题。"
+        description="运行一致性检查后，可查看 Blueprint、API 契约、数据库模型和 Prompt Pack 之间的问题"
       />
     );
   }
@@ -34,7 +34,7 @@ export function ConsistencyCheckPanel({ check }: { check: ConsistencyCheck | nul
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle>一致性检查结果</CardTitle>
-            <CardDescription>展示整体状态和逐项检查结果。</CardDescription>
+            <CardDescription>展示整体状态和逐项检查结果</CardDescription>
           </div>
           <Badge className={meta.className}>{meta.label}</Badge>
         </div>

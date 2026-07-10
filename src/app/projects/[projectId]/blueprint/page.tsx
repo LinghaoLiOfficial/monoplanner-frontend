@@ -40,7 +40,7 @@ export default function ProjectBlueprintPage() {
       setBlueprints(sorted);
       setSelectedId(sorted[0]?.id ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载 blueprint 失败。");
+      setError(err instanceof Error ? err.message : "加载 blueprint 失败");
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export default function ProjectBlueprintPage() {
       await generateProjectBlueprint(projectId);
       await loadBlueprints();
     } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : "生成 blueprint 草案失败。");
+      setGenerateError(err instanceof Error ? err.message : "生成 blueprint 草案失败");
     } finally {
       setGenerating(false);
     }
@@ -71,10 +71,9 @@ export default function ProjectBlueprintPage() {
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Blueprints</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Project Blueprint</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">项目蓝图</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            查看该项目的所有 blueprint 版本，默认展示最新版本。
+            查看该项目的所有 blueprint 版本，默认展示最新版本
           </p>
         </div>
         <Button asChild variant="outline">
@@ -89,7 +88,7 @@ export default function ProjectBlueprintPage() {
           <Card>
             <CardHeader>
               <CardTitle>版本列表</CardTitle>
-              <CardDescription>选择一个版本查看 JSON 内容。</CardDescription>
+              <CardDescription>选择一个版本查看 JSON 内容</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {generateError ? <ErrorState message={generateError} /> : null}
@@ -97,7 +96,7 @@ export default function ProjectBlueprintPage() {
                 {generating ? "正在生成..." : "生成蓝图草案"}
               </Button>
               {sortedBlueprints.length === 0 ? (
-                <p className="text-sm leading-7 text-muted-foreground">当前项目还没有 blueprint。</p>
+                <p className="text-sm leading-7 text-muted-foreground">当前项目还没有 blueprint</p>
               ) : null}
               {sortedBlueprints.map((blueprint) => (
                 <button

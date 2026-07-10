@@ -6,13 +6,32 @@ import { ProjectCard } from "@/components/project/ProjectCard";
 import { Button } from "@/components/ui/button";
 import type { Project } from "@/lib/types/project";
 
-export function ProjectList({ projects }: { projects: Project[] }) {
+type ProjectListProps = {
+  projects: Project[];
+  hasSearch?: boolean;
+  onDeleteProject?: (project: Project) => void;
+};
+
+export function ProjectList({
+  projects,
+  hasSearch = false,
+  onDeleteProject,
+}: ProjectListProps) {
   if (projects.length === 0) {
+    if (hasSearch) {
+      return (
+        <EmptyState
+          title="没有找到匹配的项目"
+          description="没有找到匹配的项目"
+        />
+      );
+    }
+
     return (
       <EmptyState
         icon={FolderPlus}
         title="还没有项目"
-        description="创建第一个项目，开始把自然语言需求整理成结构化开发上下文。"
+        description="还没有项目，创建第一个项目开始编排你的全栈上下文"
         action={
           <Button asChild>
             <Link href="/projects/new">创建第一个项目</Link>
@@ -25,7 +44,11 @@ export function ProjectList({ projects }: { projects: Project[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
+        <ProjectCard
+          key={project.id}
+          project={project}
+          onDelete={onDeleteProject}
+        />
       ))}
     </div>
   );

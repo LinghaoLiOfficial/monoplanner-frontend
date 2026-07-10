@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "工作台", segment: "" },
-  { label: "需求", segment: "requirements" },
+  { label: "用户需求", segment: "requirements" },
   { label: "蓝图", segment: "blueprint" },
   { label: "API 契约", segment: "api-contract" },
   { label: "数据库模型", segment: "db-model" },
-  { label: "Prompts", segment: "prompts" },
+  { label: "指令集合", segment: "prompts" },
   { label: "一致性检查", segment: "consistency" },
 ];
 

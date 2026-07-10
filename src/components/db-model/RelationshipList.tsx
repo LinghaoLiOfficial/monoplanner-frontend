@@ -3,7 +3,7 @@ import type { DbIndex, DbRelationship } from "@/lib/types/db-model";
 
 export function RelationshipList({ relationships }: { relationships: DbRelationship[] }) {
   if (relationships.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 relationships。</p>;
+    return <p className="text-sm text-muted-foreground">暂无 relationships</p>;
   }
 
   return (
@@ -24,7 +24,7 @@ export function RelationshipList({ relationships }: { relationships: DbRelations
 
 export function IndexList({ indexes }: { indexes: DbIndex[] }) {
   if (indexes.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 indexes。</p>;
+    return <p className="text-sm text-muted-foreground">暂无 indexes</p>;
   }
 
   return (

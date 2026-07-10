@@ -24,7 +24,7 @@ export function ContextPackList({
   onSelect: (packId: string) => void;
 }) {
   if (packs.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 Context Packs。</p>;
+    return <p className="text-sm text-muted-foreground">暂无 Context Packs</p>;
   }
 
   return (

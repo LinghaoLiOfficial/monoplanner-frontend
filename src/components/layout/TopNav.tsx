@@ -1,12 +1,21 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Braces, FolderKanban, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { cn } from "@/lib/utils";
 
 export function TopNav() {
+  const pathname = usePathname();
+  const isProjectsActive =
+    pathname === "/projects" || (pathname.startsWith("/projects/") && pathname !== "/projects/new");
+  const isNewProjectActive = pathname === "/projects/new";
+
   return (
-    <header className="sticky top-0 z-40 mb-8">
+    <header className="sticky top-6 z-40 mb-8">
       <div className="rounded-full border border-border/70 bg-background/85 px-4 py-3 shadow-sm backdrop-blur">
         <div className="flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-3">
@@ -20,10 +29,22 @@ export function TopNav() {
           </Link>
 
           <nav className="hidden items-center gap-4 md:flex">
-            <Link href="/projects" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              href="/projects"
+              className={cn(
+                "rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                isProjectsActive && "bg-muted text-foreground font-medium"
+              )}
+            >
               项目列表
             </Link>
-            <Link href="/projects/new" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              href="/projects/new"
+              className={cn(
+                "rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                isNewProjectActive && "bg-muted text-foreground font-medium"
+              )}
+            >
               新建项目
             </Link>
           </nav>

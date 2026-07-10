@@ -12,7 +12,7 @@ export function PromptTextViewer({ promptText }: { promptText: string }) {
       </CardHeader>
       <CardContent>
         <pre className="max-h-[560px] overflow-auto whitespace-pre-wrap rounded-[1.5rem] border border-border/60 bg-muted/50 p-4 font-mono text-xs leading-6 text-foreground">
-          {promptText || "暂无 prompt_text。"}
+          {promptText || "暂无 prompt_text"}
         </pre>
       </CardContent>
     </Card>

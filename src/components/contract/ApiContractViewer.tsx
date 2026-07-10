@@ -21,7 +21,7 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
       <EmptyState
         icon={Code2}
         title="当前项目还没有 API 契约草案"
-        description="先在工作台或本页触发生成，随后可查看 endpoints、schemas 和完整 JSON。"
+        description="先在工作台或本页触发生成，随后可查看 endpoints、schemas 和完整 JSON"
       />
     );
   }
@@ -50,7 +50,7 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
       <Card>
         <CardHeader>
           <CardTitle>Resources & Endpoints</CardTitle>
-          <CardDescription>按资源分组展示接口契约草案。</CardDescription>
+          <CardDescription>按资源分组展示接口契约草案</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           {resources.map((resource) => (
@@ -68,7 +68,7 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
       <Card>
         <CardHeader>
           <CardTitle>Schemas</CardTitle>
-          <CardDescription>接口请求和响应中涉及的数据结构。</CardDescription>
+          <CardDescription>接口请求和响应中涉及的数据结构</CardDescription>
         </CardHeader>
         <CardContent>
           <SchemaList schemas={schemas} />
