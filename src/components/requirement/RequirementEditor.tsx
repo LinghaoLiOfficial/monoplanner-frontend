@@ -16,6 +16,8 @@ type RequirementEditorProps = {
   title?: string;
   hideLabel?: boolean;
   submitButton?: "text" | "icon";
+  disabled?: boolean;
+  disabledMessage?: string;
 };
 
 export function RequirementEditor({
@@ -24,16 +26,21 @@ export function RequirementEditor({
   title = "需求输入",
   hideLabel = false,
   submitButton = "text",
+  disabled = false,
+  disabledMessage,
 }: RequirementEditorProps) {
   const [rawText, setRawText] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const inputDisabled = disabled || saving;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
-    setSuccess(null);
+
+    if (disabled) {
+      return;
+    }
 
     if (!rawText.trim()) {
       setError("请输入自然语言业务需求");
@@ -44,7 +51,6 @@ export function RequirementEditor({
     try {
       await onSave(rawText.trim());
       setRawText("");
-      setSuccess("需求已保存");
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存需求失败，请稍后重试");
     } finally {
@@ -63,13 +69,13 @@ export function RequirementEditor({
               value={rawText}
               onChange={(event) => setRawText(event.target.value)}
               placeholder="描述业务目标、核心流程、角色、数据对象或你希望 Codex 理解的开发上下文"
-              disabled={saving}
+              disabled={inputDisabled}
               className="min-h-44 resize-none border-0 bg-transparent shadow-none focus-visible:border-transparent focus-visible:ring-0"
             />
             <Button
               type="submit"
               size="icon"
-              disabled={saving}
+              disabled={inputDisabled}
               aria-label="保存需求"
               className="self-end"
             >
@@ -82,17 +88,17 @@ export function RequirementEditor({
             value={rawText}
             onChange={(event) => setRawText(event.target.value)}
             placeholder="描述业务目标、核心流程、角色、数据对象或你希望 Codex 理解的开发上下文"
-            disabled={saving}
+            disabled={inputDisabled}
             className="min-h-44"
           />
         )}
       </div>
+      {disabledMessage ? <p className="text-sm text-muted-foreground">{disabledMessage}</p> : null}
       {error ? <ErrorState message={error} /> : null}
-      {success ? <p className="text-sm text-muted-foreground">{success}</p> : null}
       {submitButton === "icon" ? (
         null
       ) : (
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={inputDisabled}>
           {saving ? "正在保存..." : "保存需求"}
         </Button>
       )}

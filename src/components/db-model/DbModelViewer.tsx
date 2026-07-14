@@ -20,8 +20,8 @@ export function DbModelViewer({ model }: { model: DbModelDraft | null }) {
     return (
       <EmptyState
         icon={Database}
-        title="当前项目还没有数据库模型草案"
-        description="先在工作台或本页触发生成，随后可查看实体、字段、关系和完整 JSON"
+        title="还没有数据库模型"
+        description="请先生成项目蓝图，建议再生成 API 契约。"
       />
     );
   }

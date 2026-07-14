@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BlueprintViewer } from "@/components/blueprint/BlueprintViewer";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
+import { SavedGenerationPanel } from "@/components/common/SavedGenerationPanel";
 import { GenerationActionPanel } from "@/components/project/GenerationActionPanel";
 import { ProjectStatusBadge } from "@/components/project/ProjectStatusBadge";
 import { ProjectWorkspaceNav } from "@/components/project/ProjectWorkspaceNav";
@@ -15,8 +16,10 @@ import { RequirementList } from "@/components/requirement/RequirementList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { generateProjectBlueprint, getProjectBlueprints } from "@/lib/api/blueprints";
+import { getGenerationErrorMessage } from "@/lib/api/generation-errors";
 import { getProject } from "@/lib/api/projects";
 import { createProjectRequirement, getProjectRequirements } from "@/lib/api/requirements";
+import { isProjectTechStackConfigured } from "@/lib/project-tech-stack";
 import type { ProjectBlueprint } from "@/lib/types/blueprint";
 import type { Project } from "@/lib/types/project";
 import type { Requirement } from "@/lib/types/requirement";
@@ -33,11 +36,11 @@ export default function ProjectWorkspacePage() {
   const [blueprints, setBlueprints] = useState<ProjectBlueprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const [generateSuccess, setGenerateSuccess] = useState<string | null>(null);
 
   const latestBlueprint = useMemo(() => getLatestBlueprint(blueprints), [blueprints]);
+  const isTechStackConfigured = project
+    ? isProjectTechStackConfigured(project)
+    : false;
 
   const loadWorkspace = async () => {
     setLoading(true);
@@ -66,6 +69,15 @@ export default function ProjectWorkspacePage() {
     setBlueprints(await getProjectBlueprints(projectId));
   };
 
+  const handleGenerateBlueprint = async () => {
+    if (!isTechStackConfigured) {
+      throw new Error("请先在项目蓝图页完成技术栈首次配置");
+    }
+
+    await generateProjectBlueprint(projectId);
+    await refreshBlueprints();
+  };
+
   const handleSaveRequirement = async (rawText: string) => {
     const requirement = await createProjectRequirement(projectId, {
       raw_text: rawText,
@@ -74,21 +86,6 @@ export default function ProjectWorkspacePage() {
     });
     await refreshRequirements();
     return requirement;
-  };
-
-  const handleGenerateBlueprint = async () => {
-    setGenerating(true);
-    setGenerateError(null);
-    setGenerateSuccess(null);
-    try {
-      await generateProjectBlueprint(projectId);
-      await refreshBlueprints();
-      setGenerateSuccess("蓝图草案已生成");
-    } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : "生成 blueprint 草案失败");
-    } finally {
-      setGenerating(false);
-    }
   };
 
   useEffect(() => {
@@ -126,7 +123,12 @@ export default function ProjectWorkspacePage() {
         </div>
       </div>
 
-      <GenerationActionPanel projectId={projectId} hasBlueprint={Boolean(latestBlueprint)} onGenerated={refreshBlueprints} />
+      <GenerationActionPanel
+        projectId={projectId}
+        hasBlueprint={Boolean(latestBlueprint)}
+        isTechStackConfigured={isTechStackConfigured}
+        onGenerated={refreshBlueprints}
+      />
 
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-4">
@@ -146,14 +148,27 @@ export default function ProjectWorkspacePage() {
           <Card>
             <CardHeader>
               <CardTitle>Project Blueprint 预览</CardTitle>
-              <CardDescription>调用后端占位接口生成并展示最新 JSON 草案</CardDescription>
+              <CardDescription>调用后端生成接口，由大模型基于用户需求和业务需求池生成最新 JSON 蓝图</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {generateError ? <ErrorState message={generateError} /> : null}
-              {generateSuccess ? <p className="text-sm text-muted-foreground">{generateSuccess}</p> : null}
-              <Button type="button" onClick={handleGenerateBlueprint} disabled={generating}>
-                {generating ? "正在生成蓝图草案..." : "生成蓝图草案"}
-              </Button>
+            <CardContent>
+              <SavedGenerationPanel
+                buttonLabel="生成蓝图"
+                loadingLabel="正在生成蓝图，请稍候..."
+                successLabel="蓝图已生成"
+                description={
+                  isTechStackConfigured
+                    ? "后端会流式读取大模型输出，并在完成后保存为项目蓝图，后端正在调用大模型并保存结果，生成可能需要一些时间"
+                    : "请先前往项目蓝图页完成技术栈首次配置，保存后不可修改"
+                }
+                disabled={!isTechStackConfigured}
+                onGenerate={handleGenerateBlueprint}
+                formatError={(err) => getGenerationErrorMessage(err, "蓝图")}
+              />
+              {!isTechStackConfigured ? (
+                <Button asChild variant="outline" className="mt-4">
+                  <Link href={`/projects/${projectId}/blueprint`}>配置技术栈</Link>
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
           <BlueprintViewer blueprint={latestBlueprint} />

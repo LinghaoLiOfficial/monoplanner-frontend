@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "工作台", segment: "" },
-  { label: "用户需求", segment: "requirements" },
-  { label: "蓝图", segment: "blueprint" },
+  { label: "项目蓝图", segment: "blueprint" },
+  { label: "原始用户需求", segment: "requirements" },
+  { label: "敏捷业务需求", segment: "business-stories" },
   { label: "API 契约", segment: "api-contract" },
   { label: "数据库模型", segment: "db-model" },
   { label: "指令集合", segment: "prompts" },

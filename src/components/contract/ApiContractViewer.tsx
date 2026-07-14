@@ -20,8 +20,8 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
     return (
       <EmptyState
         icon={Code2}
-        title="当前项目还没有 API 契约草案"
-        description="先在工作台或本页触发生成，随后可查看 endpoints、schemas 和完整 JSON"
+        title="还没有 API 契约"
+        description="请先生成项目蓝图，然后生成 API 契约。"
       />
     );
   }

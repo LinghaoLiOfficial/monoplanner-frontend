@@ -1,5 +1,9 @@
 import { apiRequest } from "@/lib/api/client";
-import type { CreateRequirementPayload, Requirement } from "@/lib/types/requirement";
+import type {
+  BusinessStoryGenerationProgress,
+  CreateRequirementPayload,
+  Requirement,
+} from "@/lib/types/requirement";
 
 export function getProjectRequirements(projectId: string) {
   return apiRequest<Requirement[]>(`/projects/${projectId}/requirements`);
@@ -10,4 +14,10 @@ export function createProjectRequirement(projectId: string, payload: CreateRequi
     method: "POST",
     body: payload,
   });
+}
+
+export function getRequirementBusinessStoryGeneration(requirementId: string) {
+  return apiRequest<BusinessStoryGenerationProgress | null>(
+    `/requirements/${requirementId}/business-story-generation`
+  );
 }

@@ -2,13 +2,15 @@ import { env } from "@/lib/env";
 
 export class ApiError extends Error {
   status: number;
+  detail?: unknown;
   details?: unknown;
 
-  constructor(message: string, status: number, details?: unknown) {
+  constructor(message: string, status: number, detail?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
-    this.details = details;
+    this.detail = detail;
+    this.details = detail;
   }
 }
 
@@ -79,6 +81,7 @@ export async function apiRequest<T>(
   try {
     response = await fetch(buildUrl(path, query), {
       ...init,
+      credentials: init.credentials ?? "include",
       headers: {
         ...(body instanceof FormData ? {} : { "Content-Type": "application/json" }),
         ...headers,

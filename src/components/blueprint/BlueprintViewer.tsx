@@ -15,7 +15,7 @@ export function BlueprintViewer({ blueprint }: BlueprintViewerProps) {
       <EmptyState
         icon={FileJson}
         title="当前项目还没有 blueprint"
-        description="保存至少一条需求后，点击“生成蓝图草案”查看后端占位版 Project Blueprint JSON"
+        description="保存至少一条用户需求后，点击“生成蓝图”查看由大模型生成的 Project Blueprint JSON"
       />
     );
   }
