@@ -1,0 +1,46 @@
+import { cn } from "@/lib/utils";
+import type { BusinessRequirementFieldDefinition } from "@/lib/types/business-story";
+
+export function FieldDefinitionHeading({
+  definition,
+  className,
+  titleClassName,
+  showMeaning = true,
+}: {
+  definition: BusinessRequirementFieldDefinition;
+  className?: string;
+  titleClassName?: string;
+  showMeaning?: boolean;
+}) {
+  return (
+    <div className={cn("space-y-1", className)}>
+      <div className={cn("flex flex-wrap items-baseline gap-x-2 gap-y-1", titleClassName)}>
+        <span>{definition.name}</span>
+        <code className="rounded-full border border-border/60 bg-muted px-2 py-0.5 font-mono text-[11px] font-normal text-muted-foreground">
+          {definition.englishName}
+        </code>
+      </div>
+      {showMeaning ? (
+        <p className="text-xs font-normal leading-5 text-muted-foreground">{definition.meaning}</p>
+      ) : null}
+    </div>
+  );
+}
+
+export function FieldDefinitionSummary({
+  definitions,
+}: {
+  definitions: BusinessRequirementFieldDefinition[];
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="grid gap-x-6 gap-y-4 md:grid-cols-2">
+        {definitions.map((definition) => (
+          <div key={definition.key} className="border-l border-border pl-3">
+            <FieldDefinitionHeading definition={definition} titleClassName="text-sm font-medium" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}

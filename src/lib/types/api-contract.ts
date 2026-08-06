@@ -1,3 +1,5 @@
+import type { VersionedDesignAsset } from "@/lib/types/design-asset";
+
 export type ApiContractDraft = {
   id: string;
   project_id: string;
@@ -10,6 +12,8 @@ export type ApiContractDraft = {
   created_at: string;
   updated_at: string;
 };
+
+export type VersionedApiContract = VersionedDesignAsset<ApiContractContent>;
 
 export type ApiContractContent = {
   base_path: string;

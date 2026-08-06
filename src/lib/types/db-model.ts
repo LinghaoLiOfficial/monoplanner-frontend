@@ -1,3 +1,5 @@
+import type { VersionedDesignAsset } from "@/lib/types/design-asset";
+
 export type DbModelDraft = {
   id: string;
   project_id: string;
@@ -9,6 +11,8 @@ export type DbModelDraft = {
   created_at: string;
   updated_at: string;
 };
+
+export type VersionedDbModel = VersionedDesignAsset<DbModelContent>;
 
 export type DbModelContent = {
   database?: {

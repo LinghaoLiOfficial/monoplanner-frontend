@@ -22,16 +22,27 @@ import { Label } from "@/components/ui/label";
 export default function LoginPage() {
   const router = useRouter();
   const { loginWithPassword } = useAuth();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const normalizedEmail = email.trim();
 
-    if (!username.trim() || !password) {
-      setError("请输入用户名和密码");
+    if (!normalizedEmail) {
+      setError("请输入邮箱");
+      return;
+    }
+
+    if (!normalizedEmail.includes("@") || !normalizedEmail.includes(".")) {
+      setError("请输入有效邮箱");
+      return;
+    }
+
+    if (!password) {
+      setError("请输入密码");
       return;
     }
 
@@ -40,7 +51,7 @@ export default function LoginPage() {
 
     try {
       const user = await loginWithPassword({
-        username: username.trim(),
+        email: normalizedEmail,
         password,
       });
       const redirectTo = new URLSearchParams(window.location.search).get("redirectTo");
@@ -65,14 +76,14 @@ export default function LoginPage() {
               登录
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">
-              使用用户名和密码登录，登录态由后端 HttpOnly cookie 保持。
+              使用邮箱和密码登录，登录态由后端 HttpOnly cookie 保持。
             </p>
           </section>
 
           <Card>
             <CardHeader>
               <CardTitle>登录账号</CardTitle>
-              <CardDescription>使用用户名和密码登录</CardDescription>
+              <CardDescription>使用邮箱和密码登录</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleSubmit}>
@@ -83,12 +94,14 @@ export default function LoginPage() {
                 ) : null}
 
                 <div className="space-y-2">
-                  <Label htmlFor="username">用户名</Label>
+                  <Label htmlFor="email">邮箱</Label>
                   <Input
-                    id="username"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    autoComplete="username"
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    placeholder="请输入邮箱"
                     disabled={submitting}
                   />
                 </div>
@@ -101,6 +114,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     autoComplete="current-password"
+                    placeholder="请输入密码"
                     disabled={submitting}
                   />
                 </div>

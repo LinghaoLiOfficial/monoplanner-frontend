@@ -28,7 +28,10 @@ export async function register(input: RegisterInput) {
 export async function login(input: LoginInput) {
   const response = await apiRequest<AuthUserResponse>("/auth/login", {
     method: "POST",
-    body: input,
+    body: {
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+    },
   });
 
   return response;

@@ -4,19 +4,15 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { BlueprintViewer } from "@/components/blueprint/BlueprintViewer";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
-import { SavedGenerationPanel } from "@/components/common/SavedGenerationPanel";
 import { GenerationActionPanel } from "@/components/project/GenerationActionPanel";
 import { ProjectStatusBadge } from "@/components/project/ProjectStatusBadge";
-import { ProjectWorkspaceNav } from "@/components/project/ProjectWorkspaceNav";
 import { RequirementEditor } from "@/components/requirement/RequirementEditor";
 import { RequirementList } from "@/components/requirement/RequirementList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { generateProjectBlueprint, getProjectBlueprints } from "@/lib/api/blueprints";
-import { getGenerationErrorMessage } from "@/lib/api/generation-errors";
+import { getProjectBlueprints } from "@/lib/api/blueprints";
 import { getProject } from "@/lib/api/projects";
 import { createProjectRequirement, getProjectRequirements } from "@/lib/api/requirements";
 import { isProjectTechStackConfigured } from "@/lib/project-tech-stack";
@@ -65,19 +61,6 @@ export default function ProjectWorkspacePage() {
     setRequirements(await getProjectRequirements(projectId));
   };
 
-  const refreshBlueprints = async () => {
-    setBlueprints(await getProjectBlueprints(projectId));
-  };
-
-  const handleGenerateBlueprint = async () => {
-    if (!isTechStackConfigured) {
-      throw new Error("请先在项目蓝图页完成技术栈首次配置");
-    }
-
-    await generateProjectBlueprint(projectId);
-    await refreshBlueprints();
-  };
-
   const handleSaveRequirement = async (rawText: string) => {
     const requirement = await createProjectRequirement(projectId, {
       raw_text: rawText,
@@ -103,9 +86,7 @@ export default function ProjectWorkspacePage() {
   }
 
   return (
-    <div className="space-y-6 pb-12">
-      <ProjectWorkspaceNav projectId={projectId} />
-
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -118,7 +99,10 @@ export default function ProjectWorkspacePage() {
             <Link href="/projects">返回项目列表</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}/blueprint`}>蓝图版本</Link>
+            <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/projects/${projectId}/business-requirements`}>敏捷业务需求</Link>
           </Button>
         </div>
       </div>
@@ -127,7 +111,6 @@ export default function ProjectWorkspacePage() {
         projectId={projectId}
         hasBlueprint={Boolean(latestBlueprint)}
         isTechStackConfigured={isTechStackConfigured}
-        onGenerated={refreshBlueprints}
       />
 
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
@@ -135,7 +118,7 @@ export default function ProjectWorkspacePage() {
           <RequirementEditor onSave={handleSaveRequirement} />
           <Card>
             <CardHeader>
-              <CardTitle>需求历史</CardTitle>
+              <CardTitle>原始用户需求</CardTitle>
               <CardDescription>最近保存的自然语言需求</CardDescription>
             </CardHeader>
             <CardContent>
@@ -147,31 +130,35 @@ export default function ProjectWorkspacePage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Project Blueprint 预览</CardTitle>
-              <CardDescription>调用后端生成接口，由大模型基于用户需求和业务需求池生成最新 JSON 蓝图</CardDescription>
+              <CardTitle>当前编排状态</CardTitle>
+              <CardDescription>新版流程会在应用变更集后更新前端工程实现、API 契约、后端工程实现、数据库模型和交付资产</CardDescription>
             </CardHeader>
-            <CardContent>
-              <SavedGenerationPanel
-                buttonLabel="生成蓝图"
-                loadingLabel="正在生成蓝图，请稍候..."
-                successLabel="蓝图已生成"
-                description={
-                  isTechStackConfigured
-                    ? "后端会流式读取大模型输出，并在完成后保存为项目蓝图，后端正在调用大模型并保存结果，生成可能需要一些时间"
-                    : "请先前往项目蓝图页完成技术栈首次配置，保存后不可修改"
-                }
-                disabled={!isTechStackConfigured}
-                onGenerate={handleGenerateBlueprint}
-                formatError={(err) => getGenerationErrorMessage(err, "蓝图")}
-              />
-              {!isTechStackConfigured ? (
-                <Button asChild variant="outline" className="mt-4">
-                  <Link href={`/projects/${projectId}/blueprint`}>配置技术栈</Link>
+            <CardContent className="space-y-4">
+              <div className="rounded-2xl border border-border/60 p-4">
+                <p className="text-sm font-medium">项目配置</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {isTechStackConfigured ? "已配置前后端技术栈" : "尚未完成项目配置"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border/60 p-4">
+                <p className="text-sm font-medium">项目蓝图</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {latestBlueprint ? `当前最新版本：v${latestBlueprint.version}` : "暂无蓝图版本"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline">
+                  <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
                 </Button>
-              ) : null}
+                <Button asChild variant="outline">
+                  <Link href={`/projects/${projectId}/frontend-implementation`}>前端工程实现</Link>
+                </Button>
+                <Button asChild>
+                  <Link href={`/projects/${projectId}/delivery`}>交付 / 指令集合</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
-          <BlueprintViewer blueprint={latestBlueprint} />
         </div>
       </div>
     </div>

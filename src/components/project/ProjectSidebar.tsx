@@ -1,0 +1,99 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { getProjectNavHref, getProjectNavItems, projectNavGroups } from "@/components/project/project-navigation";
+
+function ProjectNavigationContent({
+  projectId,
+  onNavigate,
+}: {
+  projectId: string;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-5">
+        {projectNavGroups.map((group) => (
+          <div key={group.label} className="space-y-2">
+            <p className="px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const href = getProjectNavHref(projectId, item.segment);
+                const active = pathname === href;
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={href}
+                    onClick={onNavigate}
+                    className={cn(
+                      "flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                      active && "bg-foreground text-background hover:bg-foreground hover:text-background"
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function ProjectSidebar({ projectId }: { projectId: string }) {
+  return (
+    <aside className="hidden min-h-0 overflow-y-auto rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm lg:block">
+      <ProjectNavigationContent projectId={projectId} />
+    </aside>
+  );
+}
+
+export function ProjectMobileNav({ projectId }: { projectId: string }) {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const currentItem = getProjectNavItems().find((item) => pathname === getProjectNavHref(projectId, item.segment));
+
+  return (
+    <div className="lg:hidden">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button variant="outline" className="w-full justify-between rounded-2xl">
+            <span className="flex items-center gap-2">
+              <Menu className="size-4" />
+              {currentItem?.label ?? "项目导航"}
+            </span>
+            <span className="text-xs text-muted-foreground">切换</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>项目导航</SheetTitle>
+            <SheetDescription>切换当前项目的工作区页面</SheetDescription>
+          </SheetHeader>
+          <ProjectNavigationContent projectId={projectId} onNavigate={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}

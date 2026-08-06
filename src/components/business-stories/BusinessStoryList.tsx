@@ -24,6 +24,8 @@ export function BusinessStoryList({
   onUpdateStory,
   onPriorityChange,
   onStatusChange,
+  onExecuteStory,
+  executingStoryId,
   onDeleteStory,
 }: {
   stories: BusinessRequirementStory[];
@@ -34,6 +36,8 @@ export function BusinessStoryList({
   onUpdateStory: (storyId: string, input: UpdateBusinessStoryInput) => Promise<BusinessRequirementStory>;
   onPriorityChange: (storyId: string, priority: BusinessStoryPriority) => Promise<void>;
   onStatusChange: (storyId: string, status: BusinessStoryStatus) => Promise<void>;
+  onExecuteStory?: (story: BusinessRequirementStory) => void;
+  executingStoryId?: string | null;
   onDeleteStory?: (story: BusinessRequirementStory) => void;
 }) {
   const listScrollRef = useRef<HTMLDivElement | null>(null);
@@ -100,6 +104,8 @@ export function BusinessStoryList({
               onUpdateStory={onUpdateStory}
               onPriorityChange={onPriorityChange}
               onStatusChange={onStatusChange}
+              onExecute={onExecuteStory}
+              executing={executingStoryId === story.id}
               onDelete={onDeleteStory}
             />
           </div>

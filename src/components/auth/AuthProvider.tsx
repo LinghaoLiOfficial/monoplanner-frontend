@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await register(input);
 
     const response = await login({
-      username: input.username,
+      email: input.email,
       password: input.password,
     });
     setError(null);

@@ -7,16 +7,22 @@ const PROGRESS_STATUS_LABELS: Record<RequirementProgressStatus, string> = {
 };
 
 export function getRequirementProgressStatus(requirement: Requirement): RequirementProgressStatus {
-  if (requirement.progress_status) {
-    return requirement.progress_status;
-  }
+  const generationStatus = requirement.business_story_generation?.status;
 
-  if (requirement.business_story_generation?.status === "running") {
+  if (generationStatus === "running") {
     return "in_progress";
   }
 
-  if (requirement.business_story_generation?.status === "succeeded") {
+  if (generationStatus === "succeeded") {
     return "success";
+  }
+
+  if (generationStatus === "failed") {
+    return "failed";
+  }
+
+  if (requirement.progress_status) {
+    return requirement.progress_status;
   }
 
   return "failed";

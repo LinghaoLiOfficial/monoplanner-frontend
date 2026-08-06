@@ -37,3 +37,14 @@ export type CreateRequirementPayload = {
   language?: string;
   source_type?: string;
 };
+
+export type RequirementFieldMetadata = {
+  chineseName: string;
+  englishName: string;
+  meaning: string;
+};
+
+export type RawUserRequirements = Requirement[];
+export type NewUserRequirement = CreateRequirementPayload;
+export type RequirementHistory = Requirement[];
+export type RequirementItem = Requirement;

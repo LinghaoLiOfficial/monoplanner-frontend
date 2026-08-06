@@ -4,17 +4,23 @@ import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import {
+  AffectedLayerBadge,
+} from "@/components/business-stories/AffectedLayerBadge";
+import { FieldDefinitionHeading } from "@/components/business-stories/BusinessRequirementFieldDefinition";
+import {
   BusinessStoryPriorityBadge,
   priorityBadgeLabels,
   priorityLabels,
 } from "@/components/business-stories/BusinessStoryPriorityBadge";
 import { BusinessStoryStatusBadge, statusLabels } from "@/components/business-stories/BusinessStoryStatusBadge";
+import { ImplementationScopeBadge } from "@/components/business-stories/ImplementationScopeBadge";
 import { InlineEditableList } from "@/components/business-stories/InlineEditableList";
 import { InlineEditableText } from "@/components/business-stories/InlineEditableText";
 import { ErrorState } from "@/components/common/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { businessRequirementFieldDefinitionByKey } from "@/lib/business-story-contract";
 import { cn } from "@/lib/utils";
 import type {
   BusinessRequirementStory,
@@ -38,14 +44,26 @@ function formatDate(value: string) {
 
 function StorySection({
   title,
+  definition,
+  showMeaning = true,
   children,
 }: {
-  title: string;
+  title?: string;
+  definition?: Parameters<typeof FieldDefinitionHeading>[0]["definition"];
+  showMeaning?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <section className="space-y-2">
-      <h3 className="text-sm font-medium">{title}</h3>
+      {definition ? (
+        <FieldDefinitionHeading
+          definition={definition}
+          showMeaning={showMeaning}
+          titleClassName="text-sm font-medium"
+        />
+      ) : (
+        <h3 className="text-sm font-medium">{title}</h3>
+      )}
       {children}
     </section>
   );
@@ -247,16 +265,28 @@ export function BusinessStoryCard({
   onUpdateStory,
   onPriorityChange,
   onStatusChange,
+  onExecute,
+  executing,
   onDelete,
 }: {
   story: BusinessRequirementStory;
   onUpdateStory: (storyId: string, input: UpdateBusinessStoryInput) => Promise<BusinessRequirementStory>;
   onPriorityChange: (storyId: string, priority: BusinessStoryPriority) => Promise<void>;
   onStatusChange: (storyId: string, status: BusinessStoryStatus) => Promise<void>;
+  onExecute?: (story: BusinessRequirementStory) => void;
+  executing?: boolean;
   onDelete?: (story: BusinessRequirementStory) => void;
 }) {
   const [updatingField, setUpdatingField] = useState<"priority" | "status" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const requirementName = story.requirement_name ?? story.title;
+  const impactScope = story.impact_scope ?? {
+    implementation_scope: story.implementation_scope,
+    affected_layers: story.affected_layers,
+  };
+  const includedScope = story.included_scope ?? story.business_scope.included;
+  const excludedScope = story.excluded_scope ?? story.business_scope.excluded;
+  const executionNote = story.execution_note ?? story.execution_notes ?? "";
 
   const handlePriorityChange = async (priority: BusinessStoryPriority) => {
     if (priority === story.priority) {
@@ -311,9 +341,27 @@ export function BusinessStoryCard({
       <CardHeader className="pb-4 pr-14">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-3">
+            <FieldDefinitionHeading
+              definition={businessRequirementFieldDefinitionByKey.business_requirement_story}
+              titleClassName="text-sm font-medium text-muted-foreground"
+            />
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-semibold leading-7">{story.title}</h2>
+              <div className="min-w-0 space-y-1">
+                <FieldDefinitionHeading
+                  definition={businessRequirementFieldDefinitionByKey.requirement_name}
+                  titleClassName="text-xs font-medium text-muted-foreground"
+                />
+                <InlineEditableText
+                  value={requirementName}
+                  ariaLabel="编辑需求名称"
+                  placeholder="请输入需求名称"
+                  minRows={1}
+                  className="cursor-text text-xl font-semibold leading-7 transition-colors hover:text-primary"
+                  onSave={(title) => handleFieldSave({ title })}
+                />
+              </div>
               <BusinessStoryPriorityBadge priority={story.priority} />
+              <ImplementationScopeBadge scope={impactScope.implementation_scope} />
               <BusinessStoryStatusBadge status={story.status} />
             </div>
             <p className="text-xs text-muted-foreground">创建于 {formatDate(story.created_at)}</p>
@@ -337,11 +385,35 @@ export function BusinessStoryCard({
               className="w-28"
               onChange={handleStatusChange}
             />
+            {onExecute ? (
+              <Button
+                type="button"
+                size="sm"
+                className="self-end"
+                disabled={executing}
+                onClick={() => onExecute(story)}
+              >
+                {executing ? "执行中..." : "执行该需求切片"}
+              </Button>
+            ) : null}
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
         {error ? <ErrorState title="更新失败" message={error} /> : null}
+
+        <StorySection definition={businessRequirementFieldDefinitionByKey.impact_scope}>
+          <div className="flex flex-wrap gap-2">
+            <ImplementationScopeBadge scope={impactScope.implementation_scope} />
+            {impactScope.affected_layers.length > 0 ? (
+              impactScope.affected_layers.map((layer) => (
+                <AffectedLayerBadge key={layer} layer={layer} />
+              ))
+            ) : (
+              <span className="text-sm leading-7 text-muted-foreground">暂无影响层</span>
+            )}
+          </div>
+        </StorySection>
 
         {story.vertical_slice_note ? (
           <p className="text-sm font-medium leading-7 text-[oklch(0.42_0.06_55)] dark:text-[oklch(0.82_0.08_65)]">
@@ -349,7 +421,7 @@ export function BusinessStoryCard({
           </p>
         ) : null}
 
-        <StorySection title="用户故事">
+        <StorySection definition={businessRequirementFieldDefinitionByKey.user_story}>
           <InlineEditableText
             value={story.user_story}
             ariaLabel="编辑用户故事"
@@ -359,12 +431,15 @@ export function BusinessStoryCard({
           />
         </StorySection>
 
-        <StorySection title="业务范围">
+        <StorySection definition={businessRequirementFieldDefinitionByKey.business_scope}>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <h4 className="text-sm font-medium">包含</h4>
+              <FieldDefinitionHeading
+                definition={businessRequirementFieldDefinitionByKey.included_scope}
+                titleClassName="text-sm font-medium"
+              />
               <InlineEditableList
-                value={story.business_scope.included}
+                value={includedScope}
                 ariaLabel="编辑业务范围包含"
                 placeholder="每行输入一个包含范围"
                 emptyText="暂无包含范围"
@@ -374,16 +449,19 @@ export function BusinessStoryCard({
                   handleFieldSave({
                     business_scope: {
                       included,
-                      excluded: story.business_scope.excluded,
+                      excluded: excludedScope,
                     },
                   })
                 }
               />
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <h4 className="text-sm font-medium">不包含</h4>
+              <FieldDefinitionHeading
+                definition={businessRequirementFieldDefinitionByKey.excluded_scope}
+                titleClassName="text-sm font-medium"
+              />
               <InlineEditableList
-                value={story.business_scope.excluded}
+                value={excludedScope}
                 ariaLabel="编辑业务范围不包含"
                 placeholder="每行输入一个不包含范围"
                 emptyText="暂无排除范围"
@@ -392,7 +470,7 @@ export function BusinessStoryCard({
                 onSave={(excluded) =>
                   handleFieldSave({
                     business_scope: {
-                      included: story.business_scope.included,
+                      included: includedScope,
                       excluded,
                     },
                   })
@@ -400,6 +478,17 @@ export function BusinessStoryCard({
               />
             </div>
           </div>
+        </StorySection>
+
+        <StorySection definition={businessRequirementFieldDefinitionByKey.execution_note}>
+          <InlineEditableText
+            value={executionNote}
+            ariaLabel="编辑执行说明"
+            placeholder="请输入执行说明"
+            className={storyTextBlockClassName}
+            emptyText="暂无执行说明"
+            onSave={(executionNotes) => handleFieldSave({ execution_notes: executionNotes || null })}
+          />
         </StorySection>
 
         <StorySection title="数据规则">

@@ -7,11 +7,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
-import { ProjectWorkspaceNav } from "@/components/project/ProjectWorkspaceNav";
 import { RequirementEditor } from "@/components/requirement/RequirementEditor";
 import { RequirementList } from "@/components/requirement/RequirementList";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
 import { generateBusinessStories } from "@/lib/api/business-stories";
 import {
@@ -23,6 +22,54 @@ import { getRequirementProgressStatus } from "@/lib/requirement-progress";
 import type { BusinessStoryGenerationProgress, Requirement } from "@/lib/types/requirement";
 
 const GENERATION_POLL_INTERVAL_MS = 2500;
+
+const rawUserRequirementsField = {
+  chineseName: "原始用户需求",
+  englishName: "raw_user_requirements",
+  meaning: "用户直接输入的未经结构化拆解的原始需求集合。",
+};
+
+const newUserRequirementField = {
+  chineseName: "新用户需求",
+  englishName: "new_user_requirement",
+  meaning: "用户当前准备提交的一条新需求输入。",
+};
+
+const requirementHistoryField = {
+  chineseName: "用户需求历史",
+  englishName: "requirement_history",
+  meaning: "当前项目中已提交的原始用户需求记录列表。",
+};
+
+type RequirementFieldMeta = typeof rawUserRequirementsField;
+
+function FieldMetaTitle({ fieldMeta }: { fieldMeta: RequirementFieldMeta }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight">{fieldMeta.chineseName}</h1>
+        <span className="rounded-full border border-border/60 bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+          {fieldMeta.englishName}
+        </span>
+      </div>
+      <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{fieldMeta.meaning}</p>
+    </div>
+  );
+}
+
+function FieldMetaSectionTitle({ fieldMeta }: { fieldMeta: RequirementFieldMeta }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-lg font-semibold tracking-tight">{fieldMeta.chineseName}</h2>
+        <span className="rounded-full border border-border/60 bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+          {fieldMeta.englishName}
+        </span>
+      </div>
+      <p className="text-sm leading-6 text-muted-foreground">{fieldMeta.meaning}</p>
+    </div>
+  );
+}
 
 function debugBusinessStoryGeneration(
   requirementId: string,
@@ -278,15 +325,10 @@ export default function ProjectRequirementsPage() {
   }, [pollRunningRequirementGenerations, runningRequirementIdsKey]);
 
   return (
-    <div className="space-y-6 pb-12">
-      <ProjectWorkspaceNav projectId={projectId} />
-
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">原始用户需求</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            查看当前项目的需求记录，也可以继续追加新的自然语言需求
-          </p>
+          <FieldMetaTitle fieldMeta={rawUserRequirementsField} />
         </div>
         <Button asChild variant="outline">
           <Link href={`/projects/${projectId}`}>返回工作台</Link>
@@ -294,18 +336,25 @@ export default function ProjectRequirementsPage() {
       </div>
 
       <div className="space-y-4">
-        <RequirementEditor
-          title="新用户需求"
-          hideLabel
-          submitButton="icon"
-          disabled={hasRunningRequirement}
-          disabledMessage={hasRunningRequirement ? "已有需求正在更新，请等待完成后再提交新的用户需求" : undefined}
-          onSave={handleSaveRequirement}
-        />
         <Card>
           <CardHeader>
-            <CardTitle>用户需求历史</CardTitle>
-            <CardDescription>每条需求展示文本摘要、语言、来源和创建时间</CardDescription>
+            <FieldMetaSectionTitle fieldMeta={newUserRequirementField} />
+          </CardHeader>
+          <CardContent>
+            <RequirementEditor
+              compact
+              title={newUserRequirementField.chineseName}
+              hideLabel
+              submitButton="icon"
+              disabled={hasRunningRequirement}
+              disabledMessage={hasRunningRequirement ? "已有需求正在更新，请等待完成后再提交新的用户需求" : undefined}
+              onSave={handleSaveRequirement}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <FieldMetaSectionTitle fieldMeta={requirementHistoryField} />
           </CardHeader>
           <CardContent>
             {loading ? <LoadingState label="正在加载需求..." /> : null}

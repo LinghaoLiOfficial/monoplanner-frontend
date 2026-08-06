@@ -1,18 +1,19 @@
 import { apiRequest } from "@/lib/api/client";
-import { streamPost } from "@/lib/api/streaming";
+import type { ChangeSet } from "@/lib/types/change-set";
 import type {
   BusinessRequirementStory,
   BusinessStoryPriority,
   BusinessStoryStatus,
   GenerateBusinessStoriesInput,
   GenerateBusinessStoriesResponse,
+  ImplementationScope,
   UpdateBusinessStoryInput,
 } from "@/lib/types/business-story";
-import type { StreamEvent } from "@/lib/types/streaming";
 
 type BusinessStoryFilters = {
   priority?: BusinessStoryPriority;
   status?: BusinessStoryStatus;
+  implementation_scope?: ImplementationScope;
   q?: string;
 };
 
@@ -35,34 +36,6 @@ export function generateBusinessStories(
       body,
     }
   );
-}
-
-export function streamGenerateBusinessStories(
-  projectId: string,
-  {
-    input = {},
-    onEvent,
-    signal,
-  }: {
-    input?: GenerateBusinessStoriesInput;
-    onEvent: (event: StreamEvent) => void;
-    signal?: AbortSignal;
-  }
-) {
-  const body: GenerateBusinessStoriesInput = {
-    overwrite: input.overwrite ?? false,
-  };
-
-  if ("requirement_id" in input) {
-    body.requirement_id = input.requirement_id;
-  }
-
-  return streamPost({
-    path: `/projects/${projectId}/generate/business-stories/stream`,
-    body,
-    onEvent,
-    signal,
-  });
 }
 
 export function listBusinessStories(projectId: string, filters?: BusinessStoryFilters) {
@@ -91,5 +64,17 @@ export function updateBusinessStory(
 export function deleteBusinessStory(storyId: string) {
   return apiRequest<void>(`/business-stories/${storyId}`, {
     method: "DELETE",
+  });
+}
+
+export function selectBusinessStory(storyId: string) {
+  return apiRequest<BusinessRequirementStory>(`/business-stories/${storyId}/select`, {
+    method: "POST",
+  });
+}
+
+export function executeBusinessStory(storyId: string) {
+  return apiRequest<ChangeSet>(`/business-stories/${storyId}/execute`, {
+    method: "POST",
   });
 }
