@@ -4,15 +4,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  BUSINESS_STORY_PAGE_SIZE,
-  BusinessStoryList,
-} from "@/components/business-stories/BusinessStoryList";
+import { BusinessStoryList } from "@/components/business-stories/BusinessStoryList";
 import { BusinessStoryPriorityBadge } from "@/components/business-stories/BusinessStoryPriorityBadge";
-import { statusLabels } from "@/components/business-stories/BusinessStoryStatusBadge";
-import {
-  FieldDefinitionHeading,
-} from "@/components/business-stories/BusinessRequirementFieldDefinition";
+import { BusinessStoryStatusBadge, statusLabels } from "@/components/business-stories/BusinessStoryStatusBadge";
+import { FieldDefinitionHeading } from "@/components/business-stories/BusinessRequirementFieldDefinition";
+import { AffectedLayerBadge } from "@/components/business-stories/AffectedLayerBadge";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
@@ -39,7 +35,7 @@ import type {
 function getBusinessStoryErrorMessage(err: unknown, fallback: string) {
   if (err instanceof ApiError) {
     if (err.status === 400) {
-      return "请先提交用户需求后再生成业务需求故事";
+      return "请先提交用户需求后再生成业务故事";
     }
 
     if (err.status === 503) {
@@ -54,11 +50,13 @@ function getBusinessStoryErrorMessage(err: unknown, fallback: string) {
 
 function sortStories(stories: BusinessRequirementStory[]) {
   return [...stories].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || Date.parse(a.created_at) - Date.parse(b.created_at)
+    (a, b) =>
+      Number(Boolean(b.is_current)) - Number(Boolean(a.is_current)) ||
+      (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+      Date.parse(b.updated_at) - Date.parse(a.updated_at)
   );
 }
 
-const priorityOptions: BusinessStoryPriority[] = ["p1_must", "p2_should", "p3_could", "p4_wont"];
 const statusOptions: BusinessStoryStatus[] = [
   "draft",
   "ready",
@@ -71,21 +69,13 @@ const statusOptions: BusinessStoryStatus[] = [
   "deferred",
 ];
 
-function BusinessStoryOverview({
+function StorySummaryCard({
+  title,
   stories,
-  onSelectStory,
 }: {
+  title: string;
   stories: BusinessRequirementStory[];
-  onSelectStory: (storyId: string) => void;
 }) {
-  const priorityCounts = useMemo(
-    () =>
-      priorityOptions.map((priority) => ({
-        priority,
-        count: stories.filter((story) => story.priority === priority).length,
-      })),
-    [stories]
-  );
   const statusCounts = useMemo(
     () =>
       statusOptions
@@ -100,12 +90,7 @@ function BusinessStoryOverview({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="leading-normal">
-          <FieldDefinitionHeading
-            definition={businessRequirementFieldDefinitionByKey.requirement_overview}
-            titleClassName="text-base font-semibold"
-          />
-        </CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid gap-2 text-sm md:grid-cols-2">
@@ -126,35 +111,6 @@ function BusinessStoryOverview({
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {priorityCounts.map((item) => (
-            <span
-              key={item.priority}
-              className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground"
-            >
-              <BusinessStoryPriorityBadge priority={item.priority} />
-              {item.count}
-            </span>
-          ))}
-        </div>
-        {stories.length === 0 ? (
-          <p className="text-sm leading-7 text-muted-foreground">当前项目还没有业务需求故事</p>
-        ) : null}
-        {stories.map((story) => (
-          <button
-            key={story.id}
-            type="button"
-            onClick={() => onSelectStory(story.id)}
-            className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-left text-sm transition-colors hover:bg-muted"
-          >
-            <span className="flex items-start justify-between gap-3">
-              <span className="min-w-0 font-medium leading-6">
-                {story.requirement_name ?? story.title}
-              </span>
-              <BusinessStoryPriorityBadge priority={story.priority} />
-            </span>
-          </button>
-        ))}
       </CardContent>
     </Card>
   );
@@ -170,8 +126,6 @@ export default function ProjectBusinessStoriesPage() {
   const [storyToDelete, setStoryToDelete] = useState<BusinessRequirementStory | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [targetStoryId, setTargetStoryId] = useState<string | null>(null);
-  const [storyScrollRequestKey, setStoryScrollRequestKey] = useState(0);
   const [storyPage, setStoryPage] = useState(1);
   const [priorityFilter, setPriorityFilter] = useState<BusinessStoryPriority | "">("");
   const [statusFilter, setStatusFilter] = useState<BusinessStoryStatus | "">("");
@@ -180,10 +134,19 @@ export default function ProjectBusinessStoriesPage() {
   const [executingStoryId, setExecutingStoryId] = useState<string | null>(null);
   const [executeError, setExecuteError] = useState<string | null>(null);
 
-  const filteredStories = useMemo(() => {
+  const currentStories = useMemo(
+    () => sortStories(stories.filter((story) => story.is_current !== false)),
+    [stories]
+  );
+  const historicalStories = useMemo(
+    () => sortStories(stories.filter((story) => story.is_current === false)),
+    [stories]
+  );
+
+  const filteredCurrentStories = useMemo(() => {
     const q = keyword.trim().toLowerCase();
 
-    return stories.filter((story) => {
+    return currentStories.filter((story) => {
       if (priorityFilter && story.priority !== priorityFilter) {
         return false;
       }
@@ -200,12 +163,9 @@ export default function ProjectBusinessStoriesPage() {
         return true;
       }
 
-      return [story.title, story.user_story, story.execution_notes ?? ""]
-        .join("\n")
-        .toLowerCase()
-        .includes(q);
+      return [story.title, story.user_story, story.execution_notes ?? ""].join("\n").toLowerCase().includes(q);
     });
-  }, [keyword, priorityFilter, scopeFilter, statusFilter, stories]);
+  }, [currentStories, keyword, priorityFilter, scopeFilter, statusFilter]);
 
   const loadStories = async () => {
     setLoading(true);
@@ -213,7 +173,7 @@ export default function ProjectBusinessStoriesPage() {
     try {
       setStories(sortStories(await listBusinessStories(projectId)));
     } catch (err) {
-      setError(getBusinessStoryErrorMessage(err, "加载业务需求故事失败"));
+      setError(getBusinessStoryErrorMessage(err, "加载业务故事池失败"));
     } finally {
       setLoading(false);
     }
@@ -226,13 +186,11 @@ export default function ProjectBusinessStoriesPage() {
   };
 
   const handlePriorityChange = async (storyId: string, priority: BusinessStoryPriority) => {
-    const updatedStory = await updateBusinessStory(storyId, { priority });
-    replaceStory(updatedStory);
+    replaceStory(await updateBusinessStory(storyId, { priority }));
   };
 
   const handleStatusChange = async (storyId: string, status: BusinessStoryStatus) => {
-    const updatedStory = await updateBusinessStory(storyId, { status });
-    replaceStory(updatedStory);
+    replaceStory(await updateBusinessStory(storyId, { status }));
   };
 
   const handleUpdateStory = async (storyId: string, input: UpdateBusinessStoryInput) => {
@@ -246,16 +204,6 @@ export default function ProjectBusinessStoriesPage() {
     setDeleteError(null);
   };
 
-  const handleSelectStory = (storyId: string) => {
-    const storyIndex = filteredStories.findIndex((story) => story.id === storyId);
-    if (storyIndex !== -1) {
-      setStoryPage(Math.floor(storyIndex / BUSINESS_STORY_PAGE_SIZE) + 1);
-    }
-
-    setTargetStoryId(storyId);
-    setStoryScrollRequestKey((current) => current + 1);
-  };
-
   const handleConfirmDelete = async () => {
     if (!storyToDelete || deleteLoading) {
       return;
@@ -266,15 +214,13 @@ export default function ProjectBusinessStoriesPage() {
 
     try {
       await deleteBusinessStory(storyToDelete.id);
+      setStories((current) => current.filter((story) => story.id !== storyToDelete.id));
+      setStoryToDelete(null);
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "删除业务需求故事失败");
+      setDeleteError(err instanceof Error ? err.message : "删除业务故事失败");
+    } finally {
       setDeleteLoading(false);
-      return;
     }
-
-    setStories((current) => current.filter((story) => story.id !== storyToDelete.id));
-    setStoryToDelete(null);
-    setDeleteLoading(false);
   };
 
   const handleExecuteStory = async (story: BusinessRequirementStory) => {
@@ -284,15 +230,18 @@ export default function ProjectBusinessStoriesPage() {
       const changeSet = await executeBusinessStory(story.id);
       router.push(`/projects/${projectId}/change-sets?selected=${changeSet.id}`);
     } catch (err) {
-      setExecuteError(err instanceof Error ? err.message : "执行业务需求切片失败");
+      setExecuteError(err instanceof Error ? err.message : "生成分层变更集失败");
     } finally {
       setExecutingStoryId(null);
     }
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadStories();
+    const timer = window.setTimeout(() => {
+      void loadStories();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
@@ -304,35 +253,24 @@ export default function ProjectBusinessStoriesPage() {
             definition={businessRequirementFieldDefinitionByKey.agile_business_requirements}
             titleClassName="text-3xl font-semibold tracking-tight"
           />
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
+            当前业务故事池只展示有效故事；历史记录单独保留，用于追踪原始需求到已应用变更集的演进。
+          </p>
         </div>
         <Button asChild variant="outline">
           <Link href={`/projects/${projectId}`}>返回工作台</Link>
         </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <BusinessStoryOverview
-          stories={stories}
-          onSelectStory={handleSelectStory}
-        />
+      <div className="grid gap-4 xl:grid-cols-2">
+        <StorySummaryCard title="当前有效故事池" stories={currentStories} />
+        <StorySummaryCard title="历史追踪" stories={historicalStories} />
+      </div>
 
+      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <Card>
           <CardHeader>
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <CardTitle className="leading-normal">
-                  <FieldDefinitionHeading
-                    definition={businessRequirementFieldDefinitionByKey.business_requirement_pool}
-                    titleClassName="text-base font-semibold"
-                  />
-                </CardTitle>
-              </div>
-            <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => void loadStories()}>
-                  刷新
-                </Button>
-              </div>
-            </div>
+            <CardTitle>当前有效故事池</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 md:grid-cols-4">
@@ -365,7 +303,9 @@ export default function ProjectBusinessStoriesPage() {
                 >
                   <option value="">全部</option>
                   {Object.entries(statusLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -381,7 +321,9 @@ export default function ProjectBusinessStoriesPage() {
                 >
                   <option value="">全部</option>
                   {Object.entries(implementationScopeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -398,14 +340,12 @@ export default function ProjectBusinessStoriesPage() {
               </label>
             </div>
             {executeError ? <ErrorState title="执行失败" message={executeError} /> : null}
-            {loading ? <LoadingState label="正在加载业务需求故事..." /> : null}
+            {loading ? <LoadingState label="正在加载业务故事池..." /> : null}
             {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadStories} /> : null}
             {!loading && !error ? (
               <BusinessStoryList
-                stories={filteredStories}
+                stories={filteredCurrentStories}
                 page={storyPage}
-                targetStoryId={targetStoryId}
-                scrollRequestKey={storyScrollRequestKey}
                 onPageChange={setStoryPage}
                 onUpdateStory={handleUpdateStory}
                 onPriorityChange={handlePriorityChange}
@@ -417,12 +357,42 @@ export default function ProjectBusinessStoriesPage() {
             ) : null}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>历史追踪</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {historicalStories.length === 0 ? (
+              <p className="text-sm leading-7 text-muted-foreground">暂无历史故事记录</p>
+            ) : (
+              historicalStories.map((story) => (
+                <section key={story.id} className="rounded-2xl border border-border/60 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{story.requirement_name ?? story.title}</span>
+                    <BusinessStoryPriorityBadge priority={story.priority} />
+                    <BusinessStoryStatusBadge status={story.status} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {story.affected_layers.map((layer) => (
+                      <AffectedLayerBadge key={layer} layer={layer} />
+                    ))}
+                  </div>
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{story.user_story}</p>
+                  {story.applied_at ? (
+                    <p className="mt-2 text-xs text-muted-foreground">已应用时间：{new Date(story.applied_at).toLocaleString("zh-CN")}</p>
+                  ) : null}
+                </section>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <ConfirmDialog
         open={Boolean(storyToDelete)}
-        title="确认删除业务需求故事？"
-        description={`删除后，“${storyToDelete?.title ?? "该业务需求故事"}”将从业务需求故事列表中移除，此操作不可撤销`}
+        title="确认删除业务故事？"
+        description={`删除后，“${storyToDelete?.title ?? "该业务故事"}”将从当前列表中移除，此操作不可撤销`}
         confirmText="确认删除"
         cancelText="取消"
         loading={deleteLoading}
@@ -436,7 +406,6 @@ export default function ProjectBusinessStoriesPage() {
           }
         }}
       />
-
     </div>
   );
 }

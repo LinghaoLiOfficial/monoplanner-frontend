@@ -18,34 +18,38 @@ const actions = [
   },
   {
     icon: ListChecks,
-    title: "梳理需求编排",
-    description: "录入原始需求并整理成可执行的敏捷业务需求。",
+    title: "进入业务故事池",
+    description: "录入原始需求并整理成当前有效的业务故事池。",
     href: "business-requirements",
-    buttonLabel: "查看敏捷业务需求",
+    buttonLabel: "查看业务故事池",
   },
   {
     icon: FileJson,
-    title: "查看工程实现",
-    description: "查看前端工程实现、API 契约、后端工程实现与数据库模型。",
+    title: "查看版本资产",
+    description: "查看 UX、UI、前端实现、API 契约、后端实现与数据库模型。",
     href: "frontend-implementation",
-    buttonLabel: "查看前端工程实现",
+    buttonLabel: "打开版本资产",
   },
   {
     icon: Workflow,
-    title: "查看交付资产",
-    description: "查看前后端 Codex 指令集合、验收清单和版本差异。",
+    title: "查看 PromptPack",
+    description: "查看当前有效的 PromptPack、验收清单和历史版本。",
     href: "delivery",
-    buttonLabel: "查看交付 / 指令集合",
+    buttonLabel: "查看 PromptPack",
   },
 ];
 
 export function GenerationActionPanel({
   projectId,
-  hasBlueprint,
+  hasCurrentStoryPool,
+  hasCurrentChangeSet,
+  hasPromptPack,
   isTechStackConfigured,
 }: {
   projectId: string;
-  hasBlueprint: boolean;
+  hasCurrentStoryPool: boolean;
+  hasCurrentChangeSet: boolean;
+  hasPromptPack: boolean;
   isTechStackConfigured: boolean;
   onGenerated?: () => Promise<void> | void;
 }) {
@@ -54,10 +58,12 @@ export function GenerationActionPanel({
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle>上下文编排流程</CardTitle>
-            <CardDescription>从项目配置、需求编排到前后端工程实现与交付资产的主流程</CardDescription>
+            <CardTitle>主流程入口</CardTitle>
+            <CardDescription>从业务故事池、分层变更集到版本资产和 PromptPack 的主链路</CardDescription>
           </div>
-          <Badge variant="outline">{hasBlueprint ? "蓝图就绪" : "蓝图待生成"}</Badge>
+          <Badge variant="outline">
+            {hasPromptPack ? "PromptPack 就绪" : hasCurrentChangeSet ? "变更集待消耗" : hasCurrentStoryPool ? "故事池就绪" : "待启动"}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-2">

@@ -27,10 +27,11 @@ export function AssetHeader({
     <Card>
       <CardContent className="flex flex-col gap-3 py-6 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-semibold">{asset.title}</h2>
-            <Badge variant="outline">v{asset.version}</Badge>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-xl font-semibold">{asset.title}</h2>
+          <Badge variant="outline">v{asset.version}</Badge>
+          {asset.is_current ? <Badge>当前版本</Badge> : null}
+        </div>
           {asset.summary ? (
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{asset.summary}</p>
           ) : null}

@@ -7,7 +7,10 @@ import type { VersionedDesignAsset } from "@/lib/types/design-asset";
 
 export function sortAssetsByVersion<T extends VersionedDesignAsset>(assets: T[]) {
   return [...assets].sort(
-    (a, b) => b.version - a.version || Date.parse(b.created_at) - Date.parse(a.created_at)
+    (a, b) =>
+      Number(Boolean(b.is_current)) - Number(Boolean(a.is_current)) ||
+      b.version - a.version ||
+      Date.parse(b.created_at) - Date.parse(a.created_at)
   );
 }
 
@@ -52,6 +55,7 @@ export function VersionList<T extends VersionedDesignAsset>({
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{asset.title}</span>
                   <Badge variant="outline">v{asset.version}</Badge>
+                  {asset.is_current ? <Badge>当前</Badge> : null}
                 </span>
                 <span className="block text-xs text-muted-foreground">{formatDateTime(asset.created_at)}</span>
               </span>

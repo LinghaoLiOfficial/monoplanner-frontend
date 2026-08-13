@@ -17,6 +17,7 @@ import { ImplementationScopeBadge } from "@/components/business-stories/Implemen
 import { InlineEditableList } from "@/components/business-stories/InlineEditableList";
 import { InlineEditableText } from "@/components/business-stories/InlineEditableText";
 import { ErrorState } from "@/components/common/ErrorState";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -365,6 +366,10 @@ export function BusinessStoryCard({
               <BusinessStoryStatusBadge status={story.status} />
             </div>
             <p className="text-xs text-muted-foreground">创建于 {formatDate(story.created_at)}</p>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              {story.is_current ? <Badge>当前有效</Badge> : <Badge variant="secondary">历史版本</Badge>}
+              {story.applied_at ? <span>已应用于 {formatDate(story.applied_at)}</span> : null}
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 lg:justify-end">
             <InlineSelect

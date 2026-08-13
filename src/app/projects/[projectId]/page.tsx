@@ -12,16 +12,34 @@ import { RequirementEditor } from "@/components/requirement/RequirementEditor";
 import { RequirementList } from "@/components/requirement/RequirementList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProjectBlueprints } from "@/lib/api/blueprints";
+import { listBusinessStories } from "@/lib/api/business-stories";
+import { listChangeSets } from "@/lib/api/change-sets";
 import { getProject } from "@/lib/api/projects";
+import { listPromptPacks } from "@/lib/api/prompt-packs";
 import { createProjectRequirement, getProjectRequirements } from "@/lib/api/requirements";
 import { isProjectTechStackConfigured } from "@/lib/project-tech-stack";
-import type { ProjectBlueprint } from "@/lib/types/blueprint";
+import type { BusinessRequirementStory } from "@/lib/types/business-story";
+import type { ChangeSet } from "@/lib/types/change-set";
 import type { Project } from "@/lib/types/project";
+import type { PromptPack } from "@/lib/types/prompt-pack";
 import type { Requirement } from "@/lib/types/requirement";
 
-function getLatestBlueprint(blueprints: ProjectBlueprint[]) {
-  return [...blueprints].sort((a, b) => b.version - a.version || Date.parse(b.created_at) - Date.parse(a.created_at))[0] ?? null;
+function sortBusinessStories(stories: BusinessRequirementStory[]) {
+  return [...stories].sort(
+    (a, b) =>
+      Number(Boolean(b.is_current)) - Number(Boolean(a.is_current)) ||
+      (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+      Date.parse(b.updated_at) - Date.parse(a.updated_at)
+  );
+}
+
+function sortByVersionDesc<T extends { version: number; created_at: string; is_current?: boolean }>(items: T[]) {
+  return [...items].sort(
+    (a, b) =>
+      Number(Boolean(b.is_current)) - Number(Boolean(a.is_current)) ||
+      b.version - a.version ||
+      Date.parse(b.created_at) - Date.parse(a.created_at)
+  );
 }
 
 export default function ProjectWorkspacePage() {
@@ -29,11 +47,24 @@ export default function ProjectWorkspacePage() {
   const projectId = params.projectId;
   const [project, setProject] = useState<Project | null>(null);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
-  const [blueprints, setBlueprints] = useState<ProjectBlueprint[]>([]);
+  const [businessStories, setBusinessStories] = useState<BusinessRequirementStory[]>([]);
+  const [changeSets, setChangeSets] = useState<ChangeSet[]>([]);
+  const [promptPacks, setPromptPacks] = useState<PromptPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const latestBlueprint = useMemo(() => getLatestBlueprint(blueprints), [blueprints]);
+  const currentBusinessStories = useMemo(
+    () => sortBusinessStories(businessStories.filter((story) => story.is_current !== false)),
+    [businessStories]
+  );
+  const currentChangeSets = useMemo(
+    () => sortByVersionDesc(changeSets.filter((changeSet) => changeSet.is_current !== false)),
+    [changeSets]
+  );
+  const currentPromptPack = useMemo(
+    () => sortByVersionDesc(promptPacks).find((pack) => pack.is_current !== false) ?? sortByVersionDesc(promptPacks)[0] ?? null,
+    [promptPacks]
+  );
   const isTechStackConfigured = project
     ? isProjectTechStackConfigured(project)
     : false;
@@ -42,14 +73,18 @@ export default function ProjectWorkspacePage() {
     setLoading(true);
     setError(null);
     try {
-      const [projectData, requirementsData, blueprintsData] = await Promise.all([
+      const [projectData, requirementsData, storiesData, changeSetsData, promptPacksData] = await Promise.all([
         getProject(projectId),
         getProjectRequirements(projectId),
-        getProjectBlueprints(projectId),
+        listBusinessStories(projectId),
+        listChangeSets(projectId),
+        listPromptPacks(projectId),
       ]);
       setProject(projectData);
       setRequirements(requirementsData);
-      setBlueprints(blueprintsData);
+      setBusinessStories(storiesData);
+      setChangeSets(changeSetsData);
+      setPromptPacks(promptPacksData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载项目工作台失败");
     } finally {
@@ -102,14 +137,16 @@ export default function ProjectWorkspacePage() {
             <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}/business-requirements`}>敏捷业务需求</Link>
+            <Link href={`/projects/${projectId}/business-requirements`}>业务故事池</Link>
           </Button>
         </div>
       </div>
 
       <GenerationActionPanel
         projectId={projectId}
-        hasBlueprint={Boolean(latestBlueprint)}
+        hasCurrentStoryPool={currentBusinessStories.length > 0}
+        hasCurrentChangeSet={currentChangeSets.length > 0}
+        hasPromptPack={Boolean(currentPromptPack)}
         isTechStackConfigured={isTechStackConfigured}
       />
 
@@ -131,19 +168,25 @@ export default function ProjectWorkspacePage() {
           <Card>
             <CardHeader>
               <CardTitle>当前编排状态</CardTitle>
-              <CardDescription>新版流程会在应用变更集后更新前端工程实现、API 契约、后端工程实现、数据库模型和交付资产</CardDescription>
+              <CardDescription>以业务故事池、分层变更集、版本资产和 PromptPack 为中心的主链路概览</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-sm font-medium">项目配置</p>
+                <p className="text-sm font-medium">业务故事池</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {isTechStackConfigured ? "已配置前后端技术栈" : "尚未完成项目配置"}
+                  {currentBusinessStories.length > 0 ? `${currentBusinessStories.length} 条当前有效故事` : "当前还没有有效业务故事"}
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-sm font-medium">项目蓝图</p>
+                <p className="text-sm font-medium">分层变更集</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {latestBlueprint ? `当前最新版本：v${latestBlueprint.version}` : "暂无蓝图版本"}
+                  {currentChangeSets.length > 0 ? `${currentChangeSets.length} 条当前有效变更集` : "当前还没有有效变更集"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border/60 p-4">
+                <p className="text-sm font-medium">PromptPack</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {currentPromptPack ? `当前有效版本：v${currentPromptPack.version}` : "暂无可用 PromptPack"}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -151,10 +194,13 @@ export default function ProjectWorkspacePage() {
                   <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href={`/projects/${projectId}/frontend-implementation`}>前端工程实现</Link>
+                  <Link href={`/projects/${projectId}/business-requirements`}>业务故事池</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/projects/${projectId}/change-sets`}>分层变更集</Link>
                 </Button>
                 <Button asChild>
-                  <Link href={`/projects/${projectId}/delivery`}>交付 / 指令集合</Link>
+                  <Link href={`/projects/${projectId}/delivery`}>PromptPack</Link>
                 </Button>
               </div>
             </CardContent>

@@ -113,7 +113,7 @@ export function RequirementEditor({
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>保存原始业务需求，后续由后端占位接口生成 blueprint 草案</CardDescription>
+        <CardDescription>保存原始业务需求，后续由后端生成业务故事池条目</CardDescription>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

@@ -24,13 +24,18 @@ export type ImplementationScope =
 export type AffectedLayer =
   | "ux_design"
   | "ui_design"
-  | "frontend_pages"
+  | "frontend_implementation"
   | "frontend_tools"
   | "api_contract"
-  | "backend_services"
+  | "backend_implementation"
   | "backend_tools"
+  | "database_model"
+  | "db_model"
+  | "frontend_pages"
+  | "backend_services"
   | "database_models"
   | "project_blueprint"
+  | "prompt_pack"
   | "prompt_assets"
   | "documentation";
 
@@ -75,9 +80,13 @@ export type BusinessRequirementStory = {
   project_id: string;
   requirement_id?: string | null;
   generation_run_id?: string | null;
+  source_story_id?: string | null;
   title: string;
   priority: BusinessStoryPriority;
   status: BusinessStoryStatus;
+  is_current?: boolean;
+  applied_at?: string | null;
+  applied_change_set_id?: string | null;
   implementation_scope: ImplementationScope;
   affected_layers: AffectedLayer[];
   user_story: string;

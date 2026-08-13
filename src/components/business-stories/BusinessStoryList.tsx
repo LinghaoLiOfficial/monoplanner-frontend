@@ -84,7 +84,7 @@ export function BusinessStoryList({
       <EmptyState
         icon={ListChecks}
         title="当前项目还没有业务需求故事"
-        description="从用户需求生成业务需求故事后，会在这里按优先级展示垂直业务切片"
+        description="从原始需求生成业务故事后，会在这里按优先级展示当前有效故事池"
       />
     );
   }

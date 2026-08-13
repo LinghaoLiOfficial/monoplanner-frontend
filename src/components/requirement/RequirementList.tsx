@@ -157,7 +157,7 @@ export function RequirementList({
       <EmptyState
         icon={MessageSquareText}
         title="当前项目还没有需求"
-        description="输入一段自然语言业务需求，保存后即可触发 blueprint 草案生成"
+        description="输入一段自然语言业务需求，保存后即可触发业务故事生成"
       />
     );
   }

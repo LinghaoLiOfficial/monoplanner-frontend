@@ -6,7 +6,7 @@ import { EndpointTable } from "@/components/contract/EndpointTable";
 import { SchemaList } from "@/components/contract/SchemaList";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ApiContractDraft } from "@/lib/types/api-contract";
+import type { ApiContractDraft, LegacyApiContractContent } from "@/lib/types/api-contract";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -28,6 +28,7 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
 
   const resources = Array.isArray(contract.content.resources) ? contract.content.resources : [];
   const schemas = Array.isArray(contract.content.schemas) ? contract.content.schemas : [];
+  const legacyContent = contract.content as LegacyApiContractContent;
 
   return (
     <div className="space-y-4">
@@ -40,7 +41,7 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge>v{contract.version}</Badge>
-              <Badge variant="outline">{contract.base_path || contract.content.base_path}</Badge>
+              <Badge variant="outline">{contract.base_path || legacyContent.base_path}</Badge>
             </div>
           </div>
         </CardHeader>

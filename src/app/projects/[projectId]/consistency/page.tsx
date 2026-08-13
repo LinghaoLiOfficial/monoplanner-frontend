@@ -63,7 +63,7 @@ export default function ConsistencyPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">一致性检查</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            检查项目蓝图、API 契约、数据库模型和交付指令的一致性
+            检查版本资产、API 契约、数据库模型和 PromptPack 的一致性
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -81,9 +81,9 @@ export default function ConsistencyPage() {
       {!loading && !error && !hasBlueprint ? (
         <EmptyState
           icon={ShieldCheck}
-          title="先生成项目蓝图"
-          description="一致性检查仍需要基于已有项目蓝图运行"
-          action={<Button asChild><Link href={`/projects/${projectId}/blueprint`}>前往蓝图页</Link></Button>}
+          title="先准备版本资产"
+          description="一致性检查仍需要基于已有版本上下文运行"
+          action={<Button asChild><Link href={`/projects/${projectId}/frontend-implementation`}>前往版本资产</Link></Button>}
         />
       ) : null}
       {!loading && !error && hasBlueprint ? <ConsistencyCheckPanel check={check} /> : null}

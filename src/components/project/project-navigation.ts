@@ -33,33 +33,33 @@ export const projectNavGroups: ProjectNavGroup[] = [
     ],
   },
   {
-    label: "需求编排",
+    label: "业务故事池",
     items: [
       { label: "原始用户需求", segment: "raw-requirements", icon: FileText },
-      { label: "敏捷业务需求", segment: "business-requirements", icon: ListChecks },
+      { label: "业务故事池", segment: "business-requirements", icon: ListChecks },
+    ],
+  },
+  {
+    label: "分层变更集",
+    items: [
       { label: "变更集", segment: "change-sets", icon: ScrollText },
     ],
   },
   {
-    label: "前端资产",
+    label: "版本资产",
     items: [
       { label: "UX 用户体验设计", segment: "ux-design", icon: DraftingCompass },
       { label: "UI 视觉设计", segment: "ui-design", icon: Palette },
-      { label: "前端工程实现", segment: "frontend-implementation", icon: Code2 },
-    ],
-  },
-  {
-    label: "后端资产",
-    items: [
+      { label: "前端实现版本", segment: "frontend-implementation", icon: Code2 },
       { label: "API 契约", segment: "api-contract", icon: Braces },
-      { label: "后端工程实现", segment: "backend-implementation", icon: Code2 },
+      { label: "后端实现版本", segment: "backend-implementation", icon: Code2 },
       { label: "数据库模型", segment: "database-model", icon: Database },
     ],
   },
   {
-    label: "交付",
+    label: "PromptPack",
     items: [
-      { label: "交付 / 指令集合", segment: "delivery", icon: ScrollText },
+      { label: "PromptPack", segment: "delivery", icon: ScrollText },
       { label: "一致性检查", segment: "consistency", icon: ClipboardCheck },
     ],
   },

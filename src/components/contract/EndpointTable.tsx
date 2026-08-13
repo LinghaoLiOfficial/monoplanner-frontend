@@ -1,12 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { ApiEndpoint } from "@/lib/types/api-contract";
+import type { LegacyApiEndpoint } from "@/lib/types/api-contract";
 
 function display(value?: string | null) {
   return value && value.trim() ? value : "-";
 }
 
-export function EndpointTable({ endpoints }: { endpoints: ApiEndpoint[] }) {
+export function EndpointTable({ endpoints }: { endpoints: LegacyApiEndpoint[] }) {
   if (endpoints.length === 0) {
     return <p className="text-sm text-muted-foreground">暂无 endpoints</p>;
   }

@@ -15,6 +15,7 @@ export type VersionedDesignAsset<TContent = unknown> = {
   id: string;
   project_id: string;
   version: number;
+  is_current?: boolean;
   title: string;
   summary?: string | null;
   content: TContent;

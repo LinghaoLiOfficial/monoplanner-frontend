@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { ApiSchema } from "@/lib/types/api-contract";
+import type { LegacyApiSchema } from "@/lib/types/api-contract";
 
-export function SchemaList({ schemas }: { schemas: ApiSchema[] }) {
+export function SchemaList({ schemas }: { schemas: LegacyApiSchema[] }) {
   if (schemas.length === 0) {
     return <p className="text-sm text-muted-foreground">暂无 schemas</p>;
   }

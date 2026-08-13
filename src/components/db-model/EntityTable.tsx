@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { DbEntity, DbRelationship } from "@/lib/types/db-model";
 
 function formatRelationship(relationship: DbRelationship) {
-  return `${relationship.from} -> ${relationship.to} (${relationship.type})`;
+  return `${relationship.from ?? relationship.field} -> ${relationship.to ?? relationship.target} (${relationship.type})`;
 }
 
 export function EntityTable({ entities }: { entities: DbEntity[] }) {

@@ -6,7 +6,7 @@ import { EntityTable } from "@/components/db-model/EntityTable";
 import { IndexList, RelationshipList } from "@/components/db-model/RelationshipList";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { DbModelDraft } from "@/lib/types/db-model";
+import type { DbModelDraft, LegacyDbModelContent } from "@/lib/types/db-model";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -26,11 +26,12 @@ export function DbModelViewer({ model }: { model: DbModelDraft | null }) {
     );
   }
 
-  const database = model.content.database;
-  const entities = Array.isArray(model.content.entities) ? model.content.entities : [];
-  const relationships = Array.isArray(model.content.relationships) ? model.content.relationships : [];
-  const indexes = Array.isArray(model.content.indexes) ? model.content.indexes : [];
-  const migrationNotes = Array.isArray(model.content.migration_notes) ? model.content.migration_notes : [];
+  const content = model.content as LegacyDbModelContent;
+  const database = content.database;
+  const entities = Array.isArray(content.entities) ? content.entities : [];
+  const relationships = Array.isArray(content.relationships) ? content.relationships : [];
+  const indexes = Array.isArray(content.indexes) ? content.indexes : [];
+  const migrationNotes = Array.isArray(content.migration_notes) ? content.migration_notes : [];
 
   return (
     <div className="space-y-4">

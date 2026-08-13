@@ -14,22 +14,30 @@ const groupLabels: Array<[keyof ModuleChangeGroup, string]> = [
 const moduleLabels: Record<keyof ChangeSet["module_changes"], string> = {
   ux_design: affectedLayerLabels.ux_design,
   ui_design: affectedLayerLabels.ui_design,
+  frontend_implementation: affectedLayerLabels.frontend_implementation,
   frontend_pages: affectedLayerLabels.frontend_pages,
   frontend_tools: affectedLayerLabels.frontend_tools,
   api_contract: affectedLayerLabels.api_contract,
+  backend_implementation: affectedLayerLabels.backend_implementation,
   backend_services: affectedLayerLabels.backend_services,
   backend_tools: affectedLayerLabels.backend_tools,
+  database_model: affectedLayerLabels.database_model,
+  db_model: affectedLayerLabels.db_model,
   database_models: affectedLayerLabels.database_models,
 };
 
 const moduleOrder: Array<keyof ChangeSet["module_changes"]> = [
   "ux_design",
   "ui_design",
+  "frontend_implementation",
   "frontend_pages",
   "frontend_tools",
   "api_contract",
+  "backend_implementation",
   "backend_services",
   "backend_tools",
+  "database_model",
+  "db_model",
   "database_models",
 ];
 

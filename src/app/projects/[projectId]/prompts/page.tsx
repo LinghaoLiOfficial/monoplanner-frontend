@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { ImplementationScopeBadge } from "@/components/business-stories/ImplementationScopeBadge";
 import { CopyButton } from "@/components/common/CopyButton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
@@ -121,12 +120,10 @@ function getUXUIBasis(content: PromptPack["content"]) {
 
   candidates.push(content.frontend_prompt?.body ?? content.frontend_prompt?.prompt ?? "");
 
-  const uxuiText = candidates
+  return candidates
     .map((item) => item.trim())
     .filter((item) => item && /UX|UI|用户|交互|视觉|组件|布局|样式|状态|可访问性/i.test(item))
     .join("\n\n");
-
-  return uxuiText;
 }
 
 function UXUIBasisCard({ content }: { content: PromptPack["content"] }) {
@@ -150,6 +147,48 @@ function UXUIBasisCard({ content }: { content: PromptPack["content"] }) {
   );
 }
 
+function PromptPackDetail({ pack }: { pack: PromptPack }) {
+  const content = pack.content;
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>{pack.title}</CardTitle>
+              <CardDescription>{pack.summary}</CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">v{pack.version}</Badge>
+              {pack.is_current ? <Badge>当前有效</Badge> : <Badge variant="secondary">历史版本</Badge>}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <section>
+            <h3 className="text-sm font-medium">批次摘要</h3>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">{content.batch_summary ?? "暂无批次摘要"}</p>
+          </section>
+          <section>
+            <h3 className="text-sm font-medium">差异摘要</h3>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {textFromUnknown(content.diff_summary) || "暂无差异摘要"}
+            </p>
+          </section>
+          <PromptList title="执行顺序" items={content.execution_order} />
+          <PromptList title="验收清单" items={content.acceptance_checklist} />
+          <PromptList title="回滚说明" items={content.rollback_notes} />
+        </CardContent>
+      </Card>
+      <UXUIBasisCard content={content} />
+      <PromptBlock title="前端提示词" prompt={content.frontend_prompt} />
+      <PromptBlock title="后端提示词" prompt={content.backend_prompt} />
+      <JsonViewer title="Prompt Pack JSON" data={content} />
+    </div>
+  );
+}
+
 export default function PromptsPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
@@ -159,8 +198,15 @@ export default function PromptsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const sortedPacks = useMemo(() => sortAssetsByVersion(packs), [packs]);
-  const selectedPack = sortedPacks.find((pack) => pack.id === selectedId) ?? sortedPacks[0] ?? null;
-  const content = selectedPack?.content;
+  const currentPack = useMemo(
+    () => sortedPacks.find((pack) => pack.is_current) ?? sortedPacks[0] ?? null,
+    [sortedPacks]
+  );
+  const historyPacks = useMemo(
+    () => sortedPacks.filter((pack) => pack.id !== currentPack?.id),
+    [currentPack?.id, sortedPacks]
+  );
+  const selectedPack = sortedPacks.find((pack) => pack.id === selectedId) ?? currentPack;
 
   const loadData = async () => {
     setLoading(true);
@@ -168,17 +214,20 @@ export default function PromptsPage() {
     try {
       const data = sortAssetsByVersion(await listPromptPacks(projectId));
       setPacks(data);
-      setSelectedId((current) => current ?? data[0]?.id ?? null);
+      setSelectedId((current) => current ?? data.find((pack) => pack.is_current)?.id ?? data[0]?.id ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载指令集合失败");
+      setError(err instanceof Error ? err.message : "加载 PromptPack 失败");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadData();
+    const timer = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
@@ -186,55 +235,66 @@ export default function PromptsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">交付 / 指令集合</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">PromptPack</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            查看应用变更集后生成的前端与后端 Codex 提示词、差异摘要和验收清单。
+            默认展示最新有效版本；历史版本仍可切换查看，不再依赖 blueprint 作为输入假设。
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}/change-sets`}>查看变更集</Link>
+          <Link href={`/projects/${projectId}/change-sets`}>查看分层变更集</Link>
         </Button>
       </div>
 
-      {loading ? <LoadingState label="正在加载交付 / 指令集合..." /> : null}
+      {loading ? <LoadingState label="正在加载 PromptPack..." /> : null}
       {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadData} /> : null}
       {!loading && !error && sortedPacks.length === 0 ? (
-        <EmptyState title="暂无交付 / 指令集合" description="应用变更集后，系统会生成对应批次的前后端提示词。" />
+        <EmptyState
+          title="暂无 PromptPack"
+          description="应用变更集后，系统会生成当前有效的 PromptPack。"
+          action={
+            <Button asChild variant="outline">
+              <Link href={`/projects/${projectId}/change-sets`}>前往变更集</Link>
+            </Button>
+          }
+        />
       ) : null}
-      {!loading && !error && selectedPack && content ? (
+      {!loading && !error && currentPack ? (
         <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <VersionList assets={sortedPacks} selectedId={selectedPack.id} onSelect={setSelectedId} title="批次列表" description="选择一个 Prompt Pack 批次" />
+          <PromptPackDetail pack={selectedPack ?? currentPack} />
           <div className="space-y-4">
+            <VersionList
+              assets={[currentPack, ...historyPacks].filter(Boolean)}
+              selectedId={selectedPack?.id ?? currentPack.id}
+              onSelect={setSelectedId}
+              title="版本列表"
+              description="当前版本优先，点击可查看历史版本"
+            />
             <Card>
               <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>{selectedPack.title}</CardTitle>
-                    <CardDescription>{selectedPack.summary}</CardDescription>
-                  </div>
-                  {content.implementation_scope ? <ImplementationScopeBadge scope={content.implementation_scope} /> : null}
-                </div>
+                <CardTitle>历史记录</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <section>
-                  <h3 className="text-sm font-medium">批次摘要</h3>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{content.batch_summary ?? "暂无批次摘要"}</p>
-                </section>
-                <section>
-                  <h3 className="text-sm font-medium">差异摘要</h3>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-                    {textFromUnknown(content.diff_summary) || "暂无差异摘要"}
-                  </p>
-                </section>
-                <PromptList title="执行顺序" items={content.execution_order} />
-                <PromptList title="验收清单" items={content.acceptance_checklist} />
-                <PromptList title="回滚说明" items={content.rollback_notes} />
+              <CardContent className="space-y-3">
+                {historyPacks.length === 0 ? (
+                  <p className="text-sm leading-6 text-muted-foreground">暂无历史版本</p>
+                ) : (
+                  historyPacks.map((pack) => (
+                    <button
+                      key={pack.id}
+                      type="button"
+                      onClick={() => setSelectedId(pack.id)}
+                      className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-left transition-colors hover:bg-muted"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{pack.title}</span>
+                        <Badge variant="outline">v{pack.version}</Badge>
+                        <Badge variant="secondary">历史</Badge>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">{pack.summary}</p>
+                    </button>
+                  ))
+                )}
               </CardContent>
             </Card>
-            <UXUIBasisCard content={content} />
-            <PromptBlock title="前端提示词" prompt={content.frontend_prompt} />
-            <PromptBlock title="后端提示词" prompt={content.backend_prompt} />
-            <JsonViewer title="Prompt Pack JSON" data={content} />
           </div>
         </div>
       ) : null}
