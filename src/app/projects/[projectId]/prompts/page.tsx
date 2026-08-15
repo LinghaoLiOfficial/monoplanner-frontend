@@ -184,7 +184,7 @@ function PromptPackDetail({ pack }: { pack: PromptPack }) {
       <UXUIBasisCard content={content} />
       <PromptBlock title="前端提示词" prompt={content.frontend_prompt} />
       <PromptBlock title="后端提示词" prompt={content.backend_prompt} />
-      <JsonViewer title="Prompt Pack JSON" data={content} />
+      <JsonViewer title="指令集合 JSON" data={content} />
     </div>
   );
 }
@@ -216,7 +216,7 @@ export default function PromptsPage() {
       setPacks(data);
       setSelectedId((current) => current ?? data.find((pack) => pack.is_current)?.id ?? data[0]?.id ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载 PromptPack 失败");
+      setError(err instanceof Error ? err.message : "加载指令集合失败");
     } finally {
       setLoading(false);
     }
@@ -235,7 +235,7 @@ export default function PromptsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">PromptPack</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">指令集合</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
             默认展示最新有效版本；历史版本仍可切换查看，不再依赖 blueprint 作为输入假设。
           </p>
@@ -245,12 +245,12 @@ export default function PromptsPage() {
         </Button>
       </div>
 
-      {loading ? <LoadingState label="正在加载 PromptPack..." /> : null}
+      {loading ? <LoadingState label="正在加载指令集合..." /> : null}
       {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadData} /> : null}
       {!loading && !error && sortedPacks.length === 0 ? (
         <EmptyState
-          title="暂无 PromptPack"
-          description="应用变更集后，系统会生成当前有效的 PromptPack。"
+          title="暂无指令集合"
+          description="应用变更集后，系统会生成当前有效的指令集合。"
           action={
             <Button asChild variant="outline">
               <Link href={`/projects/${projectId}/change-sets`}>前往变更集</Link>

@@ -1,41 +1,76 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import { ErrorState } from "@/components/common/ErrorState";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { CreateProjectPayload, Project } from "@/lib/types/project";
+import { Skeleton } from "@/components/ui/skeleton";
+import { generateProjectDescriptionOptions } from "@/lib/api/projects";
+import type { CreateProjectPayload, Project, ProjectDescriptionOption } from "@/lib/types/project";
 
 type ProjectFormProps = {
   onSubmit: (payload: CreateProjectPayload) => Promise<Project>;
 };
 
+type FormStep = "input_name" | "analyzing" | "select_description" | "error";
+
 export function ProjectForm({ onSubmit }: ProjectFormProps) {
   const [name, setName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<FormStep>("input_name");
+  const [options, setOptions] = useState<ProjectDescriptionOption[]>([]);
+  const [creatingDescription, setCreatingDescription] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const analyzing = step === "analyzing";
+  const selecting = step === "select_description";
+  const locked = analyzing || selecting || creatingDescription !== null;
+
+  const analyzeProject = async () => {
+    const normalizedName = name.trim();
     setError(null);
 
-    if (!name.trim()) {
+    if (!normalizedName) {
       setError("请输入项目名称");
+      setStep("input_name");
       return;
     }
 
-    setSubmitting(true);
+    setName(normalizedName);
+    setOptions([]);
+    setStep("analyzing");
+
+    try {
+      const result = await generateProjectDescriptionOptions({ name: normalizedName });
+      setOptions(result.options);
+      setStep("select_description");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "项目分析失败，请稍后重试");
+      setStep("error");
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await analyzeProject();
+  };
+
+  const handleCreate = async (description: string) => {
+    setError(null);
+    setCreatingDescription(description);
     try {
       await onSubmit({
         name: name.trim(),
+        description,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "创建项目失败，请稍后重试");
+      setStep("select_description");
     } finally {
-      setSubmitting(false);
+      setCreatingDescription(null);
     }
   };
 
@@ -43,7 +78,6 @@ export function ProjectForm({ onSubmit }: ProjectFormProps) {
     <Card className="mx-auto max-w-2xl">
       <CardHeader>
         <CardTitle>创建新项目</CardTitle>
-        <CardDescription>先记录项目名称，再进入工作台补充业务需求</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -54,14 +88,64 @@ export function ProjectForm({ onSubmit }: ProjectFormProps) {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="请输入项目名称"
-              disabled={submitting}
+              disabled={locked}
               required
             />
           </div>
-          {error ? <ErrorState message={error} /> : null}
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "正在创建..." : "创建项目"}
-          </Button>
+
+          {step === "input_name" ? <Button type="submit">创建项目</Button> : null}
+
+          {analyzing ? (
+            <div className="space-y-4 rounded-md border border-border/60 bg-muted/30 p-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Loader2 className="size-4 animate-spin" />
+                项目分析中
+              </div>
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : null}
+
+          {step === "error" && error ? (
+            <ErrorState message={error} actionLabel="重新分析" onAction={analyzeProject} />
+          ) : null}
+
+          {selecting ? (
+            <div className="space-y-3">
+              <Label>项目描述</Label>
+              {error ? <ErrorState message={error} /> : null}
+              <div className="grid gap-3">
+                {options.map((option, index) => {
+                  const isCreating = creatingDescription === option.description;
+                  return (
+                    <button
+                      key={option.description}
+                      type="button"
+                      className="rounded-md border border-border bg-background p-4 text-left text-sm leading-6 transition hover:border-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={creatingDescription !== null}
+                      onClick={() => handleCreate(option.description)}
+                    >
+                      <span className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                        <span className="flex shrink-0 items-center gap-2">
+                          <span className="inline-flex items-center rounded-full border border-border bg-muted/70 px-2.5 py-0.5 text-xs font-medium leading-5 text-muted-foreground shadow-sm">
+                            选项 {index + 1}
+                          </span>
+                        </span>
+                        <span className="text-muted-foreground">{option.description}</span>
+                      </span>
+                      {isCreating ? (
+                        <span className="mt-3 flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="size-4 animate-spin" />
+                          正在创建...
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </form>
       </CardContent>
     </Card>

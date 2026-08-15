@@ -258,7 +258,7 @@ export default function ProjectBusinessStoriesPage() {
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}`}>返回工作台</Link>
+          <Link href={`/projects/${projectId}`}>返回</Link>
         </Button>
       </div>
 

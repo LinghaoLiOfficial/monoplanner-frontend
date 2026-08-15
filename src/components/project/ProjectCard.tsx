@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { ProjectStatusBadge } from "@/components/project/ProjectStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Project } from "@/lib/types/project";
@@ -22,22 +21,18 @@ export function ProjectCard({
   return (
     <Card className="h-full">
       <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <CardTitle>{project.name}</CardTitle>
-          </div>
-          <ProjectStatusBadge status={project.status} />
-        </div>
+        <CardTitle>{project.name}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-          <div>前端：{project.target_frontend_stack || "未设置"}</div>
-          <div>后端：{project.target_backend_stack || "未设置"}</div>
-          <div className="sm:col-span-2">创建时间：{formatDate(project.created_at)}</div>
+        <div className="space-y-3 text-sm text-muted-foreground">
+          <p className="line-clamp-3 leading-6">
+            {project.description?.trim() || "暂无项目描述"}
+          </p>
+          <div>创建时间：{formatDate(project.created_at)}</div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild>
-            <Link href={`/projects/${project.id}`}>进入工作台</Link>
+            <Link href={`/projects/${project.id}`}>进入</Link>
           </Button>
           {onDelete ? (
             <Button

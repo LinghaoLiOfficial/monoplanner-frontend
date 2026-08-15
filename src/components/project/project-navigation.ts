@@ -6,7 +6,6 @@ import {
   Database,
   DraftingCompass,
   FileText,
-  LayoutDashboard,
   ListChecks,
   Palette,
   ScrollText,
@@ -26,27 +25,21 @@ export type ProjectNavGroup = {
 
 export const projectNavGroups: ProjectNavGroup[] = [
   {
-    label: "配置",
+    label: "全局约束",
     items: [
-      { label: "工作台", segment: "", icon: LayoutDashboard },
       { label: "项目配置", segment: "configuration", icon: Settings2 },
     ],
   },
   {
-    label: "业务故事池",
+    label: "需求分析",
     items: [
       { label: "原始用户需求", segment: "raw-requirements", icon: FileText },
       { label: "业务故事池", segment: "business-requirements", icon: ListChecks },
-    ],
-  },
-  {
-    label: "分层变更集",
-    items: [
       { label: "变更集", segment: "change-sets", icon: ScrollText },
     ],
   },
   {
-    label: "版本资产",
+    label: "方案资产",
     items: [
       { label: "UX 用户体验设计", segment: "ux-design", icon: DraftingCompass },
       { label: "UI 视觉设计", segment: "ui-design", icon: Palette },
@@ -57,9 +50,9 @@ export const projectNavGroups: ProjectNavGroup[] = [
     ],
   },
   {
-    label: "PromptPack",
+    label: "交付校验",
     items: [
-      { label: "PromptPack", segment: "delivery", icon: ScrollText },
+      { label: "指令集合", segment: "delivery", icon: ScrollText },
       { label: "一致性检查", segment: "consistency", icon: ClipboardCheck },
     ],
   },

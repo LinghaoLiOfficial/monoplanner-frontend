@@ -10,7 +10,7 @@ export type NavItem = {
 export const siteConfig = {
   name: "全栈上下文编排器",
   description:
-    "将自然语言业务需求转化为适合 vibe coding 工具使用的结构化开发上下文和提示词包",
+    "将自然语言业务需求转化为适合 vibe coding 工具使用的结构化开发上下文和指令集合",
   tagline: "面向全栈开发的上下文编排工作台",
   links: {
     docs: "https://nextjs.org/docs",
@@ -25,7 +25,7 @@ export const siteConfig = {
       description: "查看产品介绍",
     },
     {
-      label: "项目列表",
+      label: "我的项目",
       href: "/projects",
       icon: FolderKanban,
       description: "查看和进入项目工作台",

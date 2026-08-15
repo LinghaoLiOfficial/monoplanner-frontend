@@ -1,5 +1,11 @@
 import { apiRequest } from "@/lib/api/client";
-import type { CreateProjectPayload, Project, UpdateProjectPayload } from "@/lib/types/project";
+import type {
+  CreateProjectPayload,
+  Project,
+  ProjectDescriptionOptionsPayload,
+  ProjectDescriptionOptionsResponse,
+  UpdateProjectPayload,
+} from "@/lib/types/project";
 
 export function listProjects(q?: string) {
   const keyword = q?.trim();
@@ -15,6 +21,13 @@ export function getProjects() {
 
 export function createProject(payload: CreateProjectPayload) {
   return apiRequest<Project>("/projects", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function generateProjectDescriptionOptions(payload: ProjectDescriptionOptionsPayload) {
+  return apiRequest<ProjectDescriptionOptionsResponse>("/projects/description-options", {
     method: "POST",
     body: payload,
   });

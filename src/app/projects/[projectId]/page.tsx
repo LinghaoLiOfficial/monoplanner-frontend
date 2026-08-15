@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
 import { GenerationActionPanel } from "@/components/project/GenerationActionPanel";
-import { ProjectStatusBadge } from "@/components/project/ProjectStatusBadge";
 import { RequirementEditor } from "@/components/requirement/RequirementEditor";
 import { RequirementList } from "@/components/requirement/RequirementList";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,7 @@ export default function ProjectWorkspacePage() {
       setChangeSets(changeSetsData);
       setPromptPacks(promptPacksData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载项目工作台失败");
+      setError(err instanceof Error ? err.message : "加载项目失败");
     } finally {
       setLoading(false);
     }
@@ -113,7 +112,7 @@ export default function ProjectWorkspacePage() {
   }, [projectId]);
 
   if (loading) {
-    return <LoadingState label="正在加载项目工作台..." />;
+    return <LoadingState label="正在加载项目..." />;
   }
 
   if (error || !project) {
@@ -124,14 +123,11 @@ export default function ProjectWorkspacePage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
-            <ProjectStatusBadge status={project.status} />
-          </div>
+          <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href="/projects">返回项目列表</Link>
+            <Link href="/projects">返回我的项目</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
@@ -168,7 +164,7 @@ export default function ProjectWorkspacePage() {
           <Card>
             <CardHeader>
               <CardTitle>当前编排状态</CardTitle>
-              <CardDescription>以业务故事池、分层变更集、版本资产和 PromptPack 为中心的主链路概览</CardDescription>
+              <CardDescription>以业务故事池、分层变更集、版本资产和指令集合为中心的主链路概览</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-2xl border border-border/60 p-4">
@@ -184,9 +180,9 @@ export default function ProjectWorkspacePage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-sm font-medium">PromptPack</p>
+                <p className="text-sm font-medium">指令集合</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {currentPromptPack ? `当前有效版本：v${currentPromptPack.version}` : "暂无可用 PromptPack"}
+                  {currentPromptPack ? `当前有效版本：v${currentPromptPack.version}` : "暂无可用指令集合"}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -200,7 +196,7 @@ export default function ProjectWorkspacePage() {
                   <Link href={`/projects/${projectId}/change-sets`}>分层变更集</Link>
                 </Button>
                 <Button asChild>
-                  <Link href={`/projects/${projectId}/delivery`}>PromptPack</Link>
+                  <Link href={`/projects/${projectId}/delivery`}>指令集合</Link>
                 </Button>
               </div>
             </CardContent>

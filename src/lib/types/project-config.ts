@@ -1,3 +1,5 @@
+import type { TechStackItem } from "@/lib/types/tech-stack";
+
 export type ProjectConfig = {
   id: string;
   project_id: string;
@@ -7,6 +9,8 @@ export type ProjectConfig = {
   project_description: string | null;
   target_frontend_stack: string;
   target_backend_stack: string;
+  target_frontend_stack_items: TechStackItem[];
+  target_backend_stack_items: TechStackItem[];
   frontend_tech_stack: string;
   backend_tech_stack: string;
   target_stacks_configured: boolean;
@@ -24,6 +28,8 @@ export type ProjectConfigUpdateInput = {
   project_description?: string | null;
   frontend_tech_stack?: string;
   backend_tech_stack?: string;
+  target_frontend_stack_items?: TechStackItem[];
+  target_backend_stack_items?: TechStackItem[];
   global_constraints?: string[];
   coding_preferences?: string[];
   prompt_preferences?: string[];

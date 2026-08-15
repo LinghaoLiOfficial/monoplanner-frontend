@@ -76,7 +76,7 @@ export default function MarketingPage() {
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link href="/projects">
-                进入项目列表
+                进入我的项目
                 <ArrowRight className="size-4" />
               </Link>
             </Button>

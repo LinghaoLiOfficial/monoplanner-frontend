@@ -48,9 +48,6 @@ function FieldMetaTitle({ fieldMeta }: { fieldMeta: RequirementFieldMeta }) {
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-3xl font-semibold tracking-tight">{fieldMeta.chineseName}</h1>
-        <span className="rounded-full border border-border/60 bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
-          {fieldMeta.englishName}
-        </span>
       </div>
       <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{fieldMeta.meaning}</p>
     </div>
@@ -62,9 +59,6 @@ function FieldMetaSectionTitle({ fieldMeta }: { fieldMeta: RequirementFieldMeta 
     <div className="space-y-1">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-semibold tracking-tight">{fieldMeta.chineseName}</h2>
-        <span className="rounded-full border border-border/60 bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
-          {fieldMeta.englishName}
-        </span>
       </div>
       <p className="text-sm leading-6 text-muted-foreground">{fieldMeta.meaning}</p>
     </div>
@@ -331,7 +325,7 @@ export default function ProjectRequirementsPage() {
           <FieldMetaTitle fieldMeta={rawUserRequirementsField} />
         </div>
         <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}`}>返回工作台</Link>
+          <Link href={`/projects/${projectId}`}>返回</Link>
         </Button>
       </div>
 

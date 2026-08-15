@@ -27,7 +27,7 @@ export default function ProjectsPage() {
     try {
       setProjects(await listProjects(keyword));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载项目列表失败");
+      setError(err instanceof Error ? err.message : "加载我的项目失败");
     } finally {
       setLoading(false);
     }
@@ -69,33 +69,30 @@ export default function ProjectsPage() {
 
   const trimmedSearch = search.trim();
   const hasSearch = trimmedSearch.length > 0;
-  const loadingLabel = hasSearch ? "正在搜索项目..." : "正在加载项目列表...";
+  const loadingLabel = hasSearch ? "正在搜索项目..." : "正在加载我的项目...";
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="mt-5 space-y-6 pb-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Projects</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">项目列表</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            管理业务项目，进入工作台录入需求并生成 Project Blueprint JSON 草案
-          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">我的项目</h1>
         </div>
-        <Button asChild>
-          <Link href="/projects/new">新建项目</Link>
-        </Button>
-      </div>
-
-      <div className="max-w-md">
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="搜索项目名称..."
-          aria-label="搜索项目名称"
-        />
-        {loading && hasSearch ? (
-          <p className="mt-2 text-sm text-muted-foreground">正在搜索...</p>
-        ) : null}
+        <div className="flex w-full flex-wrap items-start gap-3 sm:w-auto">
+          <div className="w-full sm:w-72">
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="搜索项目名称..."
+              aria-label="搜索项目名称"
+            />
+            {loading && hasSearch ? (
+              <p className="mt-2 text-sm text-muted-foreground">正在搜索...</p>
+            ) : null}
+          </div>
+          <Button asChild>
+            <Link href="/projects/new">新建项目</Link>
+          </Button>
+        </div>
       </div>
 
       {loading ? <LoadingState label={loadingLabel} /> : null}

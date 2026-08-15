@@ -18,8 +18,7 @@ export default function NewProjectPage() {
   return (
     <div className="space-y-6 pb-12">
       <div>
-        <p className="text-sm text-muted-foreground">New Project</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">创建项目</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">创建项目</h1>
       </div>
       <ProjectForm onSubmit={handleSubmit} />
     </div>

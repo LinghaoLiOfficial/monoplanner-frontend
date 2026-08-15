@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const actions = [
   {
     icon: Settings,
-    title: "完善项目配置",
-    description: "维护项目名称、描述、前后端技术栈和全局约束。",
+    title: "查看项目配置",
+    description: "查看项目名称、描述、结构化技术项和全局约束。",
     href: "configuration",
     buttonLabel: "打开项目配置",
   },
@@ -32,10 +32,10 @@ const actions = [
   },
   {
     icon: Workflow,
-    title: "查看 PromptPack",
-    description: "查看当前有效的 PromptPack、验收清单和历史版本。",
+    title: "查看指令集合",
+    description: "查看当前有效的指令集合、验收清单和历史版本。",
     href: "delivery",
-    buttonLabel: "查看 PromptPack",
+    buttonLabel: "查看指令集合",
   },
 ];
 
@@ -59,10 +59,10 @@ export function GenerationActionPanel({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <CardTitle>主流程入口</CardTitle>
-            <CardDescription>从业务故事池、分层变更集到版本资产和 PromptPack 的主链路</CardDescription>
+            <CardDescription>从业务故事池、分层变更集到版本资产和指令集合的主链路</CardDescription>
           </div>
           <Badge variant="outline">
-            {hasPromptPack ? "PromptPack 就绪" : hasCurrentChangeSet ? "变更集待消耗" : hasCurrentStoryPool ? "故事池就绪" : "待启动"}
+            {hasPromptPack ? "指令集合就绪" : hasCurrentChangeSet ? "变更集待消耗" : hasCurrentStoryPool ? "故事池就绪" : "待启动"}
           </Badge>
         </div>
       </CardHeader>
@@ -71,8 +71,8 @@ export function GenerationActionPanel({
           <div className="md:col-span-2">
             <EmptyState
               icon={FileJson}
-              title="先配置项目"
-              description="项目进入编排流程前需要完成前端和后端技术栈配置"
+              title="先生成配置"
+              description="项目进入编排流程前需要先有可用的结构化技术栈配置"
               action={
                 <Button asChild variant="outline">
                   <Link href={`/projects/${projectId}/configuration`}>配置项目</Link>

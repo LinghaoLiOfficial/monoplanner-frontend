@@ -36,7 +36,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
                 <AlertDescription>管理员页面仅 admin 角色可访问。</AlertDescription>
               </div>
               <Button asChild variant="outline" size="sm">
-                <Link href="/projects">返回项目列表</Link>
+                <Link href="/projects">返回我的项目</Link>
               </Button>
             </div>
           </div>

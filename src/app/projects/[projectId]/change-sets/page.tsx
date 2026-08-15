@@ -191,7 +191,7 @@ export default function ChangeSetsPage() {
       const run = await applyChangeSet(selectedChangeSet.id);
       await waitForGenerationRun(run.id);
       await loadChangeSets();
-      setSuccess("变更集已应用，相关版本资产与 PromptPack 已更新。");
+      setSuccess("变更集已应用，相关版本资产与指令集合已更新。");
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "应用变更集失败");
     } finally {
@@ -330,7 +330,7 @@ export default function ChangeSetsPage() {
                       <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
                         <span>{success}</span>
                         <Button type="button" size="sm" onClick={() => router.push(`/projects/${projectId}/delivery`)}>
-                          查看 PromptPack
+                          查看指令集合
                         </Button>
                       </AlertDescription>
                     </Alert>

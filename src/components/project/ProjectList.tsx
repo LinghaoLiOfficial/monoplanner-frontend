@@ -19,19 +19,14 @@ export function ProjectList({
 }: ProjectListProps) {
   if (projects.length === 0) {
     if (hasSearch) {
-      return (
-        <EmptyState
-          title="没有找到匹配的项目"
-          description="没有找到匹配的项目"
-        />
-      );
+      return <EmptyState title="无匹配项目" />;
     }
 
     return (
       <EmptyState
         icon={FolderPlus}
         title="还没有项目"
-        description="还没有项目，创建第一个项目开始编排你的全栈上下文"
+        description="还没有项目，创建第一个项目开始编排你的web全栈程序"
         action={
           <Button asChild>
             <Link href="/projects/new">创建第一个项目</Link>

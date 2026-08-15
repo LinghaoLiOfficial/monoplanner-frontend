@@ -1,9 +1,13 @@
+import type { TechStackItem } from "@/lib/types/tech-stack";
+
 export type Project = {
   id: string;
   name: string;
   description: string | null;
   target_frontend_stack?: string;
   target_backend_stack?: string;
+  target_frontend_stack_items?: TechStackItem[];
+  target_backend_stack_items?: TechStackItem[];
   target_stacks_configured: boolean;
   status: string;
   created_at: string;
@@ -12,6 +16,19 @@ export type Project = {
 
 export type CreateProjectPayload = {
   name: string;
+  description?: string | null;
+};
+
+export type ProjectDescriptionOption = {
+  description: string;
+};
+
+export type ProjectDescriptionOptionsPayload = {
+  name: string;
+};
+
+export type ProjectDescriptionOptionsResponse = {
+  options: ProjectDescriptionOption[];
 };
 
 export type UpdateProjectPayload = {
@@ -20,4 +37,6 @@ export type UpdateProjectPayload = {
   status?: string | null;
   target_frontend_stack?: string;
   target_backend_stack?: string;
+  target_frontend_stack_items?: TechStackItem[];
+  target_backend_stack_items?: TechStackItem[];
 };
