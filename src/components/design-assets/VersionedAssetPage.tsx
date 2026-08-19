@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
-import { Button } from "@/components/ui/button";
 import { AssetContentSections } from "@/components/design-assets/AssetContentSections";
 import { AssetHeader } from "@/components/design-assets/AssetHeader";
 import { DiffSummary } from "@/components/design-assets/DiffSummary";
@@ -77,15 +75,9 @@ export function VersionedAssetPage<TAsset extends VersionedDesignAsset>({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">{description}</p>
+          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{description}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {action}
-          <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}`}>返回工作台</Link>
-          </Button>
-        </div>
+        {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
       </div>
 
       {loading ? <LoadingState label={`正在加载${title}...`} /> : null}

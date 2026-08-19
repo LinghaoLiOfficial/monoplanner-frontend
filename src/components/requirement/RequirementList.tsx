@@ -156,8 +156,7 @@ export function RequirementList({
     return (
       <EmptyState
         icon={MessageSquareText}
-        title="当前项目还没有需求"
-        description="输入一段自然语言业务需求，保存后即可触发业务故事生成"
+        title="暂无需求历史"
       />
     );
   }
@@ -181,8 +180,6 @@ export function RequirementList({
             <CardHeader className="pb-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{requirement.language}</Badge>
-                  <Badge variant="secondary">{requirement.source_type}</Badge>
                   <Badge
                     variant={status === "failed" ? "destructive" : "outline"}
                     className={getStatusBadgeClassName(status)}

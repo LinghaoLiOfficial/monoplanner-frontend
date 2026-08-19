@@ -14,7 +14,7 @@ export function ProjectWorkspaceShell({
       <ProjectSidebar projectId={projectId} />
       <div className="min-w-0 space-y-5 lg:flex lg:min-h-0 lg:flex-col lg:space-y-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border/70 lg:bg-card/80 lg:shadow-sm">
         <ProjectMobileNav projectId={projectId} />
-        <div className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:p-6">
+        <div className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:p-6">
           {children}
         </div>
       </div>

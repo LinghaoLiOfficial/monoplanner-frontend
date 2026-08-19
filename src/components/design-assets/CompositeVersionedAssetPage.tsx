@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 
 import { AssetContentSections } from "@/components/design-assets/AssetContentSections";
 import { AssetHeader } from "@/components/design-assets/AssetHeader";
@@ -11,7 +10,6 @@ import { DiffSummary } from "@/components/design-assets/DiffSummary";
 import { sortAssetsByVersion, VersionList } from "@/components/design-assets/VersionList";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
-import { Button } from "@/components/ui/button";
 import type { VersionedDesignAsset } from "@/lib/types/design-asset";
 
 type AssetGroupConfig<TAsset extends VersionedDesignAsset = VersionedDesignAsset> = {
@@ -32,7 +30,6 @@ type AssetGroupState<TAsset extends VersionedDesignAsset = VersionedDesignAsset>
 };
 
 export function CompositeVersionedAssetPage({
-  title,
   description,
   groups,
 }: {
@@ -128,12 +125,8 @@ export function CompositeVersionedAssetPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">{description}</p>
+          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{description}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}`}>返回工作台</Link>
-        </Button>
       </div>
 
       <div className="space-y-6">

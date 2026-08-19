@@ -15,9 +15,9 @@ export const BUSINESS_REQUIREMENT_FIELD_DEFINITIONS: BusinessRequirementFieldDef
   },
   {
     key: "business_requirement_pool",
-    name: "业务需求池",
+    name: "敏捷业务需求池",
     englishName: "business_requirement_pool",
-    meaning: "用于管理、编辑、筛选和执行敏捷业务需求故事的主列表。",
+    meaning: "",
   },
   {
     key: "business_requirement_story",

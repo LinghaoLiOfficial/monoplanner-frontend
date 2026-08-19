@@ -27,7 +27,7 @@ function ProjectNavigationContent({
   const pathname = usePathname();
 
   return (
-    <div className="space-y-5">
+    <div className="flex h-full flex-col justify-start pt-2">
       <div className="space-y-5">
         {projectNavGroups.map((group) => (
           <div key={group.label} className="space-y-2">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Project } from "@/lib/types/project";
@@ -28,7 +29,9 @@ export function ProjectCard({
           <p className="line-clamp-3 leading-6">
             {project.description?.trim() || "暂无项目描述"}
           </p>
-          <div>创建时间：{formatDate(project.created_at)}</div>
+          <Badge variant="outline" className="whitespace-nowrap">
+            创建时间：{formatDate(project.created_at)}
+          </Badge>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild>

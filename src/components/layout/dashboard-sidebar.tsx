@@ -57,9 +57,11 @@ export function DashboardSidebar() {
 
   return (
     <>
-      <aside className="hidden rounded-[1.75rem] border border-border/60 bg-card/70 p-5 lg:block">
-        <div className="mb-4 text-sm text-muted-foreground">Workspace Navigation</div>
-        <NavLinks />
+      <aside className="hidden rounded-[1.75rem] border border-border/60 bg-card/70 p-5 lg:flex lg:flex-col lg:justify-center">
+        <div className="space-y-4">
+          <div className="text-sm text-muted-foreground">Workspace Navigation</div>
+          <NavLinks />
+        </div>
       </aside>
 
       <div className="flex items-center justify-between rounded-[1.75rem] border border-border/60 bg-card/70 p-4 lg:hidden">

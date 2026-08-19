@@ -21,10 +21,19 @@
 
 ## Key Files and Directories
 - `src/components/project/project-navigation.ts`：项目内副导航分组与路由段映射，当前分组为全局约束、需求分析、方案资产和交付校验。
+- `src/components/project/ProjectWorkspaceShell.tsx`：具体项目页侧栏与右侧主内容外壳；桌面端右侧主内容容器固定在卡片式工作区内并使用 `overflow-hidden`，不生成自身滚动条。
+- `src/components/project/ProjectSidebar.tsx`：具体项目页左侧导航容器，桌面端将分组内容靠上展示并保留少量顶部间距，移动端仍通过 Sheet 抽屉呈现。
+- `src/components/layout/dashboard-sidebar.tsx`：桌面端全局左侧导航栏，使用 flex 垂直居中展示标题和导航链接，移动端仍通过 Sheet 抽屉呈现。
+- `src/components/layout/AppShell.tsx`：应用主外壳；项目详情态的 `<main>` 使用 `h-screen overflow-hidden` 固定在视口内，不生成自身滚动条，非项目详情页面继续使用 `min-h-screen`。
 - `src/components/project/GenerationActionPanel.tsx`：主流程入口，承接业务故事池、变更集、版本资产和指令集合的主链路。
+- `src/components/ui/card.tsx`：通用卡片组件；默认卡片圆角为 `rounded-lg`，使用无阴影灰色细边 `border-gray-200 dark:border-gray-800`，`CardTitle` 默认字号统一为 `text-lg`。
+- `src/app/projects/[projectId]/business-stories/page.tsx`：敏捷业务需求池页面把优先级统计卡放在上方，统计卡不显示标题，内部用总数、P1、P2、P3、P4 五个紧凑固定宽度参考指标卡样式的数字块突出数量：上方标签、右侧垂直居中线性图标、大号数字、底部说明和浅斜纹背景，卡片内文本均继承对应配色；指标块自动换行且不撑满宽度；需求列表卡片和当前有效敏捷业务需求池详情卡片放入同一个组合容器；两张卡统一使用同一套卡片视觉，并在桌面端随外层网格拉伸为同高；“需求列表”和“需求详情”标题位于 `CardHeader` 并带 `size-5` 语义图标，各自内容区独立承接内部滚动；当前需求故事列表通过 `showCurrentStoryList` 正常渲染。
+- `src/components/business-stories/BusinessStoryList.tsx`：当前有效敏捷业务需求池详情列表采用自然展开，不再使用独立滚动容器或分页控件；当前页面正常渲染该列表，索引定位逻辑保留。
 - `src/components/design-assets/CompositeVersionedAssetPage.tsx`：合并展示前端/后端工程实现的通用页面组件。
 - `src/components/design-assets/VersionList.tsx`、`src/components/design-assets/AssetHeader.tsx`：版本列表和当前版本标识的通用展示组件。
 - `src/app/projects/[projectId]/business-stories/page.tsx`、`src/app/projects/[projectId]/change-sets/page.tsx`、`src/app/projects/[projectId]/prompts/page.tsx`：新主链路的核心页面，其中 `prompts/page.tsx` 面向用户显示为“指令集合”。
+- `src/app/projects/[projectId]/requirements/page.tsx`：原始用户需求页，使用带 `History` 图标的“用户需求历史”卡片承接历史列表，并在底部直接放置紧凑新需求输入框和图标提交按钮；桌面端滚动条只作用于用户需求历史卡片内容区，历史卡片优先占据更大纵向空间。
+- `src/components/requirement/RequirementEditor.tsx`：原始用户需求输入组件，默认 placeholder 采用开放式表述，覆盖业务、功能、流程、架构、约束和技术上下文；`compact` 模式使用 `min-h-20` 输入高度和更小表单间距，适合嵌入项目详情页的紧凑卡片。
 - `src/components/ux-design/`、`src/lib/ux-design-contract.ts`：UX 用户体验设计新版字段契约和专用展示器。
 - `src/components/ui-design/`、`src/lib/ui-design-contract.ts`：UI 视觉设计新版字段契约和专用展示器，覆盖 `visual_system`、`layout_rules`、`component_style_rules` 及其嵌套字段。
 - `src/components/frontend-implementation/`、`src/lib/frontend-implementation-contract.ts`：前端实现版本资产新版字段契约和专用展示器，覆盖路由、目录、代码逻辑、环境变量、设计主题和依赖包。
@@ -60,14 +69,31 @@
 ## Current Decisions and Conventions
 - 项目列表入口统一使用“我的项目”文案；`/projects` 页面标题不再显示 `Projects` 英文副标题或 Project Blueprint 说明段落。
 - `/projects` 页面无项目空状态说明为“还没有项目，创建第一个项目开始编排你的web全栈程序”。
-- `/projects` 项目卡片显示项目描述和创建时间，不显示前端/后端技术栈；进入详情/工作台的按钮文案统一为“进入”。
+- `/projects` 项目卡片显示项目描述和创建时间，不显示前端/后端技术栈；创建时间使用 outline `Badge` 展示；进入详情/工作台的按钮文案统一为“进入”。
 - `/projects` 项目卡片和具体项目页顶部都不显示项目状态 badge。
-- 具体项目区域不显示“工作台”模块入口；相关返回按钮文案使用“返回项目”。
+- 具体项目区域不显示“工作台”模块入口。
+- 具体项目页最外层 `<main>` 固定为视口高度并隐藏溢出，不生成自身滚动条；普通页面仍使用 `min-h-screen` 承接自然页面滚动。
+- 具体项目页右侧主内容外壳桌面端不使用 `overflow-y-auto`，该容器固定且不出现自身滚动条。
 - 具体项目的项目配置页顶部只显示“项目配置”标题，不显示基础信息、技术栈、全局生成约束或只读展示说明句。
-- 具体项目配置页在桌面端使用固定高度布局，页面根高度用 `h-[calc(100%-3rem)]` 扣除父级 `lg:p-6` 的上下 padding，配置卡片为 `flex-1 overflow-hidden`，卡片内容区负责 `overflow-y-auto`；移动端继续沿用页面自然滚动。
-- 具体项目各模块的返回按钮统一显示为“返回”。
+- 具体项目配置页在桌面端使用固定高度布局，配置卡片显示带 `ClipboardList` 图标的“配置表单”标题，并采用 `CardHeader` + 可滚动 `CardContent` 承载项目名称、项目描述、前端技术栈和后端技术栈；移动端继续沿用页面自然滚动。
+- 具体项目左侧导航模块打开后，右侧内容区不再显示页面主标题和顶部返回按钮；当前位置由左侧导航高亮表达。
+- 原始用户需求页不显示“原始用户需求”“新用户需求”“用户需求历史”的字段说明句；暂无需求空状态标题为“暂无需求历史”，不显示“输入一段自然语言业务需求，保存后即可触发业务故事生成”引导说明。
+- 原始用户需求页中“用户需求历史”卡片位于底部新需求输入区上方，标题带 `History` 图标；桌面端历史卡片使用 `min-h-[26rem]` 和 `flex-1` 优先占据较大高度，并由历史卡片的 `CardContent` 负责 `overflow-y-auto`；底部输入区不再包裹外部卡片或显示“新用户需求”标题，只保留 `RequirementEditor compact` 的 `min-h-20` 输入框和图标提交按钮。
+- 原始用户需求输入框的默认提示文案为“描述你希望 LLM 理解的任何需求、功能、流程、架构、约束或技术上下文，无论是单个功能还是多个模块”。
+- 原始用户需求历史列表不再展示 `zh-CN` 和 `manual` 标签，只保留业务故事生成状态 Badge。
 - 具体项目区域面向用户统一使用“指令集合”中文文案；`PromptPack` 保留为代码类型、API 和数据模型命名。
 - 具体项目左侧导航的分组名为“全局约束 / 需求分析 / 方案资产 / 交付校验”，其中“变更集”并入“需求分析”。
+- 具体项目左侧导航分组在桌面端整体靠上展示，保留少量顶部间距避免贴顶，水平对齐方式保持原样。
+- 通用 `CardTitle` 默认主标题字号为 `text-lg`，对齐原始用户需求模块中“新用户需求”的标题大小。
+- 通用 `Card` 默认圆角使用 `rounded-lg`，默认无阴影并使用灰色细边，让卡片视觉更克制；需要特殊圆角、边框或阴影的容器应在调用处显式覆盖。
+- 敏捷业务需求池页面当前以“优先级统计卡在上、索引导航 + 详情卡组合容器在下”的纵向布局组织主区；优先级统计不显示标题，按总数/P1/P2/P3/P4 的紧凑固定宽度参考指标卡样式展示当前有效故事数量，指标块不撑满宽度，图标保持 `size-5`，当前指标块为 `h-22 w-32`。
+- 桌面端全局左侧导航栏内容垂直居中显示，侧栏顶部说明和导航项作为一个整体在可用高度内居中。
+- 敏捷业务需求池页面不再展示历史追踪摘要卡和历史追踪详情卡，仅保留当前有效池与主列表。
+- 当前有效敏捷业务需求池卡片使用外层容器的可用宽度，不再受固定窄列约束。
+- 当前有效敏捷业务需求池页面不再展示摘要卡，只保留详情卡承载筛选、加载状态和错误状态；需求故事列表暂时隐藏。
+- 当前有效敏捷业务需求池详情卡的“需求详情”标题固定在 `CardHeader` 并显示 `PanelTopOpen` 图标，筛选区和内容列表在桌面端使用可用高度和 `overflow-y-auto` 承接内部滚动，项目详情 `<main>` 与工作区主内容容器继续隐藏自身滚动条。
+- 当前有效敏捷业务需求池左侧需求列表卡独立于详情卡，但外观与详情卡保持一致的卡片结构；桌面端需求列表卡和详情卡使用 `h-full` 随工作区可用高度拉伸，“需求列表”标题固定在 `CardHeader` 并显示 `ListChecks` 图标，索引项内容区使用 `overflow-y-auto`，展示全部当前有效需求的名称和优先级；索引项名称完整换行显示，右侧优先级 badge 保持固定宽度；不再显示额外说明文案，点击索引项会重置筛选并滚动到对应详情，不再执行分页。
+- 敏捷业务需求池页面标题区不再显示“用于管理、编辑、筛选和执行敏捷业务需求故事的主池。”或“当前敏捷业务需求池只展示有效故事。摘要卡用于快速查看概况，详情卡用于筛选和编辑。”这两段说明。
 - `/projects/new` 页面不显示 `New Project` 英文小标题，项目表单不显示“先记录项目名称，再进入工作台补充业务需求”说明句。
 - `/projects` 页面主内容容器使用 `mt-5 space-y-6 pb-12`，让标题、操作按钮、搜索框和列表/空状态整体下移。
 - `/projects` 页面搜索框位于标题右侧操作区，在“新建项目”按钮左侧；窄屏下操作区可换行。

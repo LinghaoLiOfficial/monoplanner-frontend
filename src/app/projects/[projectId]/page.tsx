@@ -133,7 +133,7 @@ export default function ProjectWorkspacePage() {
             <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}/business-requirements`}>业务故事池</Link>
+            <Link href={`/projects/${projectId}/business-requirements`}>敏捷业务需求池</Link>
           </Button>
         </div>
       </div>
@@ -164,11 +164,11 @@ export default function ProjectWorkspacePage() {
           <Card>
             <CardHeader>
               <CardTitle>当前编排状态</CardTitle>
-              <CardDescription>以业务故事池、分层变更集、版本资产和指令集合为中心的主链路概览</CardDescription>
+              <CardDescription>以敏捷业务需求池、分层变更集、版本资产和指令集合为中心的主链路概览</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-sm font-medium">业务故事池</p>
+                <p className="text-sm font-medium">敏捷业务需求池</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {currentBusinessStories.length > 0 ? `${currentBusinessStories.length} 条当前有效故事` : "当前还没有有效业务故事"}
                 </p>
@@ -190,7 +190,7 @@ export default function ProjectWorkspacePage() {
                   <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href={`/projects/${projectId}/business-requirements`}>业务故事池</Link>
+                  <Link href={`/projects/${projectId}/business-requirements`}>敏捷业务需求池</Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link href={`/projects/${projectId}/change-sets`}>分层变更集</Link>

@@ -1,15 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
 import { TechStackConfigCard } from "@/components/blueprint/TechStackConfigCard";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,18 +91,15 @@ export default function ProjectConfigPage() {
   }
 
   return (
-    <div className="space-y-6 lg:flex lg:h-[calc(100%-3rem)] lg:min-h-0 lg:flex-col lg:gap-6 lg:space-y-0">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">项目配置</h1>
-        </div>
-        <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}`}>返回项目</Link>
-        </Button>
-      </div>
-
-      <Card className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-        <CardContent className="space-y-6 pt-6 lg:h-full lg:min-h-0 lg:overflow-y-auto">
+    <div className="space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:gap-6 lg:space-y-0">
+      <Card className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardList className="size-5 text-muted-foreground" aria-hidden="true" />
+            配置表单
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-4">
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="project-config-name">项目名称</Label>

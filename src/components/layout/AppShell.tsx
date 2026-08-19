@@ -14,10 +14,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <main
       className={cn(
-        "mx-auto flex min-h-screen w-full flex-col transition-[max-width,padding,gap] duration-[400ms] ease-out motion-reduce:transition-none",
+        "mx-auto flex w-full flex-col transition-[max-width,padding,gap] duration-[400ms] ease-out motion-reduce:transition-none",
         isProjectDetail
-          ? "max-w-[100vw] gap-6 p-6 lg:h-screen lg:overflow-hidden"
-          : "max-w-[90rem] p-6"
+          ? "h-screen max-w-[100vw] gap-6 overflow-hidden p-6"
+          : "min-h-screen max-w-[90rem] p-6"
       )}
     >
       <TopNav compactGap={isProjectDetail} />

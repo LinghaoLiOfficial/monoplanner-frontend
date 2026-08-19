@@ -61,17 +61,13 @@ export default function ConsistencyPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">一致性检查</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
             检查版本资产、API 契约、数据库模型和指令集合的一致性
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={handleCheck} disabled={checking || !hasBlueprint}>
             {checking ? "正在检查..." : "重新检查"}
-          </Button>
-          <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}`}>返回</Link>
           </Button>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Requirement } from "@/lib/types/requirement";
+import { cn } from "@/lib/utils";
 
 type RequirementEditorProps = {
   onSave: (rawText: string) => Promise<Requirement>;
@@ -59,18 +60,26 @@ export function RequirementEditor({
   };
 
   const content = (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className={cn(compact ? "space-y-2" : "space-y-4")} onSubmit={handleSubmit}>
       <div className="space-y-2">
         {hideLabel ? null : <Label htmlFor="requirement-raw-text">自然语言业务需求</Label>}
         {submitButton === "icon" ? (
-          <div className="flex flex-col gap-3 rounded-[1.5rem] border border-input bg-secondary/60 p-3 shadow-xs transition-all focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]">
+          <div
+            className={cn(
+              "flex flex-col rounded-[1.5rem] border border-input bg-secondary/60 shadow-xs transition-all focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]",
+              compact ? "gap-2 p-2" : "gap-3 p-3"
+            )}
+          >
             <Textarea
               id="requirement-raw-text"
               value={rawText}
               onChange={(event) => setRawText(event.target.value)}
-              placeholder="描述业务目标、核心流程、角色、数据对象或你希望 Codex 理解的开发上下文"
+              placeholder="描述你希望 LLM 理解的任何需求、功能、流程、架构、约束或技术上下文，无论是单个功能还是多个模块"
               disabled={inputDisabled}
-              className="min-h-44 resize-none border-0 bg-transparent shadow-none focus-visible:border-transparent focus-visible:ring-0"
+              className={cn(
+                compact ? "min-h-20 py-2 leading-6" : "min-h-44",
+                "resize-none border-0 bg-transparent shadow-none focus-visible:border-transparent focus-visible:ring-0"
+              )}
             />
             <Button
               type="submit"
@@ -87,9 +96,9 @@ export function RequirementEditor({
             id="requirement-raw-text"
             value={rawText}
             onChange={(event) => setRawText(event.target.value)}
-            placeholder="描述业务目标、核心流程、角色、数据对象或你希望 Codex 理解的开发上下文"
+            placeholder="描述你希望 LLM 理解的任何需求、功能、流程、架构、约束或技术上下文，无论是单个功能还是多个模块"
             disabled={inputDisabled}
-            className="min-h-44"
+            className={compact ? "min-h-20" : "min-h-44"}
           />
         )}
       </div>
@@ -113,7 +122,7 @@ export function RequirementEditor({
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>保存原始业务需求，后续由后端生成业务故事池条目</CardDescription>
+        <CardDescription>保存原始业务需求，后续由后端生成敏捷业务需求池条目</CardDescription>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

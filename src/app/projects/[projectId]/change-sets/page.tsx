@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -249,17 +248,9 @@ export default function ChangeSetsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">分层变更集</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-            按 layer 和 batch_id 查看变更集，已应用的版本会退回历史，不再作为默认有效项。
-          </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}/business-requirements`}>返回业务故事池</Link>
-        </Button>
-      </div>
+      <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
+        按 layer 和 batch_id 查看变更集，已应用的版本会退回历史，不再作为默认有效项。
+      </p>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -293,7 +284,7 @@ export default function ChangeSetsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {groupedChangeSets.length === 0 ? (
-                <p className="text-sm leading-6 text-muted-foreground">暂无变更集，请先从业务故事池生成。</p>
+                <p className="text-sm leading-6 text-muted-foreground">暂无变更集，请先从敏捷业务需求池生成。</p>
               ) : null}
               {groupedChangeSets.map(([layerKey, items]) => (
                 <ChangeSetBatchSection

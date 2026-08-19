@@ -235,8 +235,7 @@ export default function PromptsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">指令集合</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
             默认展示最新有效版本；历史版本仍可切换查看，不再依赖 blueprint 作为输入假设。
           </p>
         </div>

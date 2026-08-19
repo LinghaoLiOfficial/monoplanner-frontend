@@ -18,10 +18,10 @@ const actions = [
   },
   {
     icon: ListChecks,
-    title: "进入业务故事池",
-    description: "录入原始需求并整理成当前有效的业务故事池。",
+    title: "进入敏捷业务需求池",
+    description: "录入原始需求并整理成当前有效的敏捷业务需求池。",
     href: "business-requirements",
-    buttonLabel: "查看业务故事池",
+    buttonLabel: "查看敏捷业务需求池",
   },
   {
     icon: FileJson,
@@ -59,10 +59,16 @@ export function GenerationActionPanel({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <CardTitle>主流程入口</CardTitle>
-            <CardDescription>从业务故事池、分层变更集到版本资产和指令集合的主链路</CardDescription>
+            <CardDescription>从敏捷业务需求池、分层变更集到版本资产和指令集合的主链路</CardDescription>
           </div>
           <Badge variant="outline">
-            {hasPromptPack ? "指令集合就绪" : hasCurrentChangeSet ? "变更集待消耗" : hasCurrentStoryPool ? "故事池就绪" : "待启动"}
+            {hasPromptPack
+              ? "指令集合就绪"
+              : hasCurrentChangeSet
+                ? "变更集待消耗"
+                : hasCurrentStoryPool
+                  ? "敏捷业务需求池就绪"
+                  : "待启动"}
           </Badge>
         </div>
       </CardHeader>

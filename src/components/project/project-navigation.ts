@@ -34,7 +34,7 @@ export const projectNavGroups: ProjectNavGroup[] = [
     label: "需求分析",
     items: [
       { label: "原始用户需求", segment: "raw-requirements", icon: FileText },
-      { label: "业务故事池", segment: "business-requirements", icon: ListChecks },
+      { label: "敏捷业务需求池", segment: "business-requirements", icon: ListChecks },
       { label: "变更集", segment: "change-sets", icon: ScrollText },
     ],
   },

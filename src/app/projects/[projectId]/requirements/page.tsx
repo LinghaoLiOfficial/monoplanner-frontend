@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
+import { History } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -9,7 +9,6 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
 import { RequirementEditor } from "@/components/requirement/RequirementEditor";
 import { RequirementList } from "@/components/requirement/RequirementList";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ApiError } from "@/lib/api/client";
 import { generateBusinessStories } from "@/lib/api/business-stories";
@@ -23,44 +22,24 @@ import type { BusinessStoryGenerationProgress, Requirement } from "@/lib/types/r
 
 const GENERATION_POLL_INTERVAL_MS = 2500;
 
-const rawUserRequirementsField = {
-  chineseName: "原始用户需求",
-  englishName: "raw_user_requirements",
-  meaning: "用户直接输入的未经结构化拆解的原始需求集合。",
-};
-
-const newUserRequirementField = {
-  chineseName: "新用户需求",
-  englishName: "new_user_requirement",
-  meaning: "用户当前准备提交的一条新需求输入。",
-};
-
 const requirementHistoryField = {
   chineseName: "用户需求历史",
   englishName: "requirement_history",
-  meaning: "当前项目中已提交的原始用户需求记录列表。",
+  meaning: "",
 };
 
-type RequirementFieldMeta = typeof rawUserRequirementsField;
-
-function FieldMetaTitle({ fieldMeta }: { fieldMeta: RequirementFieldMeta }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{fieldMeta.chineseName}</h1>
-      </div>
-      <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{fieldMeta.meaning}</p>
-    </div>
-  );
-}
+type RequirementFieldMeta = typeof requirementHistoryField;
 
 function FieldMetaSectionTitle({ fieldMeta }: { fieldMeta: RequirementFieldMeta }) {
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-center gap-2">
+        <History className="size-5 text-muted-foreground" aria-hidden="true" />
         <h2 className="text-lg font-semibold tracking-tight">{fieldMeta.chineseName}</h2>
       </div>
-      <p className="text-sm leading-6 text-muted-foreground">{fieldMeta.meaning}</p>
+      {fieldMeta.meaning ? (
+        <p className="text-sm leading-6 text-muted-foreground">{fieldMeta.meaning}</p>
+      ) : null}
     </div>
   );
 }
@@ -319,48 +298,32 @@ export default function ProjectRequirementsPage() {
   }, [pollRunningRequirementGenerations, runningRequirementIdsKey]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <FieldMetaTitle fieldMeta={rawUserRequirementsField} />
-        </div>
-        <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}`}>返回</Link>
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <FieldMetaSectionTitle fieldMeta={newUserRequirementField} />
-          </CardHeader>
-          <CardContent>
-            <RequirementEditor
-              compact
-              title={newUserRequirementField.chineseName}
-              hideLabel
-              submitButton="icon"
-              disabled={hasRunningRequirement}
-              disabledMessage={hasRunningRequirement ? "已有需求正在更新，请等待完成后再提交新的用户需求" : undefined}
-              onSave={handleSaveRequirement}
+    <div className="space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+      <Card className="lg:flex lg:min-h-[26rem] lg:flex-1 lg:flex-col">
+        <CardHeader>
+          <FieldMetaSectionTitle fieldMeta={requirementHistoryField} />
+        </CardHeader>
+        <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-4">
+          {loading ? <LoadingState label="正在加载需求..." /> : null}
+          {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadRequirements} /> : null}
+          {!loading && !error ? (
+            <RequirementList
+              requirements={requirements}
+              onRetryBusinessStoryGeneration={handleRetryBusinessStoryGeneration}
             />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <FieldMetaSectionTitle fieldMeta={requirementHistoryField} />
-          </CardHeader>
-          <CardContent>
-            {loading ? <LoadingState label="正在加载需求..." /> : null}
-            {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadRequirements} /> : null}
-            {!loading && !error ? (
-              <RequirementList
-                requirements={requirements}
-                onRetryBusinessStoryGeneration={handleRetryBusinessStoryGeneration}
-              />
-            ) : null}
-          </CardContent>
-        </Card>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <div className="lg:shrink-0">
+        <RequirementEditor
+          compact
+          hideLabel
+          submitButton="icon"
+          disabled={hasRunningRequirement}
+          disabledMessage={hasRunningRequirement ? "已有需求正在更新，请等待完成后再提交新的用户需求" : undefined}
+          onSave={handleSaveRequirement}
+        />
       </div>
 
       <ConfirmDialog
