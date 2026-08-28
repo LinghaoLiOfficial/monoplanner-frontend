@@ -18,7 +18,6 @@ type RequirementEditorProps = {
   hideLabel?: boolean;
   submitButton?: "text" | "icon";
   disabled?: boolean;
-  disabledMessage?: string;
 };
 
 export function RequirementEditor({
@@ -28,7 +27,6 @@ export function RequirementEditor({
   hideLabel = false,
   submitButton = "text",
   disabled = false,
-  disabledMessage,
 }: RequirementEditorProps) {
   const [rawText, setRawText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -102,7 +100,6 @@ export function RequirementEditor({
           />
         )}
       </div>
-      {disabledMessage ? <p className="text-sm text-muted-foreground">{disabledMessage}</p> : null}
       {error ? <ErrorState message={error} /> : null}
       {submitButton === "icon" ? (
         null

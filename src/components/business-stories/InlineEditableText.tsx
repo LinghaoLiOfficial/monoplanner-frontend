@@ -110,8 +110,8 @@ export function InlineEditableText({
   return (
     <p
       className={className}
-      title="双击编辑"
-      onDoubleClick={startEditing}
+      title={disabled ? undefined : "双击编辑"}
+      onDoubleClick={disabled ? undefined : startEditing}
     >
       {value.trim() ? value : emptyText}
     </p>

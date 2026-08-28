@@ -17,8 +17,8 @@ export function UIFieldHeading({
       <div className={cn("flex flex-wrap items-center gap-2", titleClassName)}>
         <span>{definition.chineseName}</span>
       </div>
-      {showMeaning ? (
-        <p className="text-xs font-normal leading-5 text-muted-foreground">{definition.meaning}</p>
+      {showMeaning && definition.meaning ? (
+        <p className="text-sm font-normal leading-6 text-muted-foreground">{definition.meaning}</p>
       ) : null}
     </div>
   );

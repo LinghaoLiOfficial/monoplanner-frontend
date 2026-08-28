@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoadingState } from "@/components/common/LoadingState";
+import { buildLoginRequiredUrl } from "@/lib/auth/login-required";
 
 export function RequireAuth({
   children,
@@ -24,7 +25,7 @@ export function RequireAuth({
 
     if (!authenticated) {
       const redirectTo = `${pathname}${window.location.search}`;
-      router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+      router.replace(buildLoginRequiredUrl(redirectTo));
       return;
     }
 

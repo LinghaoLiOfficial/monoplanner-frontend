@@ -3,86 +3,18 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { Diff, PanelTopOpen, ServerCog } from "lucide-react";
 
 import { CopyButton } from "@/components/common/CopyButton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
-import { JsonViewer } from "@/components/common/JsonViewer";
 import { LoadingState } from "@/components/common/LoadingState";
 import { sortAssetsByVersion, VersionList } from "@/components/design-assets/VersionList";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { listPromptPacks } from "@/lib/api/prompt-packs";
+import { formatDateTime } from "@/lib/design-asset-labels";
 import type { PromptBlock as PromptBlockType, PromptPack } from "@/lib/types/prompt-pack";
-
-function PromptNeededBadge({ needed }: { needed: boolean }) {
-  return <Badge variant={needed ? "default" : "outline"}>{needed ? "需要修改" : "无需修改"}</Badge>;
-}
-
-function PromptBlock({ title, prompt }: { title: string; prompt?: PromptBlockType }) {
-  if (!prompt?.needed) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle>{title}</CardTitle>
-            <PromptNeededBadge needed={false} />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm leading-6 text-muted-foreground">本批次无需{title.includes("前端") ? "前端" : "后端"}修改</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const body = prompt.body ?? prompt.prompt ?? "";
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <CardTitle>{prompt.title ?? title}</CardTitle>
-            <CardDescription>{title}</CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <PromptNeededBadge needed />
-            <CopyButton value={body} label="复制提示词" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <pre className="max-h-[520px] overflow-auto rounded-2xl border border-border/60 bg-muted/50 p-4 whitespace-pre-wrap text-sm leading-7">
-          {body}
-        </pre>
-        <div className="grid gap-4 md:grid-cols-3">
-          <PromptList title="影响文件" items={prompt.affected_files} />
-          <PromptList title="不要修改" items={prompt.do_not_modify} />
-          <PromptList title="验证步骤" items={prompt.verification_steps} />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PromptList({ title, items }: { title: string; items?: string[] }) {
-  return (
-    <section className="rounded-2xl border border-border/60 p-4">
-      <h3 className="text-sm font-medium">{title}</h3>
-      {items?.length ? (
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-muted-foreground">
-          {items.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-sm text-muted-foreground">暂无</p>
-      )}
-    </section>
-  );
-}
 
 function textFromUnknown(value: unknown): string {
   if (!value) {
@@ -107,41 +39,338 @@ function textFromUnknown(value: unknown): string {
   return String(value);
 }
 
-function getUXUIBasis(content: PromptPack["content"]) {
-  const diffSummary = content.diff_summary;
-  const candidates: string[] = [];
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
 
-  if (typeof diffSummary === "string") {
-    candidates.push(diffSummary);
-  } else if (diffSummary && typeof diffSummary === "object") {
-    candidates.push(textFromUnknown(diffSummary.added));
-    candidates.push(textFromUnknown(diffSummary.modified));
+function splitSummaryText(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return [];
   }
 
-  candidates.push(content.frontend_prompt?.body ?? content.frontend_prompt?.prompt ?? "");
+  const lines = trimmed
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-  return candidates
+  if (lines.length > 1) {
+    return lines;
+  }
+
+  return trimmed
+    .split(/(?<=[。；;])\s*/)
     .map((item) => item.trim())
-    .filter((item) => item && /UX|UI|用户|交互|视觉|组件|布局|样式|状态|可访问性/i.test(item))
+    .filter(Boolean);
+}
+
+function normalizeSummaryItems(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((item) => textFromUnknown(item)).flatMap(splitSummaryText);
+  }
+
+  return splitSummaryText(textFromUnknown(value));
+}
+
+function formatDiffLabel(key: string) {
+  const labels: Record<string, string> = {
+    added: "新增",
+    modified: "修改",
+    removed: "删除",
+    unchanged: "未变化",
+    frontend: "前端",
+    backend: "后端",
+    database: "数据库",
+    api: "API",
+    ux: "UX",
+    ui: "UI",
+  };
+
+  return labels[key] ?? key.replaceAll("_", " ");
+}
+
+function DiffSummaryPanel({ summary }: { summary: unknown }) {
+  if (!summary) {
+    return (
+      <section className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+        <h3 className="flex items-center gap-2 text-sm font-medium">
+          <Diff className="size-5 text-muted-foreground" aria-hidden="true" />
+          差异摘要
+        </h3>
+        <p className="mt-3 text-sm leading-7 text-muted-foreground">暂无差异摘要</p>
+      </section>
+    );
+  }
+
+  if (isRecord(summary)) {
+    const groups = Object.entries(summary)
+      .map(([key, value]) => ({
+        key,
+        label: formatDiffLabel(key),
+        items: normalizeSummaryItems(value),
+      }))
+      .filter((group) => group.items.length > 0);
+
+    if (groups.length > 0) {
+      return (
+        <section className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+          <h3 className="flex items-center gap-2 text-sm font-medium">
+            <Diff className="size-5 text-muted-foreground" aria-hidden="true" />
+            差异摘要
+          </h3>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {groups.map((group) => (
+              <div key={group.key} className="rounded-2xl border border-border/60 bg-background p-4">
+                <div className="text-xs font-medium text-muted-foreground">{group.label}</div>
+                <ul className="mt-3 space-y-2">
+                  {group.items.map((item, index) => (
+                    <li key={index} className="flex gap-2 text-sm leading-7 text-foreground">
+                      <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
+                      <span className="min-w-0 whitespace-pre-wrap break-words">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+  }
+
+  const items = normalizeSummaryItems(summary);
+
+  return (
+    <section className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+      <h3 className="flex items-center gap-2 text-sm font-medium">
+        <Diff className="size-5 text-muted-foreground" aria-hidden="true" />
+        差异摘要
+      </h3>
+      {items.length > 0 ? (
+        <ul className="mt-4 space-y-3">
+          {items.map((item, index) => (
+            <li key={index} className="rounded-2xl border border-border/60 bg-background p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-muted px-2 text-xs font-semibold text-muted-foreground">
+                  {index + 1}
+                </div>
+                <p className="min-w-0 whitespace-pre-wrap break-words text-sm leading-7 text-foreground">{item}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm leading-7 text-muted-foreground">暂无差异摘要</p>
+      )}
+    </section>
+  );
+}
+
+function PromptList({ title, items }: { title: string; items?: unknown[] }) {
+  const normalizedItems = normalizePromptListItems(items);
+
+  return (
+    <section className="rounded-2xl border border-border/60 p-4">
+      <h3 className="text-sm font-medium">{title}</h3>
+      {normalizedItems.length ? (
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-muted-foreground">
+          {normalizedItems.map((item, index) => (
+            <li key={index} className="whitespace-pre-wrap break-words">
+              {item}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm text-muted-foreground">暂无</p>
+      )}
+    </section>
+  );
+}
+
+function normalizePromptListItems(items?: unknown[]) {
+  return Array.isArray(items)
+    ? items.map((item) => textFromUnknown(item)).filter(Boolean)
+    : [];
+}
+
+function formatPromptListSection(title: string, items?: unknown[]) {
+  const normalizedItems = normalizePromptListItems(items);
+
+  if (normalizedItems.length === 0) {
+    return `## ${title}\n暂无`;
+  }
+
+  return [`## ${title}`, ...normalizedItems.map((item) => `- ${item}`)].join("\n");
+}
+
+function buildCopyablePrompt(title: string, prompt: PromptBlockType, body: string) {
+  const formattedBody = formatPromptBodyForCopy(body);
+
+  return [
+    `# ${title}`,
+    prompt.title ?? "",
+    formattedBody,
+    formatPromptListSection("影响文件", prompt.affected_files),
+    formatPromptListSection("不要修改", prompt.do_not_modify),
+    formatPromptListSection("验证步骤", prompt.verification_steps),
+  ]
+    .filter((section) => section.trim().length > 0)
     .join("\n\n");
 }
 
-function UXUIBasisCard({ content }: { content: PromptPack["content"] }) {
-  const basis = getUXUIBasis(content);
+function formatPromptBodyForCopy(body: string) {
+  const trimmedBody = body.trim();
 
-  if (!basis) {
-    return null;
+  if (!trimmedBody) {
+    return "";
   }
+
+  const parsed = parsePromptSteps(trimmedBody);
+
+  if (parsed.steps.length === 0) {
+    return trimmedBody;
+  }
+
+  return [
+    parsed.lead,
+    ...parsed.steps.map((step) => `${step.number}. ${step.text}`),
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function parsePromptSteps(body: string) {
+  const normalizedBody = body.replace(/([^\n])\s*(?=\d+\.\s)/g, "$1\n");
+  const lines = normalizedBody.split("\n");
+  const stepStartPattern = /^(\d+)\.\s*(.+)$/;
+  const steps: Array<{ number: string; text: string }> = [];
+  const leadLines: string[] = [];
+  let currentStep: { number: string; text: string[] } | null = null;
+  let sawFirstStep = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    const match = line.match(stepStartPattern);
+
+    if (match) {
+      sawFirstStep = true;
+      if (currentStep) {
+        steps.push({ number: currentStep.number, text: currentStep.text.join("\n").trim() });
+      }
+      currentStep = { number: match[1], text: [match[2]] };
+      continue;
+    }
+
+    if (!sawFirstStep) {
+      leadLines.push(line);
+      continue;
+    }
+
+    if (currentStep) {
+      currentStep.text.push(line);
+    } else if (line.trim()) {
+      leadLines.push(line);
+    }
+  }
+
+  if (currentStep) {
+    steps.push({ number: currentStep.number, text: currentStep.text.join("\n").trim() });
+  }
+
+  return {
+    lead: leadLines.join("\n").trim(),
+    steps,
+  };
+}
+
+function PromptBody({ body }: { body: string }) {
+  if (!body.trim()) {
+    return (
+      <p className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm leading-7 text-muted-foreground">
+        暂无提示词正文
+      </p>
+    );
+  }
+
+  const parsed = parsePromptSteps(body);
+
+  if (parsed.steps.length === 0) {
+    return (
+      <pre className="max-h-[520px] overflow-auto rounded-2xl border border-border/60 bg-muted/50 p-4 whitespace-pre-wrap break-words text-sm leading-7">
+        {body || "暂无提示词正文"}
+      </pre>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {parsed.lead ? (
+        <section className="rounded-2xl border border-border/60 bg-muted/30 p-4">
+          <p className="whitespace-pre-wrap break-words text-sm leading-7 text-muted-foreground">{parsed.lead}</p>
+        </section>
+      ) : null}
+      <div className="space-y-3">
+        {parsed.steps.map((step) => (
+          <section key={step.number} className="rounded-2xl border border-border/60 bg-background p-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-muted px-2 text-xs font-semibold text-muted-foreground">
+                {step.number}
+              </div>
+              <p className="min-w-0 whitespace-pre-wrap break-words text-sm leading-7 text-foreground">{step.text}</p>
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PromptBlock({ title, prompt }: { title: string; prompt?: PromptBlockType }) {
+  const PromptIcon = title.includes("前端") ? PanelTopOpen : ServerCog;
+
+  if (!prompt?.needed) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <PromptIcon className="size-5 text-muted-foreground" aria-hidden="true" />
+              {title}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm leading-6 text-muted-foreground">本批次无需{title.includes("前端") ? "前端" : "后端"}修改</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const body = prompt.body ?? prompt.prompt ?? "";
+  const copyablePrompt = buildCopyablePrompt(title, prompt, body);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>UX/UI 设计依据</CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <PromptIcon className="size-5 text-muted-foreground" aria-hidden="true" />
+              {title}
+            </CardTitle>
+            <CardDescription>{prompt.title ?? title}</CardDescription>
+          </div>
+          <CopyButton value={copyablePrompt} label="复制提示词" />
+        </div>
       </CardHeader>
-      <CardContent>
-        <pre className="max-h-80 overflow-auto rounded-2xl border border-border/60 bg-muted/50 p-4 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-          {basis}
-        </pre>
+      <CardContent className="space-y-4">
+        <PromptBody body={body} />
+        <div className="space-y-4">
+          <PromptList title="影响文件" items={prompt.affected_files} />
+          <PromptList title="不要修改" items={prompt.do_not_modify} />
+          <PromptList title="验证步骤" items={prompt.verification_steps} />
+        </div>
       </CardContent>
     </Card>
   );
@@ -149,42 +378,34 @@ function UXUIBasisCard({ content }: { content: PromptPack["content"] }) {
 
 function PromptPackDetail({ pack }: { pack: PromptPack }) {
   const content = pack.content;
+  const acceptanceChecklist = Array.isArray(content.acceptance_checklist) ? content.acceptance_checklist : [];
+  const rollbackNotes = Array.isArray(content.rollback_notes) ? content.rollback_notes : [];
 
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle>{pack.title}</CardTitle>
-              <CardDescription>{pack.summary}</CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">v{pack.version}</Badge>
-              {pack.is_current ? <Badge>当前有效</Badge> : <Badge variant="secondary">历史版本</Badge>}
-            </div>
+            <CardTitle className="min-w-0 text-base font-semibold leading-8 text-[oklch(0.42_0.06_55)] dark:text-[oklch(0.82_0.08_65)]">
+              {pack.title}
+            </CardTitle>
+            <p className="pb-4 text-xs text-muted-foreground">{formatDateTime(pack.created_at)}</p>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <section>
-            <h3 className="text-sm font-medium">批次摘要</h3>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">{content.batch_summary ?? "暂无批次摘要"}</p>
-          </section>
-          <section>
-            <h3 className="text-sm font-medium">差异摘要</h3>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-              {textFromUnknown(content.diff_summary) || "暂无差异摘要"}
-            </p>
-          </section>
-          <PromptList title="执行顺序" items={content.execution_order} />
-          <PromptList title="验收清单" items={content.acceptance_checklist} />
-          <PromptList title="回滚说明" items={content.rollback_notes} />
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <PromptBlock title="后端提示词" prompt={content.backend_prompt} />
+            <PromptBlock title="前端提示词" prompt={content.frontend_prompt} />
+          </div>
+          <div className="space-y-4">
+            <DiffSummaryPanel summary={content.diff_summary} />
+            <PromptList title="回滚说明" items={rollbackNotes} />
+          </div>
+          <div className="space-y-4">
+            <PromptList title="验收清单" items={acceptanceChecklist} />
+          </div>
         </CardContent>
       </Card>
-      <UXUIBasisCard content={content} />
-      <PromptBlock title="前端提示词" prompt={content.frontend_prompt} />
-      <PromptBlock title="后端提示词" prompt={content.backend_prompt} />
-      <JsonViewer title="指令集合 JSON" data={content} />
     </div>
   );
 }
@@ -198,15 +419,16 @@ export default function PromptsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const sortedPacks = useMemo(() => sortAssetsByVersion(packs), [packs]);
-  const currentPack = useMemo(
-    () => sortedPacks.find((pack) => pack.is_current) ?? sortedPacks[0] ?? null,
+  const currentPack = useMemo(() => sortedPacks[0] ?? null, [sortedPacks]);
+  const selectedPack = sortedPacks.find((pack) => pack.id === selectedId) ?? currentPack;
+  const versionListPacks = useMemo(
+    () =>
+      sortedPacks.map((pack, index) => ({
+        ...pack,
+        is_current: index === 0,
+      })),
     [sortedPacks]
   );
-  const historyPacks = useMemo(
-    () => sortedPacks.filter((pack) => pack.id !== currentPack?.id),
-    [currentPack?.id, sortedPacks]
-  );
-  const selectedPack = sortedPacks.find((pack) => pack.id === selectedId) ?? currentPack;
 
   const loadData = async () => {
     setLoading(true);
@@ -214,7 +436,7 @@ export default function PromptsPage() {
     try {
       const data = sortAssetsByVersion(await listPromptPacks(projectId));
       setPacks(data);
-      setSelectedId((current) => current ?? data.find((pack) => pack.is_current)?.id ?? data[0]?.id ?? null);
+      setSelectedId((current) => (current && data.some((pack) => pack.id === current) ? current : data[0]?.id ?? null));
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载指令集合失败");
     } finally {
@@ -232,18 +454,7 @@ export default function PromptsPage() {
   }, [projectId]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
-            默认展示最新有效版本；历史版本仍可切换查看，不再依赖 blueprint 作为输入假设。
-          </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link href={`/projects/${projectId}/change-sets`}>查看分层变更集</Link>
-        </Button>
-      </div>
-
+    <div className="space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col">
       {loading ? <LoadingState label="正在加载指令集合..." /> : null}
       {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadData} /> : null}
       {!loading && !error && sortedPacks.length === 0 ? (
@@ -257,43 +468,17 @@ export default function PromptsPage() {
           }
         />
       ) : null}
-      {!loading && !error && currentPack ? (
-        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <PromptPackDetail pack={selectedPack ?? currentPack} />
-          <div className="space-y-4">
-            <VersionList
-              assets={[currentPack, ...historyPacks].filter(Boolean)}
-              selectedId={selectedPack?.id ?? currentPack.id}
-              onSelect={setSelectedId}
-              title="版本列表"
-              description="当前版本优先，点击可查看历史版本"
-            />
-            <Card>
-              <CardHeader>
-                <CardTitle>历史记录</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {historyPacks.length === 0 ? (
-                  <p className="text-sm leading-6 text-muted-foreground">暂无历史版本</p>
-                ) : (
-                  historyPacks.map((pack) => (
-                    <button
-                      key={pack.id}
-                      type="button"
-                      onClick={() => setSelectedId(pack.id)}
-                      className="w-full rounded-2xl border border-border/60 bg-background px-4 py-3 text-left transition-colors hover:bg-muted"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{pack.title}</span>
-                        <Badge variant="outline">v{pack.version}</Badge>
-                        <Badge variant="secondary">历史</Badge>
-                      </div>
-                      <p className="mt-2 text-sm text-muted-foreground">{pack.summary}</p>
-                    </button>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+      {!loading && !error && currentPack && selectedPack ? (
+        <div className="grid gap-4 xl:h-0 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)] xl:items-stretch">
+          <VersionList
+            assets={versionListPacks}
+            selectedId={selectedPack.id}
+            onSelect={setSelectedId}
+            title="版本列表"
+            showCreatedAt
+          />
+          <div className="min-h-0 overflow-y-auto xl:pr-4">
+            <PromptPackDetail pack={selectedPack} />
           </div>
         </div>
       ) : null}

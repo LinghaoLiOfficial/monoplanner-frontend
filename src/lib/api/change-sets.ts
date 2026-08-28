@@ -6,12 +6,22 @@ export function listChangeSets(projectId: string) {
   return apiRequest<ChangeSet[]>(`/projects/${projectId}/change-sets`);
 }
 
+export function listActiveChangeSetApplicationRuns(projectId: string) {
+  return apiRequest<GenerationRun[]>(`/projects/${projectId}/change-set-application-runs`);
+}
+
 export function getChangeSet(changeSetId: string) {
   return apiRequest<ChangeSet>(`/change-sets/${changeSetId}`);
 }
 
 export function applyChangeSet(changeSetId: string) {
   return apiRequest<GenerationRun>(`/change-sets/${changeSetId}/apply`, {
+    method: "POST",
+  });
+}
+
+export function applyChangeSetBatch(projectId: string, batchId: string) {
+  return apiRequest<GenerationRun>(`/projects/${projectId}/change-set-batches/${batchId}/apply`, {
     method: "POST",
   });
 }

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { FieldHint } from "@/components/ui/field-hint";
 import type { BusinessRequirementFieldDefinition } from "@/lib/types/business-story";
 
 export function FieldDefinitionHeading({
@@ -15,11 +16,16 @@ export function FieldDefinitionHeading({
   return (
     <div className={cn("space-y-1", className)}>
       <div className={cn("flex flex-wrap items-baseline gap-x-2 gap-y-1", titleClassName)}>
-        <span>{definition.name}</span>
+        {showMeaning ? (
+          <FieldHint
+            label={definition.name}
+            hint={definition.meaning}
+            labelClassName="text-inherit"
+          />
+        ) : (
+          <span>{definition.name}</span>
+        )}
       </div>
-      {showMeaning ? (
-        <p className="text-xs font-normal leading-5 text-muted-foreground">{definition.meaning}</p>
-      ) : null}
     </div>
   );
 }

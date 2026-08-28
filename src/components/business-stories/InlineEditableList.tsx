@@ -128,8 +128,8 @@ export function InlineEditableList({
     return (
       <p
         className={cn("cursor-text rounded-md transition-colors hover:bg-muted/50", emptyClassName)}
-        title="双击编辑"
-        onDoubleClick={startEditing}
+        title={disabled ? undefined : "双击编辑"}
+        onDoubleClick={disabled ? undefined : startEditing}
       >
         {emptyText}
       </p>
@@ -139,8 +139,8 @@ export function InlineEditableList({
   return (
     <ListTag
       className={cn("cursor-text rounded-md transition-colors hover:bg-muted/50", listClassName)}
-      title="双击编辑"
-      onDoubleClick={startEditing}
+      title={disabled ? undefined : "双击编辑"}
+      onDoubleClick={disabled ? undefined : startEditing}
     >
       {value.map((item, index) => (
         <li key={`${item}-${index}`} className={itemClassName}>

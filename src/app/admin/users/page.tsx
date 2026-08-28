@@ -11,6 +11,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,6 +39,7 @@ const nonAdminRoles: NonAdminUserRole[] = [
   "vip-pro",
   "vip-pro-max",
 ];
+const allRoleFilterValue = "all";
 
 function formatDateTime(value?: string | null) {
   if (!value) {
@@ -125,18 +133,22 @@ function UserRow({
         />
       </TableCell>
       <TableCell>
-        <select
+        <Select
           value={role}
-          onChange={(event) => setRole(event.target.value as NonAdminUserRole)}
+          onValueChange={(value) => setRole(value as NonAdminUserRole)}
           disabled={saving || toggling}
-          className="h-10 min-w-36 rounded-2xl border border-input bg-background px-3 text-sm outline-none transition-all focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         >
-          {nonAdminRoles.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="min-w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {nonAdminRoles.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </TableCell>
       <TableCell>
         <Badge variant={user.is_active ? "secondary" : "destructive"}>
@@ -275,39 +287,45 @@ export default function AdminUsersPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="admin-user-role">角色</Label>
-                <select
-                  id="admin-user-role"
-                  value={role}
-                  onChange={(event) => {
-                    setRole(event.target.value as NonAdminUserRole | "");
+                <Select
+                  value={role || allRoleFilterValue}
+                  onValueChange={(value) => {
+                    setRole(value === allRoleFilterValue ? "" : (value as NonAdminUserRole));
                     setPage(1);
                   }}
-                  className="h-10 w-full rounded-2xl border border-input bg-background px-3 text-sm outline-none transition-all focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                 >
-                  <option value="">全部角色</option>
-                  {nonAdminRoles.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="admin-user-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={allRoleFilterValue}>全部角色</SelectItem>
+                    {nonAdminRoles.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="admin-user-status">状态</Label>
-                <select
-                  id="admin-user-status"
+                <Select
                   value={isActive}
-                  onChange={(event) => {
-                    setIsActive(event.target.value as "all" | "active" | "disabled");
+                  onValueChange={(value) => {
+                    setIsActive(value as "all" | "active" | "disabled");
                     setPage(1);
                   }}
-                  className="h-10 w-full rounded-2xl border border-input bg-background px-3 text-sm outline-none transition-all focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                 >
-                  <option value="all">全部状态</option>
-                  <option value="active">已启用</option>
-                  <option value="disabled">已禁用</option>
-                </select>
+                  <SelectTrigger id="admin-user-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="active">已启用</SelectItem>
+                    <SelectItem value="disabled">已禁用</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>

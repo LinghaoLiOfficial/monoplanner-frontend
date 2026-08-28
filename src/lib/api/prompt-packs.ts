@@ -2,7 +2,9 @@ import { apiRequest } from "@/lib/api/client";
 import type { PromptPack } from "@/lib/types/prompt-pack";
 
 export function listPromptPacks(projectId: string) {
-  return apiRequest<PromptPack[]>(`/projects/${projectId}/prompt-packs`);
+  return apiRequest<PromptPack[]>(`/projects/${projectId}/prompt-packs`, {
+    query: { role: "prompt_pack" },
+  });
 }
 
 export function getPromptPack(id: string) {

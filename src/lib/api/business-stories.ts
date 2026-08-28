@@ -1,5 +1,4 @@
 import { apiRequest } from "@/lib/api/client";
-import type { ChangeSet } from "@/lib/types/change-set";
 import type {
   BusinessRequirementStory,
   BusinessStoryPriority,
@@ -9,12 +8,14 @@ import type {
   ImplementationScope,
   UpdateBusinessStoryInput,
 } from "@/lib/types/business-story";
+import type { GenerationRun } from "@/lib/types/generation-run";
 
 type BusinessStoryFilters = {
   priority?: BusinessStoryPriority;
   status?: BusinessStoryStatus;
   implementation_scope?: ImplementationScope;
   q?: string;
+  include_history?: boolean;
 };
 
 export function generateBusinessStories(
@@ -74,7 +75,7 @@ export function selectBusinessStory(storyId: string) {
 }
 
 export function executeBusinessStory(storyId: string) {
-  return apiRequest<ChangeSet>(`/business-stories/${storyId}/execute`, {
+  return apiRequest<GenerationRun>(`/business-stories/${storyId}/execute`, {
     method: "POST",
   });
 }

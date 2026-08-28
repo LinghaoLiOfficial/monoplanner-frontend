@@ -9,6 +9,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { LoadingState } from "@/components/common/LoadingState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { buildLoginRequiredUrl } from "@/lib/auth/login-required";
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,7 +17,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !authenticated) {
-      router.replace("/login");
+      router.replace(buildLoginRequiredUrl(window.location.pathname + window.location.search));
     }
   }, [authenticated, loading, router]);
 

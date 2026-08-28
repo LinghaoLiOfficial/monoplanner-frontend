@@ -11,6 +11,7 @@ export type Project = {
   target_stacks_configured: boolean;
   status: string;
   created_at: string;
+  last_opened_at: string;
   updated_at: string;
 };
 

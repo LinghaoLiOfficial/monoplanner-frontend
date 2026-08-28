@@ -321,7 +321,6 @@ export default function ProjectRequirementsPage() {
           hideLabel
           submitButton="icon"
           disabled={hasRunningRequirement}
-          disabledMessage={hasRunningRequirement ? "已有需求正在更新，请等待完成后再提交新的用户需求" : undefined}
           onSave={handleSaveRequirement}
         />
       </div>

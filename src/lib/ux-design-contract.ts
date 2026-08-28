@@ -10,7 +10,7 @@ export const uxDesignFieldDefinitions = {
     key: "ux_design",
     chineseName: "UX用户体验设计",
     englishName: "ux_design",
-    meaning: "描述用户如何完成任务、页面低保真结构、业务逻辑流和交互反馈的体验设计资产。",
+    meaning: "",
   },
   version_summary: {
     key: "version_summary",

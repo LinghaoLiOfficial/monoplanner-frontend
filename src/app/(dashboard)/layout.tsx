@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { buildLoginRequiredUrl } from "@/lib/auth/login-required";
 import { getSessionUser } from "@/lib/auth/session";
 
 export default function DashboardLayout({
@@ -25,7 +26,7 @@ async function DashboardLayoutInner({
   const user = await userPromise;
 
   if (!user) {
-    redirect("/login");
+    redirect(buildLoginRequiredUrl());
   }
 
   return (

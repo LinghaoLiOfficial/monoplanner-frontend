@@ -10,7 +10,7 @@ export const databaseModelFieldDefinitions = {
     key: "database_model",
     chineseName: "数据库模型",
     englishName: "database_model",
-    meaning: "项目数据实体、数据表、字段、关系、索引和迁移说明。",
+    meaning: "",
   },
   database_tables: {
     key: "database_tables",

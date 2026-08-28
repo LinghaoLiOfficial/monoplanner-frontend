@@ -1,8 +1,23 @@
-export type ModuleChangeGroup<T = unknown> = {
+export type ModuleChangeValue = string | number | boolean | Record<string, unknown> | unknown[] | null;
+
+export type ModuleChangeItem = {
+  field?: string | null;
+  selector?: Record<string, unknown>;
+  before?: ModuleChangeValue;
+  after?: ModuleChangeValue;
+  reason?: string | null;
+  constraints?: unknown[];
+  dependencies?: unknown[];
+  acceptance_criteria?: unknown[];
+  [key: string]: unknown;
+};
+
+export type ModuleChangeEntry = ModuleChangeItem | string;
+
+export type ModuleChangeGroup<T = ModuleChangeEntry> = {
   added: T[];
   modified: T[];
   removed: T[];
-  unchanged: T[];
 };
 
 export type VersionedAssetDiff = {

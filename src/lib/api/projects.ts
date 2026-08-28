@@ -37,6 +37,12 @@ export function getProject(projectId: string) {
   return apiRequest<Project>(`/projects/${projectId}`);
 }
 
+export function recordProjectOpened(projectId: string) {
+  return apiRequest<Project>(`/projects/${projectId}/opened`, {
+    method: "POST",
+  });
+}
+
 export function updateProject(projectId: string, payload: UpdateProjectPayload) {
   return apiRequest<Project>(`/projects/${projectId}`, {
     method: "PATCH",

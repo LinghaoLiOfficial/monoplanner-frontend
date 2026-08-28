@@ -43,9 +43,9 @@ export const projectNavGroups: ProjectNavGroup[] = [
     items: [
       { label: "UX 用户体验设计", segment: "ux-design", icon: DraftingCompass },
       { label: "UI 视觉设计", segment: "ui-design", icon: Palette },
-      { label: "前端实现版本", segment: "frontend-implementation", icon: Code2 },
+      { label: "前端工程实现", segment: "frontend-implementation", icon: Code2 },
       { label: "API 契约", segment: "api-contract", icon: Braces },
-      { label: "后端实现版本", segment: "backend-implementation", icon: Code2 },
+      { label: "后端工程实现", segment: "backend-implementation", icon: Code2 },
       { label: "数据库模型", segment: "database-model", icon: Database },
     ],
   },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -11,6 +12,7 @@ import { AssetHeader } from "@/components/design-assets/AssetHeader";
 import { DiffSummary } from "@/components/design-assets/DiffSummary";
 import { sortAssetsByVersion, VersionList } from "@/components/design-assets/VersionList";
 import type { VersionedDesignAsset } from "@/lib/types/design-asset";
+import { cn } from "@/lib/utils";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -24,14 +26,18 @@ export function VersionedAssetPage<TAsset extends VersionedDesignAsset>({
   listAssets,
   action,
   renderContent,
+  titleIcon: TitleIcon,
+  versionListWidth = "default",
 }: {
   title: string;
-  description: string;
+  description?: string;
   emptyDescription?: string;
   sections: Array<{ key: string; title: string }>;
   listAssets: (projectId: string) => Promise<TAsset[]>;
   action?: ReactNode;
   renderContent?: (asset: TAsset, content: Record<string, unknown>, sections: Array<{ key: string; title: string }>) => ReactNode;
+  titleIcon?: LucideIcon;
+  versionListWidth?: "default" | "narrow";
 }) {
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
@@ -71,25 +77,36 @@ export function VersionedAssetPage<TAsset extends VersionedDesignAsset>({
     return () => window.clearInterval(interval);
   }, [loadAssets]);
 
+  const showHeader = Boolean(description || action);
+  const gridColumns =
+    versionListWidth === "narrow"
+      ? "lg:grid-cols-[260px_minmax(0,1fr)]"
+      : "lg:grid-cols-[320px_minmax(0,1fr)]";
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{description}</p>
+    <div className="space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col">
+      {showHeader ? (
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          {description ? (
+            <div>
+              <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{description}</p>
+            </div>
+          ) : null}
+          {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
         </div>
-        {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
-      </div>
+      ) : null}
 
       {loading ? <LoadingState label={`正在加载${title}...`} /> : null}
       {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadAssets} /> : null}
       {!loading && !error ? (
-        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className={cn("grid gap-4 lg:h-0 lg:min-h-0 lg:flex-1 lg:items-stretch", gridColumns)}>
           <VersionList assets={sortedAssets} selectedId={selectedAsset?.id ?? null} onSelect={setSelectedId} />
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pr-4">
             <AssetHeader
               asset={selectedAsset}
               emptyTitle={`暂无${title}版本`}
               emptyDescription={emptyDescription}
+              titleIcon={TitleIcon}
             />
             {selectedAsset ? (
               <>

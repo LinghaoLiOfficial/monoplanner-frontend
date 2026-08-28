@@ -8,9 +8,9 @@ import { EmptyState } from "@/components/common/EmptyState";
 import type {
   BusinessRequirementStory,
   BusinessStoryPriority,
-  BusinessStoryStatus,
   UpdateBusinessStoryInput,
 } from "@/lib/types/business-story";
+import type { GenerationRun } from "@/lib/types/generation-run";
 
 export function BusinessStoryList({
   stories,
@@ -18,9 +18,11 @@ export function BusinessStoryList({
   scrollRequestKey,
   onUpdateStory,
   onPriorityChange,
-  onStatusChange,
   onExecuteStory,
   executingStoryId,
+  hasExecutingStory,
+  executionProgressByStoryId,
+  failedExecutionStatuses = [],
   onDeleteStory,
 }: {
   stories: BusinessRequirementStory[];
@@ -28,9 +30,11 @@ export function BusinessStoryList({
   scrollRequestKey?: number;
   onUpdateStory: (storyId: string, input: UpdateBusinessStoryInput) => Promise<BusinessRequirementStory>;
   onPriorityChange: (storyId: string, priority: BusinessStoryPriority) => Promise<void>;
-  onStatusChange: (storyId: string, status: BusinessStoryStatus) => Promise<void>;
   onExecuteStory?: (story: BusinessRequirementStory) => void;
   executingStoryId?: string | null;
+  hasExecutingStory?: boolean;
+  executionProgressByStoryId?: Record<string, GenerationRun | undefined>;
+  failedExecutionStatuses?: string[];
   onDeleteStory?: (story: BusinessRequirementStory) => void;
 }) {
   const storyRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -71,9 +75,13 @@ export function BusinessStoryList({
             story={story}
             onUpdateStory={onUpdateStory}
             onPriorityChange={onPriorityChange}
-            onStatusChange={onStatusChange}
             onExecute={onExecuteStory}
             executing={executingStoryId === story.id}
+            executionBlocked={Boolean(hasExecutingStory && executingStoryId !== story.id)}
+            executionFailed={failedExecutionStatuses.includes(
+              executionProgressByStoryId?.[story.id]?.status ?? ""
+            )}
+            executionProgress={executionProgressByStoryId?.[story.id]}
             onDelete={onDeleteStory}
           />
         </div>

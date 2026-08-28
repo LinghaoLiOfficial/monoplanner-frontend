@@ -65,7 +65,9 @@ export type BusinessRequirementFieldKey =
   | "business_scope"
   | "included_scope"
   | "excluded_scope"
-  | "execution_note";
+  | "execution_note"
+  | "data_rules"
+  | "acceptance_criteria";
 
 export type BusinessRequirementFieldDefinition = {
   key: BusinessRequirementFieldKey;
@@ -80,6 +82,7 @@ export type BusinessRequirementStory = {
   project_id: string;
   requirement_id?: string | null;
   generation_run_id?: string | null;
+  execution_generation_run_id?: string | null;
   source_story_id?: string | null;
   title: string;
   priority: BusinessStoryPriority;

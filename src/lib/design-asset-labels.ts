@@ -9,8 +9,8 @@ export const implementationScopeLabels: Record<ImplementationScope, string> = {
 };
 
 export const affectedLayerLabels: Record<AffectedLayer, string> = {
-  ux_design: "UX设计",
-  ui_design: "UI设计",
+  ux_design: "UX 用户体验设计",
+  ui_design: "UI 视觉设计",
   frontend_implementation: "前端工程实现",
   frontend_tools: "前端工程实现扩展",
   api_contract: "API 契约",
@@ -26,6 +26,41 @@ export const affectedLayerLabels: Record<AffectedLayer, string> = {
   prompt_assets: "PromptPack",
   documentation: "文档",
 };
+
+export type BusinessStoryImpactScopeFilter =
+  | ImplementationScope
+  | "ux_design"
+  | "ui_design"
+  | "frontend_implementation"
+  | "api_contract"
+  | "backend_implementation"
+  | "database_models";
+
+export const businessStoryImpactScopeLabels: Record<BusinessStoryImpactScopeFilter, string> = {
+  frontend_only: "仅前端",
+  backend_only: "仅后端",
+  fullstack: "前后端",
+  non_code: "非代码",
+  ux_design: "UX 用户体验设计",
+  ui_design: "UI 视觉设计",
+  frontend_implementation: "前端工程实现",
+  api_contract: "API 契约",
+  backend_implementation: "后端工程实现",
+  database_models: "数据库模型",
+};
+
+export const businessStoryImpactScopeOptions: BusinessStoryImpactScopeFilter[] = [
+  "frontend_only",
+  "backend_only",
+  "fullstack",
+  "non_code",
+  "ux_design",
+  "ui_design",
+  "frontend_implementation",
+  "api_contract",
+  "backend_implementation",
+  "database_models",
+];
 
 export const changeSetStatusLabels: Record<ChangeSetStatus, string> = {
   draft: "草稿",

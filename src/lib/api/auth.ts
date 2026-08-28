@@ -44,7 +44,9 @@ export function logout() {
 }
 
 export function getCurrentUser() {
-  return apiRequest<CurrentUser>("/auth/me");
+  return apiRequest<CurrentUser>("/auth/me", {
+    redirectOnUnauthorized: false,
+  });
 }
 
 export function updateMe(input: UpdateMeInput) {

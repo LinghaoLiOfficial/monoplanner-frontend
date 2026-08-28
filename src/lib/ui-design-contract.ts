@@ -10,7 +10,7 @@ export const uiDesignFieldDefinitions = {
     key: "ui_design",
     chineseName: "UI视觉设计",
     englishName: "ui_design",
-    meaning: "描述视觉系统、布局规则、组件样式规则和视觉表达约束的设计资产。",
+    meaning: "",
   },
   version_summary: {
     key: "version_summary",

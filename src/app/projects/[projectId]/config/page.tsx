@@ -8,9 +8,9 @@ import { toast } from "sonner";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
 import { TechStackConfigCard } from "@/components/blueprint/TechStackConfigCard";
+import { FieldHint } from "@/components/ui/field-hint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getProjectConfig, updateProjectConfig } from "@/lib/api/project-config";
 import type { ProjectConfig } from "@/lib/types/project-config";
@@ -101,8 +101,12 @@ export default function ProjectConfigPage() {
         </CardHeader>
         <CardContent className="space-y-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-4">
           <div className="grid gap-5 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="project-config-name">项目名称</Label>
+            <div className="group space-y-2">
+              <FieldHint
+                label="项目名称"
+                htmlFor="project-config-name"
+                hint="标识当前项目，需要和业务主题保持一致"
+              />
               <Input
                 id="project-config-name"
                 value={projectName}
@@ -111,8 +115,12 @@ export default function ProjectConfigPage() {
                 placeholder="请输入项目名称"
               />
             </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="project-config-description">项目描述</Label>
+            <div className="group space-y-2 md:col-span-2">
+              <FieldHint
+                label="项目描述"
+                htmlFor="project-config-description"
+                hint="概括项目目标、范围或业务背景，但不参与任何业务上下文"
+              />
               <Textarea
                 id="project-config-description"
                 className="min-h-28"

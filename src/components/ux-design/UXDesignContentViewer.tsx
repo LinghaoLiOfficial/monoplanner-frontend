@@ -1,249 +1,246 @@
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AssetContentSections } from "@/components/design-assets/AssetContentSections";
-import { UXFieldBlock, UXFieldHeading } from "@/components/ux-design/UXFieldDefinition";
-import { isNewUXDesignContent, type UXDesignContent } from "@/lib/types/ux-design";
-import { uxDesignFieldDefinitions, uxDesignLegacySections } from "@/lib/ux-design-contract";
-import type { ReactNode } from "react";
+import {
+  FlowTimeline,
+  MetricStrip,
+  StatusBadge,
+  TextChips,
+  VisualSection,
+  visualIcons,
+  type TimelineStep,
+} from "@/components/design-assets/visual-dashboard";
+import { FieldHint } from "@/components/ui/field-hint";
+import { isNewUXDesignContent, type UXBranchStatus, type UXDesignContent } from "@/lib/types/ux-design";
+import { uxDesignLegacySections } from "@/lib/ux-design-contract";
 
-function TextList({
-  values,
-  emptyText = "暂无",
-}: {
-  values: string[];
-  emptyText?: string;
-}) {
-  if (values.length === 0) {
+function branchTone(status: UXBranchStatus): TimelineStep["tone"] {
+  if (status === "success") return "success";
+  if (status === "error") return "error";
+  if (status === "blocked" || status === "empty") return "warning";
+  return "muted";
+}
+
+function statusLabel(status: UXBranchStatus) {
+  return {
+    success: "成功",
+    error: "错误",
+    blocked: "阻塞",
+    empty: "空状态",
+    next_action: "下一步",
+  }[status] ?? status;
+}
+
+function isTechnicalIdentifier(value: string) {
+  if (/[\u4e00-\u9fff]/.test(value)) return false;
+  return (
+    /^[A-Za-z][A-Za-z0-9]*(?:[_-][A-Za-z0-9]+)+$/.test(value) ||
+    /^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(value)
+  );
+}
+
+function shortReadableText(value: string) {
+  return value.trim().replace(/[。！？；：,.!?;:].*$/, "");
+}
+
+function getReadableUXName(value: string | undefined, fallback: string | undefined, defaultLabel: string) {
+  const trimmedValue = value?.trim();
+  if (trimmedValue && !isTechnicalIdentifier(trimmedValue)) {
+    return { label: trimmedValue, source: "value" as const };
+  }
+
+  const trimmedFallback = fallback?.trim();
+  if (trimmedFallback && !isTechnicalIdentifier(trimmedFallback)) {
+    return { label: shortReadableText(trimmedFallback), source: "fallback" as const };
+  }
+
+  return { label: defaultLabel, source: "default" as const };
+}
+
+function getFlowTitle(value: string | undefined, fallback: string | undefined) {
+  const trimmedValue = value?.trim();
+  if (trimmedValue) {
+    return { label: trimmedValue, source: "value" as const };
+  }
+
+  const trimmedFallback = fallback?.trim();
+  if (trimmedFallback) {
+    return { label: shortReadableText(trimmedFallback), source: "fallback" as const };
+  }
+
+  return { label: "未命名流程", source: "default" as const };
+}
+
+function UXNotesTextBlock({ notes }: { notes: string[] }) {
+  return (
+    <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
+      <p className="text-sm font-medium text-muted-foreground">UX 说明</p>
+      {notes.length > 0 ? (
+        <ul className="list-disc space-y-2 pl-5">
+          {notes.map((note, index) => (
+            <li key={`${note}-${index}`} className="pl-1 text-sm leading-6 text-muted-foreground">
+              {note}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm leading-6 text-muted-foreground">暂无 UX 说明</p>
+      )}
+    </div>
+  );
+}
+
+function MetricNameList({ names, emptyText }: { names: string[]; emptyText: string }) {
+  if (names.length === 0) {
     return <p className="text-sm leading-6 text-muted-foreground">{emptyText}</p>;
   }
 
   return (
-    <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-muted-foreground">
-      {values.map((item, index) => (
-        <li key={`${item}-${index}`}>{item}</li>
-      ))}
-    </ul>
+    <div className="max-h-24 overflow-y-auto pr-1">
+      <ul className="space-y-1.5">
+        {names.map((name, index) => (
+          <li key={`${name}-${index}`} className="truncate text-sm leading-5 text-muted-foreground">
+            {name}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
-}
-
-function ObjectList({
-  items,
-  emptyText = "暂无",
-  renderItem,
-}: {
-  items: Array<Record<string, unknown>>;
-  emptyText?: string;
-  renderItem: (item: Record<string, unknown>, index: number) => ReactNode;
-}) {
-  if (items.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">{emptyText}</p>;
-  }
-
-  return <div className="space-y-3">{items.map((item, index) => renderItem(item, index))}</div>;
-}
-
-function formatStepLabel(stepOrder: unknown) {
-  if (typeof stepOrder === "number" || typeof stepOrder === "string") {
-    return `步骤 ${stepOrder}`;
-  }
-  return "步骤";
 }
 
 function NewUXDesignContentView({ content }: { content: Extract<UXDesignContent, { low_fidelity_screen_structure: unknown }> }) {
   const screens = content.low_fidelity_screen_structure ?? [];
   const flows = content.business_flows ?? [];
+  const screenNames = screens.map((screen) => getReadableUXName(screen.screen_name, screen.screen_purpose, "未命名页面").label);
+  const flowNames = flows.map((flow) => getFlowTitle(flow.flow_name, flow.flow_goal).label);
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <UXFieldHeading definition={uxDesignFieldDefinitions.version_summary} />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-            {String(content.version_summary ?? "暂无")}
-          </p>
-        </CardContent>
-      </Card>
+      <MetricStrip
+        className="xl:grid-cols-2"
+        items={[
+          {
+            label: "页面",
+            value: screens.length,
+            description: <MetricNameList names={screenNames} emptyText="暂无页面" />,
+          },
+          {
+            label: "业务流程",
+            value: flows.length,
+            description: <MetricNameList names={flowNames} emptyText="暂无业务流程" />,
+          },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <UXFieldHeading definition={uxDesignFieldDefinitions.low_fidelity_screen_structure} />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ObjectList
-            items={screens as Array<Record<string, unknown>>}
-            emptyText="暂无页面低保真结构"
-            renderItem={(screen, screenIndex) => (
-              <div key={`${String(screen.screen_name ?? "screen")}-${screenIndex}`} className="rounded-2xl border border-border/60 bg-background/70 p-4 space-y-4">
-                <UXFieldHeading definition={uxDesignFieldDefinitions.ux_screen} />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <UXFieldBlock definition={uxDesignFieldDefinitions.screen_name}>
-                    <p className="text-sm leading-7 text-muted-foreground">
-                      {String(screen.screen_name ?? "暂无")}
-                    </p>
-                  </UXFieldBlock>
-                  <UXFieldBlock definition={uxDesignFieldDefinitions.screen_purpose}>
-                    <p className="text-sm leading-7 text-muted-foreground">
-                      {String(screen.screen_purpose ?? "暂无")}
-                    </p>
-                  </UXFieldBlock>
-                </div>
-                <UXFieldBlock definition={uxDesignFieldDefinitions.information_priority}>
-                  <TextList values={Array.isArray(screen.information_priority) ? (screen.information_priority as string[]) : []} />
-                </UXFieldBlock>
-                <UXFieldBlock definition={uxDesignFieldDefinitions.interaction_regions}>
-                  <div className="space-y-3">
-                    {Array.isArray(screen.interaction_regions) && screen.interaction_regions.length > 0 ? (
-                      (screen.interaction_regions as Array<Record<string, unknown>>).map((region, regionIndex) => (
-                        <div key={`${String(region.region_name ?? "region")}-${regionIndex}`} className="rounded-2xl border border-border/60 bg-muted/30 p-4 space-y-3">
-                          <UXFieldHeading definition={uxDesignFieldDefinitions.wireframe_region} />
-                          <UXFieldBlock definition={uxDesignFieldDefinitions.region_name}>
-                            <p className="text-sm leading-7 text-muted-foreground">
-                              {String(region.region_name ?? "暂无")}
-                            </p>
-                          </UXFieldBlock>
-                          <UXFieldBlock definition={uxDesignFieldDefinitions.region_purpose}>
-                            <p className="text-sm leading-7 text-muted-foreground">
-                              {String(region.region_purpose ?? "暂无")}
-                            </p>
-                          </UXFieldBlock>
-                          <UXFieldBlock definition={uxDesignFieldDefinitions.content_elements}>
-                            <TextList values={Array.isArray(region.content_elements) ? (region.content_elements as string[]) : []} />
-                          </UXFieldBlock>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm leading-6 text-muted-foreground">暂无交互区域</p>
-                    )}
-                  </div>
-                </UXFieldBlock>
-              </div>
-            )}
+      <VisualSection
+        title={
+          <FieldHint
+            label="页面低保真结构"
+            hint="按屏幕展示信息优先级和交互区域，便于快速判断页面承载的用户任务。"
+            labelClassName="text-base font-semibold leading-6"
           />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <UXFieldHeading definition={uxDesignFieldDefinitions.business_flows} />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ObjectList
-            items={flows as Array<Record<string, unknown>>}
-            emptyText="暂无业务逻辑流"
-            renderItem={(flow, flowIndex) => (
-              <div key={`${String(flow.flow_name ?? "flow")}-${flowIndex}`} className="rounded-2xl border border-border/60 bg-background/70 p-4 space-y-4">
-                <UXFieldHeading definition={uxDesignFieldDefinitions.business_flow} />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <UXFieldBlock definition={uxDesignFieldDefinitions.flow_name}>
-                    <p className="text-sm leading-7 text-muted-foreground">
-                      {String(flow.flow_name ?? "暂无")}
-                    </p>
-                  </UXFieldBlock>
-                  <UXFieldBlock definition={uxDesignFieldDefinitions.flow_goal}>
-                    <p className="text-sm leading-7 text-muted-foreground">
-                      {String(flow.flow_goal ?? "暂无")}
-                    </p>
-                  </UXFieldBlock>
-                  <UXFieldBlock definition={uxDesignFieldDefinitions.primary_actor}>
-                    <p className="text-sm leading-7 text-muted-foreground">
-                      {String(flow.primary_actor ?? "暂无")}
-                    </p>
-                  </UXFieldBlock>
-                  <UXFieldBlock definition={uxDesignFieldDefinitions.preconditions}>
-                    <TextList values={Array.isArray(flow.preconditions) ? (flow.preconditions as string[]) : []} />
-                  </UXFieldBlock>
+        }
+        icon={visualIcons.workflow}
+        empty={screens.length === 0 ? "暂无页面低保真结构" : false}
+      >
+        <div className="grid gap-3">
+          {screens.map((screen, screenIndex) => {
+            const screenTitle = getReadableUXName(screen.screen_name, screen.screen_purpose, "未命名页面");
+            return (
+              <section key={`${screen.screen_name}-${screenIndex}`} className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
+                <div className="flex flex-wrap items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <h3 className="min-w-0 whitespace-normal break-words text-sm font-semibold">{screenTitle.label}</h3>
+                      <StatusBadge label={`${screen.interaction_regions?.length ?? 0} 区域`} tone="muted" />
+                    </div>
+                    {screenTitle.source !== "fallback" ? (
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">{screen.screen_purpose || "暂无页面功能说明"}</p>
+                    ) : null}
+                  </div>
                 </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">信息优先级</p>
+                  <TextChips values={Array.isArray(screen.information_priority) ? screen.information_priority : []} numbered />
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {(screen.interaction_regions ?? []).map((region, regionIndex) => {
+                    const regionTitle = getReadableUXName(region.region_name, region.region_purpose, "未命名区域");
+                    return (
+                      <div key={`${region.region_name}-${regionIndex}`} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <div className="text-sm font-medium">{regionTitle.label}</div>
+                        {regionTitle.source !== "fallback" ? (
+                          <p className="mt-1 text-sm leading-6 text-muted-foreground">{region.region_purpose || "暂无区域功能"}</p>
+                        ) : null}
+                        <div className="mt-3">
+                          <TextChips values={Array.isArray(region.content_elements) ? region.content_elements : []} emptyText="暂无内容元素" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      </VisualSection>
 
-                <UXFieldBlock definition={uxDesignFieldDefinitions.steps}>
-                  <div className="space-y-3">
-                    {Array.isArray(flow.steps) && flow.steps.length > 0 ? (
-                      (flow.steps as Array<Record<string, unknown>>).map((step, stepIndex) => (
-                        <div key={`${String(step.step_order ?? stepIndex)}-${stepIndex}`} className="rounded-2xl border border-border/60 bg-muted/30 p-4 space-y-3">
-                          <UXFieldHeading definition={uxDesignFieldDefinitions.flow_step} />
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <UXFieldBlock definition={uxDesignFieldDefinitions.step_order}>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">{formatStepLabel(step.step_order)}</Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  {String(step.step_order ?? "暂无")}
-                                </span>
+      <VisualSection
+        title={
+          <FieldHint
+            label="业务逻辑流"
+            hint="用时间线呈现用户行为、系统反馈和结果分支。"
+            labelClassName="text-base font-semibold leading-6"
+          />
+        }
+        icon={visualIcons.branch}
+        empty={flows.length === 0 ? "暂无业务逻辑流" : false}
+      >
+        <div className="space-y-4">
+          {flows.map((flow, flowIndex) => {
+            const flowTitle = getFlowTitle(flow.flow_name, flow.flow_goal);
+            return (
+              <section key={`${flow.flow_name}-${flowIndex}`} className="space-y-4 rounded-lg border border-border/70 bg-background/70 p-4">
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                  <div>
+                    <h3 className="text-sm font-semibold">{flowTitle.label}</h3>
+                    {flowTitle.source !== "fallback" ? (
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">{flow.flow_goal || "暂无流程目标"}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <StatusBadge label={getReadableUXName(flow.primary_actor, undefined, "未指定用户").label} tone="default" />
+                    <TextChips values={Array.isArray(flow.preconditions) ? flow.preconditions : []} emptyText="暂无前置条件" />
+                  </div>
+                </div>
+                <FlowTimeline
+                  steps={(flow.steps ?? []).map((step) => ({
+                    title: step.user_action || "未描述用户行为",
+                    meta: `步骤 ${step.step_order}`,
+                    description: step.system_feedback || "暂无系统反馈",
+                    details: (
+                      <div className="space-y-3">
+                        <TextChips values={Array.isArray(step.involved_elements) ? step.involved_elements : []} emptyText="暂无涉及元素" />
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {(step.branches ?? []).map((branch, branchIndex) => (
+                            <div key={`${branch.branch_status}-${branchIndex}`} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <StatusBadge label={statusLabel(branch.branch_status)} tone={branchTone(branch.branch_status)} />
+                                <span className="text-sm text-muted-foreground">{branch.branch_description || "暂无分支说明"}</span>
                               </div>
-                            </UXFieldBlock>
-                            <UXFieldBlock definition={uxDesignFieldDefinitions.user_action}>
-                              <p className="text-sm leading-7 text-muted-foreground">
-                                {String(step.user_action ?? "暂无")}
-                              </p>
-                            </UXFieldBlock>
-                            <UXFieldBlock definition={uxDesignFieldDefinitions.step_system_feedback}>
-                              <p className="text-sm leading-7 text-muted-foreground">
-                                {String(step.system_feedback ?? "暂无")}
-                              </p>
-                            </UXFieldBlock>
-                            <UXFieldBlock definition={uxDesignFieldDefinitions.involved_elements}>
-                              <TextList values={Array.isArray(step.involved_elements) ? (step.involved_elements as string[]) : []} />
-                            </UXFieldBlock>
-                          </div>
-                          <UXFieldBlock definition={uxDesignFieldDefinitions.branches}>
-                            <div className="space-y-3">
-                              {Array.isArray(step.branches) && step.branches.length > 0 ? (
-                                (step.branches as Array<Record<string, unknown>>).map((branch, branchIndex) => (
-                                  <div key={`${String(branch.branch_status ?? "branch")}-${branchIndex}`} className="rounded-2xl border border-border/60 bg-background p-4 space-y-3">
-                                    <UXFieldHeading definition={uxDesignFieldDefinitions.branch} />
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <Badge variant="outline">
-                                        {String(branch.branch_status ?? "next_action")}
-                                      </Badge>
-                                      <span className="text-sm text-muted-foreground">
-                                        {String(branch.branch_description ?? "暂无")}
-                                      </span>
-                                    </div>
-                                    <UXFieldBlock definition={uxDesignFieldDefinitions.branch_status}>
-                                      <p className="text-sm leading-7 text-muted-foreground">
-                                        {String(branch.branch_status ?? "暂无")}
-                                      </p>
-                                    </UXFieldBlock>
-                                    <UXFieldBlock definition={uxDesignFieldDefinitions.branch_description}>
-                                      <p className="text-sm leading-7 text-muted-foreground">
-                                        {String(branch.branch_description ?? "暂无")}
-                                      </p>
-                                    </UXFieldBlock>
-                                    <UXFieldBlock definition={uxDesignFieldDefinitions.branch_system_feedback}>
-                                      <p className="text-sm leading-7 text-muted-foreground">
-                                        {String(branch.system_feedback ?? "暂无")}
-                                      </p>
-                                    </UXFieldBlock>
-                                  </div>
-                                ))
-                              ) : (
-                                <p className="text-sm leading-6 text-muted-foreground">暂无分支</p>
-                              )}
+                              <p className="mt-2 text-sm leading-6 text-muted-foreground">{branch.system_feedback || "暂无反馈"}</p>
                             </div>
-                          </UXFieldBlock>
+                          ))}
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-sm leading-6 text-muted-foreground">暂无步骤</p>
-                    )}
-                  </div>
-                </UXFieldBlock>
-
-                <UXFieldBlock definition={uxDesignFieldDefinitions.ux_notes}>
-                  <TextList values={Array.isArray(flow.ux_notes) ? (flow.ux_notes as string[]) : []} />
-                </UXFieldBlock>
-              </div>
-            )}
-          />
-        </CardContent>
-      </Card>
+                      </div>
+                    ),
+                  }))}
+                />
+                <UXNotesTextBlock notes={Array.isArray(flow.ux_notes) ? flow.ux_notes : []} />
+              </section>
+            );
+          })}
+        </div>
+      </VisualSection>
     </div>
   );
 }
@@ -256,10 +253,7 @@ function LegacyUXDesignContentView({ content }: { content: UXDesignContent }) {
           这是历史 UX 内容结构，保留兼容读取。新版设计资产会使用页面低保真结构和业务逻辑流契约。
         </AlertDescription>
       </Alert>
-      <AssetContentSections
-        content={content as Record<string, unknown>}
-        sections={uxDesignLegacySections}
-      />
+      <AssetContentSections content={content as Record<string, unknown>} sections={uxDesignLegacySections} />
     </div>
   );
 }

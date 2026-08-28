@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-
-type CopyState = "idle" | "copied" | "failed";
 
 type CopyButtonProps = {
   value: string;
@@ -12,24 +10,18 @@ type CopyButtonProps = {
 };
 
 export function CopyButton({ value, label = "复制 JSON" }: CopyButtonProps) {
-  const [state, setState] = useState<CopyState>("idle");
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(value);
-      setState("copied");
+      toast.success("已复制到剪贴板");
     } catch {
-      setState("failed");
+      toast.error("复制失败，请重试");
     }
-
-    window.setTimeout(() => setState("idle"), 1800);
   };
-
-  const text = state === "copied" ? "已复制" : state === "failed" ? "复制失败" : label;
 
   return (
     <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
-      {text}
+      {label}
     </Button>
   );
 }

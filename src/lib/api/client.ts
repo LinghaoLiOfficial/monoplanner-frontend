@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { redirectToLoginRequired } from "@/lib/auth/login-required";
 
 export class ApiError extends Error {
   status: number;
@@ -17,6 +18,7 @@ export class ApiError extends Error {
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: BodyInit | Record<string, unknown> | null;
   query?: Record<string, string | number | boolean | undefined | null>;
+  redirectOnUnauthorized?: boolean;
 };
 
 function joinUrl(base: string, path: string) {
@@ -74,7 +76,7 @@ function getErrorMessage(payload: unknown, fallback: string) {
 
 export async function apiRequest<T>(
   path: string,
-  { body, headers, query, ...init }: RequestOptions = {}
+  { body, headers, query, redirectOnUnauthorized = true, ...init }: RequestOptions = {}
 ) {
   let response: Response;
 
@@ -107,6 +109,10 @@ export async function apiRequest<T>(
       payload = text ? JSON.parse(text) : null;
     } catch {
       payload = text;
+    }
+
+    if (response.status === 401 && redirectOnUnauthorized) {
+      redirectToLoginRequired();
     }
 
     throw new ApiError(

@@ -1,163 +1,172 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { JsonViewer } from "@/components/common/JsonViewer";
 import { ApiContractViewer } from "@/components/contract/ApiContractViewer";
 import {
-  ApiContractFieldBlock,
-  ApiContractFieldHeading,
-} from "@/components/contract/ApiContractFieldDefinition";
-import {
-  apiContractFieldDefinitions,
-} from "@/lib/api-contract-contract";
+  MetricStrip,
+  RelationshipMap,
+  SchemaPanel,
+  StatusBadge,
+  VisualSection,
+  visualIcons,
+} from "@/components/design-assets/visual-dashboard";
+import { FieldHint } from "@/components/ui/field-hint";
 import {
   isNewApiContractContent,
   type ApiContractDraft,
+  type ApiEndpoint,
   type NewApiContractContent,
 } from "@/lib/types/api-contract";
+import { cn } from "@/lib/utils";
 
-function TextValue({ value }: { value: unknown }) {
+function methodClassName(method: string) {
+  return {
+    GET: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300",
+    POST: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
+    PATCH: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300",
+    PUT: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300",
+    DELETE: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300",
+  }[method.toUpperCase()] ?? "";
+}
+
+function optionalString(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function ErrorMatrix({ endpoint }: { endpoint: ApiEndpoint }) {
+  if (endpoint.error_model.length === 0) {
+    return <p className="text-sm leading-6 text-muted-foreground">暂无错误模式</p>;
+  }
+
   return (
-    <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-      {String(value ?? "暂无")}
-    </p>
+    <div className="grid gap-2 md:grid-cols-2">
+      {endpoint.error_model.map((errorCase, index) => (
+        <div key={`${errorCase.error_code}-${index}`} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge label={errorCase.status_code} tone={errorCase.status_code >= 500 ? "error" : "warning"} />
+            <code className="text-xs text-muted-foreground">{errorCase.error_code}</code>
+          </div>
+          <p className="mt-2 text-sm leading-6">{errorCase.error_message}</p>
+          {errorCase.recovery_suggestion ? (
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">{errorCase.recovery_suggestion}</p>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
-function JsonBlock({ value }: { value: unknown }) {
-  return (
-    <pre className="max-h-80 overflow-auto rounded-lg border border-border/60 bg-muted/40 p-3 text-xs leading-6">
-      {JSON.stringify(value ?? {}, null, 2)}
-    </pre>
-  );
-}
-
-function NewApiContractContentView({
-  contract,
-  content,
-}: {
-  contract: ApiContractDraft;
-  content: NewApiContractContent;
-}) {
+function NewApiContractContentView({ contract, content }: { contract: ApiContractDraft; content: NewApiContractContent }) {
   const groups = Array.isArray(content.api_resource_groups) ? content.api_resource_groups : [];
+  const endpoints = groups.flatMap((group) => group.endpoints);
+  const authCount = endpoints.filter((endpoint) => endpoint.requires_auth).length;
+  const errorCount = endpoints.reduce((sum, endpoint) => sum + endpoint.error_model.length, 0);
+  const methodCounts = endpoints.reduce<Record<string, number>>((counts, endpoint) => {
+    counts[endpoint.http_method] = (counts[endpoint.http_method] ?? 0) + 1;
+    return counts;
+  }, {});
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle>{contract.title}</CardTitle>
-              <CardDescription>{contract.summary}</CardDescription>
-            </div>
-            <Badge>v{contract.version}</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ApiContractFieldBlock definition={apiContractFieldDefinitions.api_base_path}>
-            <Badge variant="outline" className="font-mono">
-              {content.api_base_path || contract.base_path}
-            </Badge>
-          </ApiContractFieldBlock>
-        </CardContent>
-      </Card>
+      <MetricStrip
+        items={[
+          { label: "资源分组", value: groups.length, description: content.api_base_path || contract.base_path },
+          { label: "接口", value: endpoints.length, description: Object.entries(methodCounts).map(([method, count]) => `${method} ${count}`).join(" · ") || "暂无接口" },
+          { label: "需要登录", value: authCount, description: "requires_auth=true 的接口" },
+          { label: "错误场景", value: errorCount, description: optionalString(content.version_summary, contract.summary) },
+        ]}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <ApiContractFieldHeading definition={apiContractFieldDefinitions.api_resource_groups} />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <VisualSection
+        title={
+          <FieldHint
+            label="API 资源拓扑"
+            hint={optionalString(contract.summary, "暂无 API 摘要")}
+            labelClassName="text-base font-semibold leading-6"
+          />
+        }
+        icon={visualIcons.route}
+      >
+        <RelationshipMap
+          nodes={[
+            ...groups.map((group) => ({
+              id: `group:${group.group_name}`,
+              title: group.group_name,
+              subtitle: group.group_purpose,
+              badge: <StatusBadge label={`${group.endpoints.length} 接口`} tone="muted" />,
+              tone: "accent" as const,
+            })),
+            ...groups.flatMap((group) =>
+              group.endpoints.map((endpoint) => ({
+                id: `endpoint:${group.group_name}:${endpoint.http_method}:${endpoint.endpoint_path}`,
+                title: endpoint.endpoint_path,
+                subtitle: endpoint.endpoint_purpose,
+                badge: <Badge variant="outline" className={methodClassName(endpoint.http_method)}>{endpoint.http_method}</Badge>,
+              }))
+            ),
+          ]}
+          edges={groups.flatMap((group) =>
+            group.endpoints.map((endpoint) => ({
+              from: `group:${group.group_name}`,
+              to: `endpoint:${group.group_name}:${endpoint.http_method}:${endpoint.endpoint_path}`,
+              label: endpoint.requires_auth ? "需要登录" : "公开",
+            }))
+          )}
+          emptyText="暂无 API 资源"
+        />
+      </VisualSection>
+
+      <VisualSection
+        title={
+          <FieldHint
+            label="Endpoint Dashboard"
+            hint="按资源分组展示 method、path、schema 和错误模型。"
+            labelClassName="text-base font-semibold leading-6"
+          />
+        }
+        icon={visualIcons.workflow}
+      >
+        <div className="space-y-4">
           {groups.length > 0 ? (
             groups.map((group, groupIndex) => (
-              <section key={`${group.group_name}-${groupIndex}`} className="space-y-4 rounded-lg border border-border/60 bg-background/70 p-4">
-                <ApiContractFieldHeading definition={apiContractFieldDefinitions.api_resource_group} />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <ApiContractFieldBlock definition={apiContractFieldDefinitions.group_name}>
-                    <TextValue value={group.group_name} />
-                  </ApiContractFieldBlock>
-                  <ApiContractFieldBlock definition={apiContractFieldDefinitions.group_purpose}>
-                    <TextValue value={group.group_purpose} />
-                  </ApiContractFieldBlock>
-                </div>
-
-                <ApiContractFieldBlock definition={apiContractFieldDefinitions.endpoints}>
-                  <div className="space-y-3">
-                    {group.endpoints.length > 0 ? (
-                      group.endpoints.map((endpoint, endpointIndex) => (
-                        <div key={`${endpoint.http_method}-${endpoint.endpoint_path}-${endpointIndex}`} className="space-y-4 rounded-lg border border-border/60 bg-muted/30 p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <ApiContractFieldHeading definition={apiContractFieldDefinitions.endpoint} />
-                            <Badge variant="outline">{endpoint.http_method}</Badge>
-                          </div>
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <ApiContractFieldBlock definition={apiContractFieldDefinitions.http_method}>
-                              <TextValue value={endpoint.http_method} />
-                            </ApiContractFieldBlock>
-                            <ApiContractFieldBlock definition={apiContractFieldDefinitions.endpoint_path}>
-                              <TextValue value={endpoint.endpoint_path} />
-                            </ApiContractFieldBlock>
-                            <ApiContractFieldBlock definition={apiContractFieldDefinitions.endpoint_purpose}>
-                              <TextValue value={endpoint.endpoint_purpose} />
-                            </ApiContractFieldBlock>
-                            <ApiContractFieldBlock definition={apiContractFieldDefinitions.requires_auth}>
-                              <TextValue value={endpoint.requires_auth ? "是" : "否"} />
-                            </ApiContractFieldBlock>
-                          </div>
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <ApiContractFieldBlock definition={apiContractFieldDefinitions.request_schema}>
-                              <JsonBlock value={endpoint.request_schema} />
-                            </ApiContractFieldBlock>
-                            <ApiContractFieldBlock definition={apiContractFieldDefinitions.response_schema}>
-                              <JsonBlock value={endpoint.response_schema} />
-                            </ApiContractFieldBlock>
-                          </div>
-
-                          <ApiContractFieldBlock definition={apiContractFieldDefinitions.error_model}>
-                            <div className="space-y-3">
-                              {endpoint.error_model.length > 0 ? (
-                                endpoint.error_model.map((errorCase, errorIndex) => (
-                                  <div key={`${errorCase.error_code}-${errorIndex}`} className="space-y-3 rounded-lg border border-border/60 bg-background p-4">
-                                    <ApiContractFieldHeading definition={apiContractFieldDefinitions.error_case} />
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                      <ApiContractFieldBlock definition={apiContractFieldDefinitions.error_status_code}>
-                                        <TextValue value={errorCase.status_code} />
-                                      </ApiContractFieldBlock>
-                                      <ApiContractFieldBlock definition={apiContractFieldDefinitions.error_code}>
-                                        <TextValue value={errorCase.error_code} />
-                                      </ApiContractFieldBlock>
-                                      <ApiContractFieldBlock definition={apiContractFieldDefinitions.error_message}>
-                                        <TextValue value={errorCase.error_message} />
-                                      </ApiContractFieldBlock>
-                                      <ApiContractFieldBlock definition={apiContractFieldDefinitions.recovery_suggestion}>
-                                        <TextValue value={errorCase.recovery_suggestion || "暂无"} />
-                                      </ApiContractFieldBlock>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <p className="text-sm leading-6 text-muted-foreground">暂无错误模式</p>
-                              )}
-                            </div>
-                          </ApiContractFieldBlock>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm leading-6 text-muted-foreground">暂无接口</p>
-                    )}
+              <section key={`${group.group_name}-${groupIndex}`} className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">{group.group_name}</h3>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{group.group_purpose}</p>
                   </div>
-                </ApiContractFieldBlock>
+                  <StatusBadge label={`${group.endpoints.length} 接口`} tone="muted" />
+                </div>
+                <div className="space-y-3">
+                  {group.endpoints.length > 0 ? (
+                    group.endpoints.map((endpoint, endpointIndex) => (
+                      <section key={`${endpoint.http_method}-${endpoint.endpoint_path}-${endpointIndex}`} className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <Badge variant="outline" className={cn("shrink-0", methodClassName(endpoint.http_method))}>{endpoint.http_method}</Badge>
+                            <code className="break-all text-xs">{endpoint.endpoint_path}</code>
+                          </div>
+                          <StatusBadge label={endpoint.requires_auth ? "需要登录" : "公开"} tone={endpoint.requires_auth ? "default" : "muted"} />
+                        </div>
+                        <p className="text-sm leading-6 text-muted-foreground">{endpoint.endpoint_purpose}</p>
+                        <div className="grid gap-3 xl:grid-cols-2">
+                          <SchemaPanel title="请求结构" value={endpoint.request_schema} />
+                          <SchemaPanel title="响应结构" value={endpoint.response_schema} />
+                        </div>
+                        <ErrorMatrix endpoint={endpoint} />
+                      </section>
+                    ))
+                  ) : (
+                    <p className="text-sm leading-6 text-muted-foreground">暂无接口</p>
+                  )}
+                </div>
               </section>
             ))
           ) : (
             <p className="text-sm leading-6 text-muted-foreground">暂无 API 资源分组</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </VisualSection>
 
-      <JsonViewer data={contract} title="完整 API Contract JSON" />
     </div>
   );
 }

@@ -8,41 +8,58 @@
 - App Router 为主，项目内工作区位于 `/projects/[projectId]`。
 - 项目工作区使用侧边导航 + 主内容区布局，移动端使用 Sheet 抽屉导航；导航现在按全局约束、需求分析、方案资产和交付校验组织，不显示独立“工作台”入口。
 - 通用版本资产页复用 `VersionedDesignAsset<TContent>` 体系，`is_current` 作为当前版本标识；部分自定义 draft 类型也补齐了 `is_current`。
-- 业务故事页默认只展示当前有效池，历史记录单独分区；变更集页按 `layer` 和 `batch_id` 分组，强调一次性消耗语义。
-- UX/UI、前端实现、后端实现、API 契约和数据库模型页继续使用专用内容渲染器；新版资产按字段契约就地展示中文名、英文字段名和含义，旧版内容保留兼容读取并回退通用分段展示。
+- 业务故事页默认只展示当前有效池，历史记录单独分区；变更集数据仍按 `layer` 和 `batch_id` 组织，但当前页面暂时不展示按层列表和右侧详情卡片。
+- UX/UI、前端实现、后端实现、API 契约和数据库模型页继续使用专用内容渲染器；新版资产现在以专业仪表盘方式展示指标、流程、关系、schema、字段表和状态标签，旧版内容保留兼容读取并回退通用分段展示。
 - 前端实现和后端实现页现在使用“版本资产”语义，历史 `pages/services` 相关标题只保留为兼容提示，不进入主导航。
 - 指令集合页默认聚焦最新有效版本，同时保留历史记录可查；不再把 blueprint 当作主输入假设。
 - 蓝图相关路由和数据仍保留为历史兼容，但不再是工作台默认入口。
 - 新 IA 分组已落地为：
   - 全局约束：项目配置
   - 需求分析：原始用户需求、业务故事池、变更集
-  - 方案资产：UX 用户体验设计、UI 视觉设计、前端实现版本、API 契约、后端实现版本、数据库模型
+  - 方案资产：UX 用户体验设计、UI 视觉设计、前端工程实现、API 契约、后端工程实现、数据库模型
   - 交付校验：指令集合、一致性检查
 
 ## Key Files and Directories
 - `src/components/project/project-navigation.ts`：项目内副导航分组与路由段映射，当前分组为全局约束、需求分析、方案资产和交付校验。
 - `src/components/project/ProjectWorkspaceShell.tsx`：具体项目页侧栏与右侧主内容外壳；桌面端右侧主内容容器固定在卡片式工作区内并使用 `overflow-hidden`，不生成自身滚动条。
+- `src/app/projects/[projectId]/layout.tsx`：项目工作区公共布局；进入任意项目页面时调用项目打开记录接口，不阻塞页面正常加载。
 - `src/components/project/ProjectSidebar.tsx`：具体项目页左侧导航容器，桌面端将分组内容靠上展示并保留少量顶部间距，移动端仍通过 Sheet 抽屉呈现。
 - `src/components/layout/dashboard-sidebar.tsx`：桌面端全局左侧导航栏，使用 flex 垂直居中展示标题和导航链接，移动端仍通过 Sheet 抽屉呈现。
 - `src/components/layout/AppShell.tsx`：应用主外壳；项目详情态的 `<main>` 使用 `h-screen overflow-hidden` 固定在视口内，不生成自身滚动条，非项目详情页面继续使用 `min-h-screen`。
 - `src/components/project/GenerationActionPanel.tsx`：主流程入口，承接业务故事池、变更集、版本资产和指令集合的主链路。
 - `src/components/ui/card.tsx`：通用卡片组件；默认卡片圆角为 `rounded-lg`，使用无阴影灰色细边 `border-gray-200 dark:border-gray-800`，`CardTitle` 默认字号统一为 `text-lg`。
-- `src/app/projects/[projectId]/business-stories/page.tsx`：敏捷业务需求池页面把优先级统计卡放在上方，统计卡不显示标题，内部用总数、P1、P2、P3、P4 五个紧凑固定宽度参考指标卡样式的数字块突出数量：上方标签、右侧垂直居中线性图标、大号数字、底部说明和浅斜纹背景，卡片内文本均继承对应配色；指标块自动换行且不撑满宽度；需求列表卡片和当前有效敏捷业务需求池详情卡片放入同一个组合容器；两张卡统一使用同一套卡片视觉，并在桌面端随外层网格拉伸为同高；“需求列表”和“需求详情”标题位于 `CardHeader` 并带 `size-5` 语义图标，各自内容区独立承接内部滚动；当前需求故事列表通过 `showCurrentStoryList` 正常渲染。
+- `src/components/ui/select.tsx`：基于 `@radix-ui/react-select` 的 shadcn/ui 风格通用下拉框组件，统一触发器、弹层、选中态、滚动按钮和 lucide 箭头位置。
+- `src/lib/auth/login-required.ts`：登录失效跳转工具，统一生成 `/login?loginRequired=1` 和可选 `redirectTo` 参数；客户端 API 401 和前端路由守卫复用该逻辑。
+- `src/lib/api/client.ts`：通用 API request 封装；浏览器端收到 401 响应时默认直接跳转到登录页，并让登录页显示“请先登录”的 warning 全局提示；登录态静默恢复请求可通过 `redirectOnUnauthorized: false` 关闭自动跳转，避免公开页面误跳登录页。
+- `src/app/projects/[projectId]/business-stories/page.tsx`：敏捷业务需求池页面把优先级统计卡放在上方，统计卡不显示标题，内部用总数、P1、P2、P3、P4 五个等宽展开的参考指标卡样式数字块突出数量；优先级、影响范围和关键词三个全局筛选控件位于数字统计卡下方，并同时限定需求列表和需求详情的展示条目；其中“影响范围”下拉使用固定平铺选项，覆盖 `全部`、`非代码`、`前后端`、`仅前端`、`仅后端`、`UX 用户体验设计`、`UI 视觉设计`、`前端工程实现`、`API 契约`、`后端工程实现`、`数据库模型`，既能筛 `implementation_scope` 也能按相关 `affected_layers` 过滤；需求列表卡片和需求详情卡片放入同一个组合容器；两张卡统一使用同一套卡片视觉，并在桌面端随外层网格拉伸为同高；“需求列表”和“需求详情”标题位于 `CardHeader` 并带 `size-5` 语义图标，各自内容区独立承接内部滚动；当前需求故事列表通过 `showCurrentStoryList` 正常渲染。
+- `src/app/projects/[projectId]/business-stories/page.tsx`：当前主列表显示 `is_current !== false` 且未成功执行的需求；若对应 `execution_generation_run_id` 的任务已完成，即使后端故事状态尚未归档，前端也会从当前列表隐藏并归入历史执行记录。“历史执行记录”按钮默认关闭，点击后按需请求 `include_history=true`，通过 Portal 挂载到 `document.body` 的全局固定浮层展示状态为 `applied/implemented/verified/done` 或执行任务已完成的成功执行记录。历史浮层参考变更集历史应用记录，支持标题栏拖拽，内部使用“记录列表 / 需求详情”两栏；记录列表只显示推导版本号和执行时间，详情复用只读 `BusinessStoryCard`。
 - `src/components/business-stories/BusinessStoryList.tsx`：当前有效敏捷业务需求池详情列表采用自然展开，不再使用独立滚动容器或分页控件；当前页面正常渲染该列表，索引定位逻辑保留。
+- `src/components/business-stories/BusinessStoryCard.tsx`：需求条目详情不再显示“当前有效” badge，保留优先级、创建时间和已应用时间等信息；支持 `readOnly` 模式，供历史执行记录详情复用原卡片样式但禁用内联编辑、优先级下拉更新和编辑提示。
+- `vertical_slice_note` 当前作为业务故事的可选垂直切片说明由后端返回，前端仅在需求标题下方显示说明正文；它不是特征名称，也不是当前后续编排的上下文输入字段。
+- `BusinessStoryCard` 当前恢复原有字段顺序和视觉组织；垂直切片说明正文显示在需求标题下方，不再显示字段标签或提示冒泡，其他需求字段继续按原有详情区结构展示。
+- `BusinessStoryCard` 的 `CardHeader` 使用 `pb-10`，在创建时间元信息与下方影响范围区域之间保留较明显的垂直留白。
 - `src/components/design-assets/CompositeVersionedAssetPage.tsx`：合并展示前端/后端工程实现的通用页面组件。
-- `src/components/design-assets/VersionList.tsx`、`src/components/design-assets/AssetHeader.tsx`：版本列表和当前版本标识的通用展示组件。
-- `src/app/projects/[projectId]/business-stories/page.tsx`、`src/app/projects/[projectId]/change-sets/page.tsx`、`src/app/projects/[projectId]/prompts/page.tsx`：新主链路的核心页面，其中 `prompts/page.tsx` 面向用户显示为“指令集合”。
+- `src/components/design-assets/VersionedAssetPage.tsx`：单一版本资产页通用组件，支持默认 320px 与窄版 260px 版本列表列宽；UX 用户体验设计、UI 视觉设计、前端工程实现、API 契约、后端工程实现和数据库模型当前使用窄版列宽。
+- `src/components/design-assets/DiffSummary.tsx`：方案资产版本差异通用展示组件；标准 `added/modified/removed` 差异会渲染为统计栏和新增/修改/删除分类卡片，顶部统计始终保留，0 项分类不渲染下方详情分组；字符串、空差异和历史非标准对象保留兼容展示。
+- `src/components/design-assets/VersionList.tsx`、`src/components/design-assets/AssetHeader.tsx`：版本列表和当前版本标识的通用展示组件；`AssetHeader` 支持传入与项目导航一致的 lucide 标题图标，详情卡创建日期显示在资产摘要文段下方。
+- `src/components/design-assets/visual-dashboard.tsx`：方案资产详情通用可视化组件，提供 `MetricStrip`、`VisualSection`、`FlowTimeline`、`RelationshipMap`、`SchemaPanel`、`StatusBadge`、`TextChips` 和 `JsonDebugCard`，不依赖额外图表库；核心阅读文本默认使用 `text-sm` 作为最小字号，代码、JSON、路径和装饰性序号可保留更小字号。
+- `src/app/projects/[projectId]/business-stories/page.tsx`、`src/app/projects/[projectId]/change-sets/page.tsx`、`src/app/projects/[projectId]/prompts/page.tsx`：新主链路的核心页面，其中 `change-sets/page.tsx` 同时承接当前方案资产和历史应用记录浮层详情，`prompts/page.tsx` 面向用户显示为“指令集合”。
+- `src/app/projects/[projectId]/prompts/page.tsx`：指令集合页面使用左侧版本列表、右侧详情的桌面两栏布局；版本列表左栏在 `xl` 断点使用 `minmax(220px,280px)`，为长提示词详情保留更多横向阅读空间；详情内前端/后端提示词卡片以“前端提示词/后端提示词”为主标题，具体实现标题作为说明层级显示，标题左侧分别使用前端面板和后端服务图标，不显示“需要修改/无需修改”状态 badge；提示词正文会解析 `1. ...` 形式的编号步骤，包括同一段中的段内编号，渲染为引导句加纵向步骤卡片，无法解析时回退纯文本展示；差异摘要使用 `DiffSummaryPanel` 可视化，支持对象分组和普通文本拆条展示；左侧版本列表启用创建时间显示。
+- `src/components/design-assets/VersionList.tsx`：版本列表通用组件，标题左侧使用历史图标；支持可选 `showCreatedAt` 开关在条目内显示“创建于”日期时间；指令集合页复用该组件展示 Prompt Pack 历史版本。
 - `src/app/projects/[projectId]/requirements/page.tsx`：原始用户需求页，使用带 `History` 图标的“用户需求历史”卡片承接历史列表，并在底部直接放置紧凑新需求输入框和图标提交按钮；桌面端滚动条只作用于用户需求历史卡片内容区，历史卡片优先占据更大纵向空间。
 - `src/components/requirement/RequirementEditor.tsx`：原始用户需求输入组件，默认 placeholder 采用开放式表述，覆盖业务、功能、流程、架构、约束和技术上下文；`compact` 模式使用 `min-h-20` 输入高度和更小表单间距，适合嵌入项目详情页的紧凑卡片。
 - `src/components/ux-design/`、`src/lib/ux-design-contract.ts`：UX 用户体验设计新版字段契约和专用展示器。
+- `src/components/ux-design/UXDesignContentViewer.tsx`：新版 UX 内容查看器中，“页面低保真结构”按单列展示页面卡片，使每个页面结构卡占满右侧详情宽度；每个页面卡片的区域计数 badge 位于页面小标题右侧；信息优先级 badge 左侧显示从 1 开始的圆形序号以表达先后顺序；页面内部交互区域仍可按较小卡片网格展示。
 - `src/components/ui-design/`、`src/lib/ui-design-contract.ts`：UI 视觉设计新版字段契约和专用展示器，覆盖 `visual_system`、`layout_rules`、`component_style_rules` 及其嵌套字段。
 - `src/components/frontend-implementation/`、`src/lib/frontend-implementation-contract.ts`：前端实现版本资产新版字段契约和专用展示器，覆盖路由、目录、代码逻辑、环境变量、设计主题和依赖包。
 - `src/components/backend-implementation/`、`src/lib/backend-implementation-contract.ts`：后端实现版本资产新版字段契约和专用展示器，覆盖目录、代码逻辑、工具类、大模型交互模板、环境变量和依赖包。
 - `src/components/contract/ApiContractContentViewer.tsx`、`src/components/contract/ApiContractFieldDefinition.tsx`、`src/lib/api-contract-contract.ts`：API 契约新版字段元数据和专用展示器，覆盖 API 前缀、资源分组、接口、请求/响应结构和错误模式。
 - `src/components/db-model/DatabaseModelContentViewer.tsx`、`src/lib/database-model-contract.ts`：数据库模型新版字段元数据和专用展示器，覆盖数据库模型、数据表、表、字段集合和字段。
 - `src/app/projects/[projectId]/configuration/page.tsx` 等新路由页：新的 IA 入口。
+- `src/components/ui/field-hint.tsx`：字段标题悬停提示组件，项目配置页和技术栈配置区共用；提示层通过 portal 挂到 `document.body`，避免被卡片滚动容器裁切。
 - `next.config.ts`：旧路径到新路径的兼容重定向。
 - `src/lib/types/*.ts`：版本化资产、当前版本标识和新命名类型别名。
+- `src/lib/api/change-sets.ts`：变更集列表、应用以及项目级活动应用任务查询接口。
 - `src/lib/types/ui-design.ts`：UI 视觉设计新版/旧版联合类型，`isNewUIDesignContent()` 以 `visual_system` 或 `layout_rules` 判断新版内容。
 - `src/lib/types/frontend-implementation.ts`：前端工程实现新版/旧版联合类型，`isNewFrontendImplementationContent()` 用于区分新版契约与历史页面结构/工具内容。
 - `src/lib/types/backend-implementation.ts`：后端工程实现新版/旧版联合类型，`isNewBackendImplementationContent()` 用于区分新版契约与历史服务/工具内容。
@@ -58,40 +75,99 @@
 
 ## Testing and Verification
 - 已执行：
-- `pnpm exec tsc --noEmit`
-- `pnpm lint`
-- `pnpm build`
-- `pnpm start --hostname 127.0.0.1 --port 3001`
+  - `pnpm exec tsc --noEmit`
+  - `pnpm lint`
+  - `pnpm build`
+  - `pnpm start --hostname 127.0.0.1 --port 3001`
+  - `pnpm exec eslint 'src/app/projects/[projectId]/change-sets/page.tsx'`
+  - `pnpm exec tsc --noEmit`
 - 验证结果：
   - 新主链路页面可正常构建。
   - 旧路由 `/projects/:projectId/config` 会 307 跳转到 `/projects/:projectId/configuration`。
+  - 通用 Select 组件落地后，原生下拉框已迁移到 shadcn/Radix 风格组件。
+  - 敏捷业务需求池生产构建通过；需求列表当前保留后端接口返回顺序，前端只执行筛选，不执行本地排序。
+  - 敏捷业务需求池历史执行悬浮卡片、成功状态过滤和当前有效 badge 移除已通过生产构建验证。
+  - 历史执行记录卡片 Portal 化后，ESLint、TypeScript 和生产构建验证通过。
+  - 敏捷业务需求池历史执行记录升级为可拖拽两栏浮层和只读详情卡后，`pnpm exec tsc --noEmit` 和 `pnpm lint` 通过。
+  - 需求详情中的 `vertical_slice_note` 仅保留正文展示，不再显示“垂直切片说明”字段名称或 `FieldHint` 提示冒泡；后端字段、LLM 输出和 API 返回保持兼容。
+- 变更集页面左侧方案资产条目已改为仅显示层名和版本，右侧资产详情标题显示具体变更集名称，资产层名右侧显示版本 Badge。
+- 变更集页面桌面端主内容网格的方案资产卡片列宽为 300px；历史应用记录浮层中的方案资产列宽为 220px，移动端继续自然堆叠为全宽。
+- 变更集历史应用记录浮层升级为批次列表、旧方案资产列表和资产详情三栏展示后，`pnpm exec tsc --noEmit` 和 `pnpm lint` 通过。
+  - 六大方案资产新版查看器的前端仪表盘化展示已通过 `pnpm lint` 和 `pnpm exec tsc --noEmit` 验证。
+  - 指令集合页版本列表左栏收窄后，`pnpm lint` 和 `pnpm exec tsc --noEmit` 通过。
+  - 指令集合页提示词卡片标题层级调整后，`pnpm lint` 和 `pnpm exec tsc --noEmit` 通过。
+  - 指令集合页版本列表、前端提示词和后端提示词标题增加图标后，`pnpm lint` 和 `pnpm exec tsc --noEmit` 通过。
+  - 指令集合页提示词正文结构化步骤展示改造后，`pnpm lint` 和 `pnpm exec tsc --noEmit` 通过。
+  - 指令集合页前端/后端提示词卡片移除“需要修改/无需修改”badge 后，`pnpm lint` 和 `pnpm exec tsc --noEmit` 通过。
+  - 指令集合页差异摘要可视化面板优化后，`pnpm lint` 和 `pnpm exec tsc --noEmit` 通过。
+  - 指令集合页版本列表条目显示创建日期后，`pnpm exec eslint src/components/design-assets/VersionList.tsx 'src/app/projects/[projectId]/prompts/page.tsx'` 通过。
+  - 六个方案资产版本页的版本列表列宽、详情标题图标和日期位置调整后，目标文件 `eslint` 与 `pnpm exec tsc --noEmit` 通过。
+  - UX 页面低保真结构卡片改为单列全宽后，目标文件 `eslint` 与 `pnpm exec tsc --noEmit` 通过。
+  - 六个方案资产版本差异卡片结构化展示后，`pnpm exec tsc --noEmit`、目标文件 `eslint` 和 `git diff --check` 通过。
+  - 版本差异卡片隐藏 0 项详情分组后，`pnpm exec tsc --noEmit`、目标文件 `eslint` 和 `git diff --check` 通过。
+  - 登录失效跳转提示改造后，`pnpm exec tsc --noEmit`、目标文件 `pnpm exec eslint` 和 `git diff --check` 通过。
 
 ## Current Decisions and Conventions
 - 项目列表入口统一使用“我的项目”文案；`/projects` 页面标题不再显示 `Projects` 英文副标题或 Project Blueprint 说明段落。
 - `/projects` 页面无项目空状态说明为“还没有项目，创建第一个项目开始编排你的web全栈程序”。
 - `/projects` 项目卡片显示项目描述和创建时间，不显示前端/后端技术栈；创建时间使用 outline `Badge` 展示；进入详情/工作台的按钮文案统一为“进入”。
+- `/projects` 项目列表由后端按最近打开时间倒序返回；点击“进入”打开项目工作区时会上报打开事件，新建项目的初始打开时间等于创建时间。
 - `/projects` 项目卡片和具体项目页顶部都不显示项目状态 badge。
 - 具体项目区域不显示“工作台”模块入口。
 - 具体项目页最外层 `<main>` 固定为视口高度并隐藏溢出，不生成自身滚动条；普通页面仍使用 `min-h-screen` 承接自然页面滚动。
 - 具体项目页右侧主内容外壳桌面端不使用 `overflow-y-auto`，该容器固定且不出现自身滚动条。
 - 具体项目的项目配置页顶部只显示“项目配置”标题，不显示基础信息、技术栈、全局生成约束或只读展示说明句。
 - 具体项目配置页在桌面端使用固定高度布局，配置卡片显示带 `ClipboardList` 图标的“配置表单”标题，并采用 `CardHeader` + 可滚动 `CardContent` 承载项目名称、项目描述、前端技术栈和后端技术栈；移动端继续沿用页面自然滚动。
+- 具体项目配置页中的项目名称、项目描述、前端技术栈和后端技术栈说明都改为 hover tooltip，不再常显说明段落；字段标题和对应字段区域悬停时显示冒泡提示。
+- 具体项目配置页的字段提示使用 portal 浮层渲染到 `document.body`，避免在固定高度卡片和滚动容器里被裁切。
+- 具体项目配置页的“项目名称”提示文案为“用于标识当前项目，需要与业务主题一致”。
+- 具体项目配置页的“项目描述”提示文案为“概括项目目标、范围或业务背景，但不参与任何业务上下文”。
+- 具体项目配置页的“项目名称”提示文案当前定稿为“标识当前项目，需要和业务主题保持一致”。
+- 具体项目配置页的“前端技术栈”提示文案当前定稿为“确定系统中使用的框架、语言、UI库、包管理器等前端相关技术项”。
+- 具体项目配置页的“后端技术栈”提示文案当前定稿为“确定系统中使用的语言、框架、数据库和ORM等后端相关技术项”。
+- `/login` 页面顶部品牌文案为 `Monoplanner`，不再显示额外的登录说明句和 `CardDescription` 辅助文案。
 - 具体项目左侧导航模块打开后，右侧内容区不再显示页面主标题和顶部返回按钮；当前位置由左侧导航高亮表达。
 - 原始用户需求页不显示“原始用户需求”“新用户需求”“用户需求历史”的字段说明句；暂无需求空状态标题为“暂无需求历史”，不显示“输入一段自然语言业务需求，保存后即可触发业务故事生成”引导说明。
-- 原始用户需求页中“用户需求历史”卡片位于底部新需求输入区上方，标题带 `History` 图标；桌面端历史卡片使用 `min-h-[26rem]` 和 `flex-1` 优先占据较大高度，并由历史卡片的 `CardContent` 负责 `overflow-y-auto`；底部输入区不再包裹外部卡片或显示“新用户需求”标题，只保留 `RequirementEditor compact` 的 `min-h-20` 输入框和图标提交按钮。
+- 原始用户需求页中“用户需求历史”卡片位于底部新需求输入区上方，标题带 `History` 图标；桌面端历史卡片使用 `min-h-[26rem]` 和 `flex-1` 优先占据较大高度，并由历史卡片的 `CardContent` 负责 `overflow-y-auto`；底部输入区不再包裹外部卡片或显示“新用户需求”标题，只保留 `RequirementEditor compact` 的 `min-h-20` 输入框和图标提交按钮。已有需求更新期间仍禁用输入和提交，但不显示额外等待提示。
 - 原始用户需求输入框的默认提示文案为“描述你希望 LLM 理解的任何需求、功能、流程、架构、约束或技术上下文，无论是单个功能还是多个模块”。
 - 原始用户需求历史列表不再展示 `zh-CN` 和 `manual` 标签，只保留业务故事生成状态 Badge。
 - 具体项目区域面向用户统一使用“指令集合”中文文案；`PromptPack` 保留为代码类型、API 和数据模型命名。
+- 指令集合页桌面端版本列表保持窄侧栏定位，当前使用 `xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]`，避免版本列表占用过多详情阅读宽度。
+- 指令集合页前端/后端提示词卡片的视觉层级以提示词类型为主标题，具体实现标题使用 `CardDescription` 风格，弱化为该提示词的描述。
+- 指令集合页的版本列表、前端提示词和后端提示词标题使用 `size-5 text-muted-foreground` 的 lucide 图标，与业务故事、变更集等模块卡片标题保持一致。
+- 指令集合页提示词正文优先以结构化步骤视图展示：行首编号和同一段中的段内编号都会被拆成独立条目，前置说明单独展示；非编号正文继续使用纯文本回退，避免破坏任意 prompt 内容。
+- 指令集合页前端/后端提示词卡片不显示 `prompt.needed` 对应的状态 badge；`needed=false` 时仍以正文区域文案说明本批次无需对应端修改。
+- 指令集合页差异摘要使用独立可视化面板：对象型摘要按字段分组，字符串摘要按换行或句读拆成编号条目，标题左侧使用差异图标。
+- 指令集合页左侧版本列表通过 `VersionList showCreatedAt` 显示每个 Prompt Pack 的创建日期；通用版本列表默认不显示日期，避免影响其他方案资产列表密度。
 - 具体项目左侧导航的分组名为“全局约束 / 需求分析 / 方案资产 / 交付校验”，其中“变更集”并入“需求分析”。
 - 具体项目左侧导航分组在桌面端整体靠上展示，保留少量顶部间距避免贴顶，水平对齐方式保持原样。
 - 通用 `CardTitle` 默认主标题字号为 `text-lg`，对齐原始用户需求模块中“新用户需求”的标题大小。
+- 前端核心阅读文字的最小字号基线为 `text-sm`：页面正文、字段标签、说明文本、列表文本、按钮、badge 文本和常规元信息不应低于 14px；tooltip、代码、JSON、路径、schema 字段和纯装饰性序号允许保留 `text-xs` 或更小字号。
 - 通用 `Card` 默认圆角使用 `rounded-lg`，默认无阴影并使用灰色细边，让卡片视觉更克制；需要特殊圆角、边框或阴影的容器应在调用处显式覆盖。
-- 敏捷业务需求池页面当前以“优先级统计卡在上、索引导航 + 详情卡组合容器在下”的纵向布局组织主区；优先级统计不显示标题，按总数/P1/P2/P3/P4 的紧凑固定宽度参考指标卡样式展示当前有效故事数量，指标块不撑满宽度，图标保持 `size-5`，当前指标块为 `h-22 w-32`。
+- 前端下拉框统一使用 `src/components/ui/select.tsx` 中的 Radix Select 封装，不再直接使用原生 `<select>`；需要“全部”这类空筛选值时，使用非空 sentinel 值并在业务层映射回空字符串。
+- 敏捷业务需求池的三个全局筛选控件（优先级、影响范围、关键词）在控件本体显式使用 `font-normal`，避免继承筛选标签的 `font-medium` 导致当前值或 placeholder 加粗。
+- 敏捷业务需求故事卡的“执行”按钮调用 `/business-stories/{story_id}/execute`，当前只入队 `generate_change_set` 后台任务生成分层变更集，不直接应用变更集；前端等待任务完成后停留在当前需求池页面，不自动跳转。
+- 敏捷业务需求故事卡在创建时间与影响范围之间显示执行任务实时进度条，进度数据来自对应 `GenerationRun` 的 `progress`、`message` 和 `status`；排队/运行显示主色，完成显示绿色，失败/取消显示红色。
+- 敏捷业务需求故事执行失败后仍保留在当前需求列表中，执行按钮文案改为“重试”；成功完成生成变更集任务后，该条目从当前列表移入历史执行记录。
+- 敏捷业务需求故事卡的执行进度条位于标题与操作区整行下方，分隔线和进度条使用卡片内容区完整宽度，不受右侧优先级与执行控件列宽影响。
+- 敏捷业务需求故事 API 通过 `execution_generation_run_id` 持久化点击执行后对应的 `generate_change_set` 任务；需求池刷新后会读取该任务并恢复最终状态或继续轮询实时进度。
+- 敏捷业务需求池同一项目同时只允许一个 `generate_change_set` 执行任务；执行中的故事保留“执行中...”按钮，其他故事的执行按钮禁用，后端也返回 409 防止并发请求绕过前端限制。
+- 变更集页面每 2 秒检查当前项目故事的 `execution_generation_run_id`；检测到执行任务活动时自动刷新变更集列表，任务完成后再立即刷新一次并停止后台轮询。页面不显示“正在等待需求执行完成，变更集列表会自动更新...”等待提示。
+- 变更集应用进度通过后端项目级活动任务接口持久化恢复：页面重新挂载时查询 `apply_change_set` 父任务，按 `change_set_id`/`batch_id` 映射到当前批次后继续轮询 `GenerationRun`。
+- 变更集页面顶部不再显示“按 layer 和 batch_id 查看变更集，已应用的版本会退回历史，不再作为默认有效项。”说明文案。
+- 变更集页面当前使用左侧“方案资产”卡片和右侧资产详情卡片；页面顶部不显示“分层数”“当前有效”“已应用”统计数字卡片。左侧“方案资产”标题使用 `Layers3` 图标，标题图标采用与需求池“需求列表/需求详情”一致的 `size-5 text-muted-foreground` 样式；主列表和右侧详情只展示未应用且 `is_current !== false` 的当前有效 ChangeSet，左侧列表不显示日期，并按 UX、UI、前端工程实现、API 契约、后端工程实现、数据库模型的固定 layer 顺序展示；首次加载和后台刷新在设置选中项前都会使用同一固定顺序，因此默认选中排序后的第一条 UX 用户体验设计资产，不受接口返回顺序影响；资产详情卡片标题显示当前具体变更集名称，左侧使用与敏捷业务需求池“需求列表/需求详情”一致风格的 `size-5 text-muted-foreground` 图标，副标题显示资产层名及其右侧的纯版本号 Badge；资产详情卡片头部使用 `pb-3` 收紧资产层名与影响摘要之间的留白，影响摘要自身使用 `pt-4` 增加与资产名称之间的顶部间距。左侧条目只保留层名和版本，层名字号更小、字重更轻，去掉条目内具体变更集标题。右侧详情按影响摘要、创建日期的顺序展示核心信息；影响摘要使用与敏捷业务需求详情垂直切片说明相同的浅色/深色主题文字颜色，并使用 `font-medium` 加粗。版本 Badge 使用按 layer 和创建顺序推导的方案资产版本而不是直接暴露历史全局 `ChangeSet.version`，列表条目和右侧详情均不显示“就绪”“当前”“当前有效”“历史版本”等状态 Badge；右侧展示影响摘要和新增/修改/删除明细，不展示 `unchanged`/“不变”分类，也不再展示“资产变更 JSON”；新增、修改、删除内容块不再包裹资产层名、边框或外层卡片，并在所有屏幕尺寸下按单列纵向排列；变更分组容器使用 `mt-12`，显著拉开创建日期与新增分组之间的距离；右侧“应用”按钮位于卡片头部右侧，点击后在按钮下方显示基于 `GenerationRun` 的百分比、进度文案和实时进度条，运行中使用主色，完成使用绿色，失败/取消使用红色。页面右上角提供“历史应用记录”按钮，打开居中的全局固定浮层，浮层总标题为“历史应用记录”，顶部定位为普通视口 `top-20`、桌面 `lg:top-24`；浮层标题栏支持 pointer 拖拽移动并限制在视口内，关闭按钮不触发拖拽。点击历史批次后，浮层内部以“记录列表 / 方案资产 / 资产详情”三栏只读展示对应旧批次的 ChangeSet 层级资产和 `ModuleChangeViewer` 详情，记录列表列宽为 180px，标题使用 `List` 图标，条目只显示版本号和应用时间，桌面端浮层使用中等最大宽高，第二列为 240px，未新增后端接口。两张卡片均使用独立内容区滚动，页面根节点、双栏网格和卡片补齐 `h-full`、`h-0`、`min-h-0`、`flex-1` 收缩链，适配项目工作区固定高度布局。变更集后台加载与执行状态轮询仍保留。
+- `src/lib/design-asset-labels.ts` 的 UX/UI 影响层展示名与左侧方案资产导航保持一致：`ux_design` 显示“UX 用户体验设计”，`ui_design` 显示“UI 视觉设计”。
+- 变更集页面的方案资产与资产详情卡片内部滚动参考敏捷业务需求池实现；`AppShell` 和 `ProjectWorkspaceShell` 的 `overflow-hidden` 属于固定项目工作区的外部布局约束，不是滚动失效根因，页面内部必须建立完整的高度收缩链后再由 `CardContent` 接管滚动。
+- 方案资产组的 UX、UI、前端实现、API 契约、后端实现和数据库模型页面统一复用 `VersionedAssetPage` 与 `VersionList`；这两个共享组件已建立页面、双栏网格、版本列表卡片和详情列的高度收缩链，并让左侧版本列表与右侧详情分别在内部滚动。
+- 敏捷业务需求池的 `filteredCurrentStories` 只对后端返回的当前需求执行筛选，不在前端重新排序；需求列表和详情列表共用该结果。标题首字母/中文拼音排序规则当前不纳入前端实现。
+- 敏捷业务需求池页面当前以“优先级统计卡在上、全局筛选栏居中、需求列表 + 详情卡组合容器在下”的纵向布局组织主区；优先级统计不显示标题，按总数/P1/P2/P3/P4 的等宽参考指标卡样式展示当前有效故事数量，统计区大屏五列铺满容器，小屏响应式换列，图标保持 `size-5`，当前指标块高度为 `h-22`。
 - 桌面端全局左侧导航栏内容垂直居中显示，侧栏顶部说明和导航项作为一个整体在可用高度内居中。
 - 敏捷业务需求池页面不再展示历史追踪摘要卡和历史追踪详情卡，仅保留当前有效池与主列表。
 - 当前有效敏捷业务需求池卡片使用外层容器的可用宽度，不再受固定窄列约束。
 - 当前有效敏捷业务需求池页面不再展示摘要卡，只保留详情卡承载筛选、加载状态和错误状态；需求故事列表暂时隐藏。
 - 当前有效敏捷业务需求池详情卡的“需求详情”标题固定在 `CardHeader` 并显示 `PanelTopOpen` 图标，筛选区和内容列表在桌面端使用可用高度和 `overflow-y-auto` 承接内部滚动，项目详情 `<main>` 与工作区主内容容器继续隐藏自身滚动条。
+- 需求详情卡中 `vertical_slice_note` 正文位于需求标题下方；当前不显示字段名称和提示冒泡，以减少视觉噪音。
+- `vertical_slice_note` 正文与需求标题之间使用额外的 `pt-2` 间距，避免标题和说明文字视觉粘连。
 - 当前有效敏捷业务需求池左侧需求列表卡独立于详情卡，但外观与详情卡保持一致的卡片结构；桌面端需求列表卡和详情卡使用 `h-full` 随工作区可用高度拉伸，“需求列表”标题固定在 `CardHeader` 并显示 `ListChecks` 图标，索引项内容区使用 `overflow-y-auto`，展示全部当前有效需求的名称和优先级；索引项名称完整换行显示，右侧优先级 badge 保持固定宽度；不再显示额外说明文案，点击索引项会重置筛选并滚动到对应详情，不再执行分页。
 - 敏捷业务需求池页面标题区不再显示“用于管理、编辑、筛选和执行敏捷业务需求故事的主池。”或“当前敏捷业务需求池只展示有效故事。摘要卡用于快速查看概况，详情卡用于筛选和编辑。”这两段说明。
 - `/projects/new` 页面不显示 `New Project` 英文小标题，项目表单不显示“先记录项目名称，再进入工作台补充业务需求”说明句。
@@ -103,12 +179,21 @@
 - `frontend-pages` / `frontend-tools` 与 `backend-services` / `backend-tools` 只作为历史兼容文案或旧路由重定向，不作为主入口。
 - 交付页在主链路里统一对应 `PromptPack` 数据，导航文案直接显示为“指令集合”。
 - 具体项目配置页保存成功后使用右上角全局 toast 提示“项目配置已保存”，失败态仍保留页面内错误提示；保存按钮在 `saving` 期间保持“保存配置”文案，仅通过禁用态防止重复提交，避免按钮文字闪烁。
+- `/login` 页面顶部品牌文案为 `Monoplanner`，不再显示额外的登录说明句和 `CardDescription` 辅助文案；页面中的“登录”标题当前回到文案块的垂直中心位置。
+- `/login` 页面中的品牌胶囊当前使用较大的负向垂直位移，视觉上明显上移。
+- `/login` 页面中“登录账号”标题与邮箱输入框之间、密码输入框与登录按钮之间的垂直间距已加大。
+- `/login` 页面读取 `loginRequired=1` 查询参数时，通过全局 `sonner` 以 warning 级别提示“请先登录”；受保护页面和 API 401 跳转会保留 `redirectTo` 以便登录后回到原页面。
 - UI 视觉设计新版公开内容契约为 `visual_system/layout_rules/component_style_rules`；历史 `visual_hierarchy/layout_guidelines/badge_rules/button_rules/form_rules/responsive_rules/accessibility_visual_rules` 只作为旧资产展示兼容，不作为新版主展示字段。
 - 前端实现版本资产新版公开内容契约为 `route_definitions/directory_structure/code_logic/environment_variables/design_theme/dependencies`；历史 `pages/components/data_flow/internal_utilities/install_commands` 只作为旧资产展示兼容。
 - 后端实现版本资产新版公开内容契约为 `directory_structure/code_logic/utility_classes/llm_interaction_templates/environment_variables/dependencies`；历史 `services/cross_cutting_rules/api_mappings/database_mappings/external_services/internal_utilities/install_commands` 只作为旧资产展示兼容。
 - API 契约新版公开内容契约为 `api_base_path/api_resource_groups/endpoints/request_schema/response_schema/error_model`；历史 `base_path/resources/schemas` 只作为旧资产展示兼容。
 - 数据库模型新版公开内容契约为 `database_tables/fields`；历史 `entities/relationships/indexes/migration_notes/api_field_mappings` 只作为旧资产展示兼容或扩展信息。
+- 方案资产可视化优化当前限定在前端展示层：不修改后端 API、LLM/Pydantic 输出 schema、数据库模型或迁移；新版查看器应保留完整 JSON 调试入口，旧版内容继续走兼容展示。
 
 ## Known Issues and Follow-ups
 - 旧的 blueprint、frontend-pages、backend-services 等页面文件仍保留为兼容入口，后续可继续收敛成统一的版本资产命名。
 - 如果后端再进一步细化 DTO，可以继续把 `frontend-page-structures`、`backend-service-designs` 等客户端文件名收敛到新语义。
+- 变更集与方案资产是两次不同的 LLM 输出：敏捷业务需求池“执行”先由 `ChangeSetGenerationService` 按影响层生成结构化变更计划，包含 `title`、`implementation_scope`、`affected_layers`、`impact_summary`、`module_changes`、`risks`、`open_questions`、`recommended_prompt_strategy`、`content` 和 `diff_from_previous`；变更集“应用”再由 `DesignAssetOrchestrationService` 按 layer 生成并保存完整方案资产版本的 `content`。当前变更集详情页展示的是变更计划摘要和新增/修改/删除明细，不是完整方案资产内容；完整内容应从各方案资产版本详情页读取。
+- 当前 `module_changes` 的 `added/modified/removed` 仍是 `list[Any]`，适合摘要展示但不足以作为后续资产修改规格。专业化原子变更应逐步增加稳定的结构化信息：`change_id`、`target`、`operation`、`intent`、`before`、`after`、`rules`、`dependencies`、`acceptance_criteria` 和 `source_refs`；迁移期间保留短字符串读取兼容，并由资产生成 Prompt 同时接收结构化变更与原始需求、上一版本资产和相关层资产。
+- 变更集生成时 `current_assets.current_layer_asset.content` 含当前层上一版本的完整资产内容；应用时资产生成 Prompt 同时收到完整 ChangeSet、上一版本和相关层资产。因此 ChangeSet 应优先按资产输出契约表达为“公共变更信封 + layer 专属字段 patch”：公共部分定义操作、稳定目标引用、意图、依赖和验收，专属部分以 UX 的页面/流程、UI 的视觉系统/布局/组件规则、前端与后端的路由/目录/逻辑/环境变量/依赖、API 的资源组/端点/请求响应错误模型、数据库的表/字段/关系/索引为目标。不要在 ChangeSet 复制完整目标资产，以免与应用后版本形成两份事实来源。API 契约和数据库模型在当前应用服务中仍经由通用 `DesignAssetOutput` 生成，后续字段驱动改造应一并为它们提供与前端查看器一致的专用输出模型与 Prompt。
+- 在当前业务流中，ChangeSet 也可以进一步升级为“待应用的完整目标资产版本”：每个 layer 的 ChangeSet 直接携带该资产输出契约定义的完整字段，前端/后端指令生成优先消费 ChangeSet，方案资产表负责保存应用后的版本快照，并作为下一轮 ChangeSet 的输入。采用这一定位时，应用阶段不应再独立调用一次 LLM 重新生成资产，否则会出现 ChangeSet 完整字段与最终资产字段的第二份事实来源；应用应改为校验、物化 ChangeSet 内容并生成资产记录，或明确保留一次“ChangeSet 生成 LLM”作为唯一资产生成步骤。若暂时保留应用阶段 LLM，则完整字段只能作为候选目标快照，并必须增加最终资产与 ChangeSet 的一致性校验。

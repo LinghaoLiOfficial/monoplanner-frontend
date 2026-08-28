@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FieldHint } from "@/components/ui/field-hint";
 import { Input } from "@/components/ui/input";
 import type { TechStackItem } from "@/lib/types/tech-stack";
 
@@ -105,10 +106,9 @@ function StackColumn({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="group relative space-y-3">
       <div>
-        <h3 className="text-sm font-medium">{title}</h3>
-        <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+        <FieldHint label={title} hint={description} />
       </div>
       <div className="space-y-2">
         {items.length > 0 ? (
@@ -170,7 +170,7 @@ export function TechStackConfigCard({
       <div className="grid gap-5 lg:grid-cols-2">
         <StackColumn
           title="前端技术栈"
-          description="框架、语言、UI 库、包管理器等前端相关技术项。"
+          description="确定系统中使用的框架、语言、UI库、包管理器等前端相关技术项"
           items={frontendStack}
           placeholder="添加新的前端技术"
           disabled={saving}
@@ -178,7 +178,7 @@ export function TechStackConfigCard({
         />
         <StackColumn
           title="后端技术栈"
-          description="语言、框架、数据库、ORM、迁移工具和运行时等后端相关技术项。"
+          description="确定系统中使用的语言、框架、数据库和ORM等后端相关技术项"
           items={backendStack}
           placeholder="添加新的后端技术"
           disabled={saving}

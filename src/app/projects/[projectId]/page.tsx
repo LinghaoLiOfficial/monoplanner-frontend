@@ -61,7 +61,7 @@ export default function ProjectWorkspacePage() {
     [changeSets]
   );
   const currentPromptPack = useMemo(
-    () => sortByVersionDesc(promptPacks).find((pack) => pack.is_current !== false) ?? sortByVersionDesc(promptPacks)[0] ?? null,
+    () => sortByVersionDesc(promptPacks)[0] ?? null,
     [promptPacks]
   );
   const isTechStackConfigured = project

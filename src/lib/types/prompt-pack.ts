@@ -6,9 +6,9 @@ export type PromptBlock = {
   title?: string;
   body?: string;
   prompt?: string;
-  affected_files?: string[];
-  do_not_modify?: string[];
-  verification_steps?: string[];
+  affected_files?: unknown[];
+  do_not_modify?: unknown[];
+  verification_steps?: unknown[];
 };
 
 export type PromptPackContent = {
@@ -20,12 +20,16 @@ export type PromptPackContent = {
     removed?: unknown;
     [key: string]: unknown;
   };
-  execution_order?: string[];
+  execution_order?: unknown[];
   frontend_prompt?: PromptBlock;
   backend_prompt?: PromptBlock;
-  acceptance_checklist?: string[];
-  rollback_notes?: string[];
+  acceptance_checklist?: unknown[];
+  rollback_notes?: unknown[];
   [key: string]: unknown;
 };
 
-export type PromptPack = VersionedDesignAsset<PromptPackContent>;
+export type PromptPack = VersionedDesignAsset<PromptPackContent> & {
+  role?: string;
+  prompt_text?: string;
+  format?: string;
+};
