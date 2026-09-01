@@ -2,6 +2,7 @@
 
 import { AssetContentSections } from "@/components/design-assets/AssetContentSections";
 import { VersionedAssetPage } from "@/components/design-assets/VersionedAssetPage";
+import { useLanguage } from "@/components/language/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listFrontendPageStructures } from "@/lib/api/frontend-page-structures";
 
@@ -31,6 +32,10 @@ function toTextList(value: unknown) {
 }
 
 function ComponentReferenceList({ components }: { components: unknown }) {
+  const { locale, t } = useLanguage();
+  const page = t.designAssets.pages.frontendPages;
+  const listSeparator = locale === "zh-CN" ? "、" : ", ";
+
   if (!Array.isArray(components) || components.length === 0) {
     return null;
   }
@@ -47,11 +52,11 @@ function ComponentReferenceList({ components }: { components: unknown }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>组件 UX/UI 关联</CardTitle>
+        <CardTitle>{page.componentRefs}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {componentsWithRefs.map((component, index) => {
-          const name = component.name ?? component.title ?? component.component ?? component.id ?? `组件 ${index + 1}`;
+          const name = component.name ?? component.title ?? component.component ?? component.id ?? page.unnamedComponent(index + 1);
           const purpose = component.purpose ?? component.description ?? component.usage;
           const uxRefs = toTextList(component.ux_refs);
           const uiRefs = toTextList(component.ui_refs);
@@ -60,13 +65,13 @@ function ComponentReferenceList({ components }: { components: unknown }) {
             <section key={`${String(name)}-${index}`} className="rounded-2xl border border-border/60 p-4">
               <h3 className="font-medium">{String(name)}</h3>
               {typeof purpose === "string" && purpose ? (
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">用途：{purpose}</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{page.purpose}: {purpose}</p>
               ) : null}
               {uxRefs.length > 0 ? (
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">关联 UX：{uxRefs.join("、")}</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{page.uxRefs}: {uxRefs.join(listSeparator)}</p>
               ) : null}
               {uiRefs.length > 0 ? (
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">关联 UI：{uiRefs.join("、")}</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{page.uiRefs}: {uiRefs.join(listSeparator)}</p>
               ) : null}
             </section>
           );
@@ -77,17 +82,20 @@ function ComponentReferenceList({ components }: { components: unknown }) {
 }
 
 export default function FrontendPagesPage() {
+  const { t } = useLanguage();
+  const page = t.designAssets.pages.frontendPages;
+
   return (
     <VersionedAssetPage
-      title="前端页面结构"
-      description="查看应用变更集后保存的前端页面、目录结构和版本差异。"
-      emptyDescription="执行并应用变更集后，前端页面结构会在这里形成版本记录。"
+      title={page.title}
+      description={page.description}
+      emptyDescription={page.emptyDescription}
       listAssets={listFrontendPageStructures}
       sections={[
-        { key: "version_summary", title: "版本摘要" },
-        { key: "pages", title: "页面列表" },
-        { key: "directory_structure", title: "目录结构" },
-        { key: "diff", title: "版本差异" },
+        { key: "version_summary", title: t.designAssets.legacySections.versionSummary },
+        { key: "pages", title: t.designAssets.legacySections.pages },
+        { key: "directory_structure", title: t.designAssets.legacySections.directoryStructure },
+        { key: "diff", title: t.designAssets.legacySections.diff },
       ]}
       renderContent={(_asset, content, sections) => (
         <div className="space-y-4">

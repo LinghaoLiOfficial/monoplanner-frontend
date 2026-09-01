@@ -1,13 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { FileJson, History, Layers3, List, X } from "lucide-react";
 
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
 import { ModuleChangeViewer } from "@/components/design-assets/ModuleChangeViewer";
+import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,8 @@ import {
 } from "@/lib/api/change-sets";
 import { listBusinessStories } from "@/lib/api/business-stories";
 import { getGenerationRun } from "@/lib/api/generation-runs";
-import { affectedLayerLabels, formatDateTime } from "@/lib/design-asset-labels";
+import { isAbortError, useInFlightRef, useMountedRef } from "@/lib/async-control";
+import { formatDateTime, getAffectedLayerLabel } from "@/lib/design-asset-labels";
 import { cn } from "@/lib/utils";
 import type { ModuleChangeGroup } from "@/lib/types/design-asset";
 import type { ChangeSet } from "@/lib/types/change-set";
@@ -27,6 +29,7 @@ import type { GenerationRun } from "@/lib/types/generation-run";
 
 const GENERATION_RUN_POLL_INTERVAL_MS = 2000;
 const GENERATION_RUN_MAX_POLLS = 180;
+const PROJECT_REFRESH_INTERVAL_MS = 3000;
 const COMPLETED_RUN_STATUSES = new Set(["completed", "succeeded", "success"]);
 const FAILED_RUN_STATUSES = new Set(["failed", "error", "cancelled"]);
 const ASSET_LAYER_ORDER = [
@@ -58,11 +61,12 @@ function clampProgress(value: number) {
 }
 
 function ChangeSetApplicationProgress({ run }: { run: GenerationRun }) {
+  const { t } = useLanguage();
   const progress = clampProgress(run.progress);
   const isWarning = FAILED_RUN_STATUSES.has(run.status);
   const message =
     run.message ||
-    (isWarning ? run.error_message || "应用变更集失败" : "正在应用变更集");
+    (isWarning ? run.error_message || t.projectPages.changeSets.applyFailed : t.projectPages.changeSets.applyingMessage);
 
   return (
     <div className="mt-3 border-t border-border/60 pt-3">
@@ -101,11 +105,6 @@ function sortChangeSets(changeSets: ChangeSet[]) {
 
 function getLayerKey(changeSet: ChangeSet) {
   return changeSet.layer ?? changeSet.affected_layers[0] ?? "uncategorized";
-}
-
-function getLayerLabel(changeSet: ChangeSet) {
-  const layerKey = getLayerKey(changeSet);
-  return affectedLayerLabels[layerKey as keyof typeof affectedLayerLabels] ?? layerKey;
 }
 
 function getBatchKey(changeSet: ChangeSet) {
@@ -227,6 +226,8 @@ function ChangeSetAssetList({
   onSelect: (changeSetId: string) => void;
   emptyText: string;
 }) {
+  const { locale } = useLanguage();
+
   if (batches.length === 0) {
     return <p className="text-sm leading-6 text-muted-foreground">{emptyText}</p>;
   }
@@ -235,6 +236,7 @@ function ChangeSetAssetList({
     batch.changeSets.map((changeSet) => {
       const active = selectedChangeSetId === changeSet.id;
       const assetVersion = assetVersionByChangeSetId.get(changeSet.id) ?? changeSet.version;
+      const layerLabel = getAffectedLayerLabel(getLayerKey(changeSet), locale);
 
       return (
         <button
@@ -247,7 +249,7 @@ function ChangeSetAssetList({
           )}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-normal text-foreground/80">{getLayerLabel(changeSet)}</span>
+            <span className="text-sm font-normal text-foreground/80">{layerLabel}</span>
             <Badge variant="outline">v{assetVersion}</Badge>
           </div>
         </button>
@@ -265,10 +267,11 @@ function ChangeSetDetailPanel({
   assetVersionByChangeSetId: Map<string, number>;
   applyError?: string | null;
 }) {
+  const { locale, t } = useLanguage();
   const moduleChanges = changeSet ? sanitizeModuleChanges(changeSet.module_changes) : {};
 
   if (!changeSet) {
-    return <p className="text-sm leading-6 text-muted-foreground">暂无资产详情。</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{t.projectPages.changeSets.noAssetDetails}</p>;
   }
 
   return (
@@ -277,10 +280,10 @@ function ChangeSetDetailPanel({
         {changeSet.impact_summary}
       </p>
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>创建于 {formatDateTime(changeSet.created_at)}</span>
-        {changeSet.applied_at ? <span>应用于 {formatDateTime(changeSet.applied_at)}</span> : null}
+        <span>{t.common.createdAt} {formatDateTime(changeSet.created_at, locale)}</span>
+        {changeSet.applied_at ? <span>{t.common.appliedAt} {formatDateTime(changeSet.applied_at, locale)}</span> : null}
       </div>
-      {applyError ? <ErrorState title="应用失败" message={applyError} /> : null}
+      {applyError ? <ErrorState title={t.projectPages.changeSets.applyFailedTitle} message={applyError} /> : null}
       <div className="mt-16">
         <ModuleChangeViewer
           moduleChanges={moduleChanges}
@@ -314,6 +317,7 @@ function ApplicationHistoryCard({
   onClose: () => void;
   onRetry: () => void;
 }) {
+  const { locale, t } = useLanguage();
   const cardRef = useRef<HTMLDivElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const [dragPointerId, setDragPointerId] = useState<number | null>(null);
@@ -408,15 +412,15 @@ function ApplicationHistoryCard({
       >
         <div className="flex min-w-0 items-center gap-2">
           <History className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <CardTitle>历史应用记录</CardTitle>
+          <CardTitle>{t.projectPages.changeSets.history}</CardTitle>
         </div>
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="size-8 shrink-0"
-          aria-label="关闭历史应用记录"
-          title="关闭历史应用记录"
+          aria-label={t.projectPages.changeSets.closeHistory}
+          title={t.projectPages.changeSets.closeHistory}
           onClick={onClose}
         >
           <X className="size-4" />
@@ -425,19 +429,19 @@ function ApplicationHistoryCard({
       <CardContent className="min-h-0 flex-1 overflow-y-auto p-4 lg:overflow-hidden">
         {loading ? (
           <div className="flex h-full min-h-48 items-center justify-center text-sm text-muted-foreground">
-            正在加载历史应用记录...
+            {t.projectPages.changeSets.loadingHistory}
           </div>
         ) : null}
-        {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={onRetry} /> : null}
+        {!loading && error ? <ErrorState message={error} actionLabel={t.common.reload} onAction={onRetry} /> : null}
         {!loading && !error && batches.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">暂无成功应用记录</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t.projectPages.changeSets.noAppliedHistory}</p>
         ) : null}
         {!loading && !error && batches.length > 0 ? (
           <div className="grid gap-4 lg:h-full lg:min-h-0 lg:grid-cols-[180px_220px_minmax(0,1fr)] lg:items-stretch">
             <section className="min-h-0 space-y-3 lg:overflow-hidden">
               <div className="flex items-center gap-2">
                 <List className="size-5 text-muted-foreground" aria-hidden="true" />
-                <h3 className="text-base font-semibold">记录列表</h3>
+                <h3 className="text-base font-semibold">{t.projectPages.changeSets.recordList}</h3>
               </div>
               <div className="space-y-2 lg:h-[calc(100%-2.5rem)] lg:overflow-y-auto lg:pr-2">
                 {batches.map((batch) => {
@@ -457,7 +461,7 @@ function ApplicationHistoryCard({
                         <Badge variant="outline">{getBatchVersionLabel(batch, assetVersionByChangeSetId)}</Badge>
                       </div>
                       <div className="mt-3 text-xs leading-5 text-muted-foreground">
-                        {formatDateTime(batch.representative.applied_at ?? batch.representative.created_at)}
+                        {formatDateTime(batch.representative.applied_at ?? batch.representative.created_at, locale)}
                       </div>
                     </button>
                   );
@@ -468,7 +472,7 @@ function ApplicationHistoryCard({
             <section className="min-h-0 space-y-3 lg:overflow-hidden">
               <div className="flex items-center gap-2">
                 <Layers3 className="size-5 text-muted-foreground" aria-hidden="true" />
-                <h3 className="text-base font-semibold">方案资产</h3>
+                <h3 className="text-base font-semibold">{t.projectPages.changeSets.solutionAssets}</h3>
               </div>
               <div className="space-y-2 lg:h-[calc(100%-2.5rem)] lg:overflow-y-auto lg:pr-2">
                 <ChangeSetAssetList
@@ -476,7 +480,7 @@ function ApplicationHistoryCard({
                   selectedChangeSetId={selectedChangeSet?.id ?? null}
                   assetVersionByChangeSetId={assetVersionByChangeSetId}
                   onSelect={onSelectChangeSet}
-                  emptyText="暂无历史方案资产。"
+                  emptyText={t.projectPages.changeSets.noHistoricalAssets}
                 />
               </div>
             </section>
@@ -485,7 +489,7 @@ function ApplicationHistoryCard({
               <div className="flex items-center gap-2">
                 <FileJson className="size-5 text-muted-foreground" aria-hidden="true" />
                 <h3 className="min-w-0 break-words text-base font-semibold">
-                  {selectedChangeSet ? selectedChangeSet.title : "资产详情"}
+                  {selectedChangeSet ? selectedChangeSet.title : t.projectPages.changeSets.assetDetails}
                 </h3>
               </div>
               <div className="space-y-4 lg:h-[calc(100%-2.5rem)] lg:overflow-y-auto lg:pr-2">
@@ -505,6 +509,7 @@ function ApplicationHistoryCard({
 export default function ChangeSetsPage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
+  const { t } = useLanguage();
   const [changeSets, setChangeSets] = useState<ChangeSet[]>([]);
   const [selectedChangeSetId, setSelectedChangeSetId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -520,6 +525,20 @@ export default function ChangeSetsPage() {
   const [selectedHistoryBatchKey, setSelectedHistoryBatchKey] = useState<string | null>(null);
   const [selectedHistoryChangeSetId, setSelectedHistoryChangeSetId] = useState<string | null>(null);
   const wasWatchingStoryExecutionRef = useRef(false);
+  const mountedRef = useMountedRef();
+  const refreshInFlightRef = useInFlightRef();
+  const storyExecutionPollInFlightRef = useInFlightRef();
+  const abortControllersRef = useRef<Set<AbortController>>(new Set());
+
+  const createTrackedController = useCallback(() => {
+    const controller = new AbortController();
+    abortControllersRef.current.add(controller);
+    return controller;
+  }, []);
+
+  const releaseTrackedController = useCallback((controller: AbortController) => {
+    abortControllersRef.current.delete(controller);
+  }, []);
 
   const sortedChangeSets = useMemo(() => sortChangeSets(changeSets), [changeSets]);
   const currentChangeSets = useMemo(
@@ -552,53 +571,88 @@ export default function ChangeSetsPage() {
     null;
   const selectedCanApply = canApplyBatch(selectedBatch);
 
-  const loadChangeSets = async () => {
-    setLoading(true);
-    setError(null);
+  const loadChangeSets = async (options?: { silent?: boolean; signal?: AbortSignal }) => {
+    if (options?.silent && refreshInFlightRef.current) {
+      return null;
+    }
+    if (options?.silent) {
+      refreshInFlightRef.current = true;
+    }
+    if (!options?.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      const data = sortChangeSets(await listChangeSets(projectId));
+      const data = sortChangeSets(await listChangeSets(projectId, { signal: options?.signal }));
       const currentData = sortCurrentChangeSets(data.filter(isCurrentChangeSet));
-      setChangeSets(data);
-      setSelectedChangeSetId((current) =>
-        current && currentData.some((changeSet) => changeSet.id === current)
-          ? current
-          : currentData[0]?.id ?? null
-      );
+      if (mountedRef.current && !options?.signal?.aborted) {
+        setChangeSets(data);
+        setError(null);
+        setSelectedChangeSetId((current) =>
+          current && currentData.some((changeSet) => changeSet.id === current)
+            ? current
+            : currentData[0]?.id ?? null
+        );
+      }
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载变更集失败");
+      if (isAbortError(err)) {
+        return null;
+      }
+      if (!options?.silent && mountedRef.current) {
+        setError(err instanceof Error ? err.message : t.projectPages.changeSets.loadFailed);
+      }
       return null;
     } finally {
-      setLoading(false);
+      if (options?.silent) {
+        refreshInFlightRef.current = false;
+      }
+      if (!options?.silent && mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  const refreshChangeSets = async () => {
+  const refreshChangeSets = async (signal?: AbortSignal) => {
+    if (refreshInFlightRef.current) {
+      return;
+    }
+    refreshInFlightRef.current = true;
     try {
-      const data = sortChangeSets(await listChangeSets(projectId));
+      const data = sortChangeSets(await listChangeSets(projectId, { signal }));
       const currentData = sortCurrentChangeSets(data.filter(isCurrentChangeSet));
-      setChangeSets(data);
-      setSelectedChangeSetId((current) =>
-        current && currentData.some((changeSet) => changeSet.id === current)
-          ? current
-          : currentData[0]?.id ?? null
-      );
+      if (mountedRef.current && !signal?.aborted) {
+        setChangeSets(data);
+        setSelectedChangeSetId((current) =>
+          current && currentData.some((changeSet) => changeSet.id === current)
+            ? current
+            : currentData[0]?.id ?? null
+        );
+      }
     } catch {
       // Keep the current view usable during background refresh; the next poll retries.
+    } finally {
+      refreshInFlightRef.current = false;
     }
   };
 
-  const loadApplicationHistory = async () => {
+  const loadApplicationHistory = async (signal?: AbortSignal) => {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const data = sortChangeSets(await listChangeSets(projectId));
+      const data = sortChangeSets(await listChangeSets(projectId, { signal }));
       const history = data.filter(isAppliedChangeSet);
-      setHistoryChangeSets(history);
+      if (mountedRef.current && !signal?.aborted) {
+        setHistoryChangeSets(history);
+      }
     } catch (err) {
-      setHistoryError(err instanceof Error ? err.message : "加载历史应用记录失败");
+      if (!isAbortError(err) && mountedRef.current) {
+        setHistoryError(err instanceof Error ? err.message : t.projectPages.changeSets.historyLoadFailed);
+      }
     } finally {
-      setHistoryLoading(false);
+      if (mountedRef.current && !signal?.aborted) {
+        setHistoryLoading(false);
+      }
     }
   };
 
@@ -615,25 +669,33 @@ export default function ChangeSetsPage() {
     setSelectedHistoryChangeSetId(batch.changeSets[0]?.id ?? null);
   };
 
-  const pollApplyRun = async (initialRun: GenerationRun) => {
+  const pollApplyRun = async (initialRun: GenerationRun, signal?: AbortSignal) => {
     let currentRun = initialRun;
-    setApplicationProgress(currentRun);
+    if (mountedRef.current && !signal?.aborted) {
+      setApplicationProgress(currentRun);
+    }
 
     for (let attempt = 0; attempt < GENERATION_RUN_MAX_POLLS; attempt += 1) {
+      if (signal?.aborted || !mountedRef.current) {
+        return currentRun;
+      }
+
       if (COMPLETED_RUN_STATUSES.has(currentRun.status)) {
         return currentRun;
       }
 
       if (FAILED_RUN_STATUSES.has(currentRun.status)) {
-        throw new Error(currentRun.error_message || currentRun.message || "应用变更集失败");
+        throw new Error(currentRun.error_message || currentRun.message || t.projectPages.changeSets.applyFailed);
       }
 
       await sleep(GENERATION_RUN_POLL_INTERVAL_MS);
-      currentRun = await getGenerationRun(initialRun.id);
-      setApplicationProgress(currentRun);
+      currentRun = await getGenerationRun(initialRun.id, { signal });
+      if (mountedRef.current && !signal?.aborted) {
+        setApplicationProgress(currentRun);
+      }
     }
 
-    throw new Error("应用变更集超时，请稍后刷新变更集列表");
+    throw new Error(t.projectPages.changeSets.applyTimeout);
   };
 
   const handleApplySelectedBatch = async () => {
@@ -641,29 +703,35 @@ export default function ChangeSetsPage() {
       return;
     }
 
+    const controller = createTrackedController();
     setApplyingBatchKey(selectedBatch.key);
     setApplicationProgressBatchKey(selectedBatch.key);
     setApplicationProgress(null);
     setApplyError(null);
     try {
       const queuedRun = selectedBatch.batchId
-        ? await applyChangeSetBatch(projectId, selectedBatch.batchId)
-        : await applyChangeSet(selectedBatch.representative.id);
-      await pollApplyRun(queuedRun);
-      await loadChangeSets();
+        ? await applyChangeSetBatch(projectId, selectedBatch.batchId, { signal: controller.signal })
+        : await applyChangeSet(selectedBatch.representative.id, { signal: controller.signal });
+      await pollApplyRun(queuedRun, controller.signal);
+      await loadChangeSets({ silent: true, signal: controller.signal });
       if (historyOpen) {
-        await loadApplicationHistory();
+        await loadApplicationHistory(controller.signal);
       }
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : "应用变更集失败");
+      if (!isAbortError(err) && mountedRef.current && !controller.signal.aborted) {
+        setApplyError(err instanceof Error ? err.message : t.projectPages.changeSets.applyFailed);
+      }
     } finally {
-      setApplyingBatchKey(null);
+      releaseTrackedController(controller);
+      if (mountedRef.current && !controller.signal.aborted) {
+        setApplyingBatchKey(null);
+      }
     }
   };
 
-  const restoreApplicationProgress = async (availableChangeSets: ChangeSet[]) => {
+  const restoreApplicationProgress = async (availableChangeSets: ChangeSet[], signal?: AbortSignal) => {
     try {
-      const runs = await listActiveChangeSetApplicationRuns(projectId);
+      const runs = await listActiveChangeSetApplicationRuns(projectId, { signal });
       const activeRun = runs[0];
 
       if (!activeRun) {
@@ -685,18 +753,26 @@ export default function ChangeSetsPage() {
             ? activeRun.input_snapshot.batch_id
             : changeSetId);
 
-      setApplicationProgressBatchKey(batchKey);
-      setApplyingBatchKey(batchKey);
-      await pollApplyRun(activeRun);
+      if (mountedRef.current && !signal?.aborted) {
+        setApplicationProgressBatchKey(batchKey);
+        setApplyingBatchKey(batchKey);
+      }
+      await pollApplyRun(activeRun, signal);
     } catch (err) {
-      setApplyError(err instanceof Error ? err.message : "恢复应用进度失败");
-      setApplyingBatchKey(null);
+      if (!isAbortError(err) && mountedRef.current && !signal?.aborted) {
+        setApplyError(err instanceof Error ? err.message : t.projectPages.changeSets.restoreApplyFailed);
+        setApplyingBatchKey(null);
+      }
     }
   };
 
-  const refreshStoryExecutionState = async () => {
+  const refreshStoryExecutionState = async (signal?: AbortSignal) => {
+    if (storyExecutionPollInFlightRef.current) {
+      return;
+    }
+    storyExecutionPollInFlightRef.current = true;
     try {
-      const stories = await listBusinessStories(projectId);
+      const stories = await listBusinessStories(projectId, undefined, { signal });
       const executionRunIds = stories
         .map((story) => story.execution_generation_run_id)
         .filter((runId): runId is string => Boolean(runId));
@@ -712,7 +788,7 @@ export default function ChangeSetsPage() {
       const runs = await Promise.all(
         executionRunIds.map(async (runId) => {
           try {
-            return await getGenerationRun(runId);
+            return await getGenerationRun(runId, { signal });
           } catch {
             return null;
           }
@@ -724,35 +800,67 @@ export default function ChangeSetsPage() {
       );
 
       if (hasActiveRun || wasWatchingStoryExecutionRef.current) {
-        await refreshChangeSets();
+        await refreshChangeSets(signal);
       }
       wasWatchingStoryExecutionRef.current = hasActiveRun;
     } catch {
       wasWatchingStoryExecutionRef.current = false;
+    } finally {
+      storyExecutionPollInFlightRef.current = false;
     }
   };
 
   useEffect(() => {
+    const controller = createTrackedController();
     const timer = window.setTimeout(() => {
       void (async () => {
-        const loadedChangeSets = await loadChangeSets();
-        await restoreApplicationProgress(loadedChangeSets ?? []);
+        const loadedChangeSets = await loadChangeSets({ signal: controller.signal });
+        await restoreApplicationProgress(loadedChangeSets ?? [], controller.signal);
       })();
     }, 0);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      controller.abort();
+      releaseTrackedController(controller);
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  useEffect(() => {
+    const controller = createTrackedController();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadChangeSets({ silent: true, signal: controller.signal });
+      }
+    }, PROJECT_REFRESH_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadChangeSets({ silent: true, signal: controller.signal });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      controller.abort();
+      releaseTrackedController(controller);
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {
     let disposed = false;
+    const controller = createTrackedController();
 
     const poll = async () => {
       if (disposed) {
         return;
       }
 
-      await refreshStoryExecutionState();
+      await refreshStoryExecutionState(controller.signal);
     };
 
     void poll();
@@ -762,10 +870,21 @@ export default function ChangeSetsPage() {
 
     return () => {
       disposed = true;
+      controller.abort();
+      releaseTrackedController(controller);
       window.clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  useEffect(() => {
+    const abortControllers = abortControllersRef.current;
+
+    return () => {
+      abortControllers.forEach((controller) => controller.abort());
+      abortControllers.clear();
+    };
+  }, []);
 
   return (
     <div className="relative space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-1 lg:flex-col">
@@ -778,18 +897,18 @@ export default function ChangeSetsPage() {
           onClick={handleToggleHistory}
         >
           <History className="size-4" aria-hidden="true" />
-          历史应用记录
+          {t.projectPages.changeSets.history}
         </Button>
       </div>
-      {loading ? <LoadingState label="正在加载变更集..." /> : null}
-      {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadChangeSets} /> : null}
+      {loading ? <LoadingState label={t.projectPages.changeSets.loading} /> : null}
+      {!loading && error ? <ErrorState message={error} actionLabel={t.common.reload} onAction={loadChangeSets} /> : null}
       {!loading && !error ? (
         <div className="grid gap-4 lg:h-0 lg:min-h-0 lg:flex-1 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-stretch">
           <Card className="lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
             <CardHeader className="gap-4">
               <CardTitle className="flex items-center gap-2">
                 <Layers3 className="size-5 text-muted-foreground" aria-hidden="true" />
-                方案资产
+                {t.projectPages.changeSets.solutionAssets}
               </CardTitle>
               {selectedBatch ? (
                 <div className="pt-3 pb-8">
@@ -800,7 +919,7 @@ export default function ChangeSetsPage() {
                     disabled={!selectedCanApply || applyingBatchKey === selectedBatch.key}
                     onClick={() => void handleApplySelectedBatch()}
                   >
-                    {applyingBatchKey === selectedBatch.key ? "应用中..." : "应用"}
+                    {applyingBatchKey === selectedBatch.key ? t.projectPages.changeSets.applying : t.projectPages.changeSets.apply}
                   </Button>
                   {applicationProgressBatchKey === selectedBatch.key && applicationProgress ? (
                     <ChangeSetApplicationProgress run={applicationProgress} />
@@ -814,7 +933,7 @@ export default function ChangeSetsPage() {
                 selectedChangeSetId={selectedChangeSet?.id ?? null}
                 assetVersionByChangeSetId={assetVersionByChangeSetId}
                 onSelect={setSelectedChangeSetId}
-                emptyText="暂无方案资产，请先从敏捷业务需求池生成变更集。"
+                emptyText={t.projectPages.changeSets.noCurrentAssets}
               />
             </CardContent>
           </Card>
@@ -825,7 +944,7 @@ export default function ChangeSetsPage() {
                 <CardTitle className="flex min-w-0 items-center gap-2">
                   <FileJson className="size-5 text-muted-foreground" aria-hidden="true" />
                   <span className="min-w-0 break-words">
-                    {selectedChangeSet ? selectedChangeSet.title : "资产详情"}
+                    {selectedChangeSet ? selectedChangeSet.title : t.projectPages.changeSets.assetDetails}
                   </span>
                 </CardTitle>
               </div>

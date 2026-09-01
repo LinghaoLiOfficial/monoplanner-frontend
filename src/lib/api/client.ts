@@ -94,6 +94,10 @@ export async function apiRequest<T>(
           : body,
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+
     throw new ApiError(
       "无法连接后端服务，请确认 API 服务已启动并检查 NEXT_PUBLIC_API_BASE_URL",
       0,

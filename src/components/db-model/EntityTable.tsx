@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/language-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { DbEntity, DbRelationship } from "@/lib/types/db-model";
@@ -8,8 +9,10 @@ function formatRelationship(relationship: DbRelationship) {
 }
 
 export function EntityTable({ entities }: { entities: DbEntity[] }) {
+  const { t } = useLanguage();
+
   if (entities.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 entities</p>;
+    return <p className="text-sm text-muted-foreground">{t.designAssets.viewer.noDatabaseTables}</p>;
   }
 
   return (
@@ -20,7 +23,7 @@ export function EntityTable({ entities }: { entities: DbEntity[] }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <CardTitle className="text-base">{entity.name}</CardTitle>
-                <CardDescription>{entity.description || "暂无实体说明"}</CardDescription>
+                <CardDescription>{entity.description || t.designAssets.viewer.noTableDescription}</CardDescription>
               </div>
               {entity.table_name ? <Badge variant="outline">{entity.table_name}</Badge> : null}
             </div>
@@ -41,8 +44,8 @@ export function EntityTable({ entities }: { entities: DbEntity[] }) {
                   <TableRow key={`${entity.name}-${field.name}`}>
                     <TableCell className="font-medium">{field.name}</TableCell>
                     <TableCell className="font-mono text-xs">{field.type}</TableCell>
-                    <TableCell>{field.primary_key ? "Yes" : "No"}</TableCell>
-                    <TableCell>{field.nullable ? "Yes" : "No"}</TableCell>
+                    <TableCell>{field.primary_key ? t.common.yes : t.common.no}</TableCell>
+                    <TableCell>{field.nullable ? t.common.yes : t.common.no}</TableCell>
                     <TableCell className="text-muted-foreground">{field.description || "-"}</TableCell>
                   </TableRow>
                 ))}

@@ -7,8 +7,10 @@ export function generateApiContract(projectId: string) {
   });
 }
 
-export function listApiContracts(projectId: string) {
-  return apiRequest<ApiContractDraft[]>(`/projects/${projectId}/api-contracts`);
+export function listApiContracts(projectId: string, options?: { signal?: AbortSignal }) {
+  return apiRequest<ApiContractDraft[]>(`/projects/${projectId}/api-contracts`, {
+    signal: options?.signal,
+  });
 }
 
 export function getApiContract(apiContractId: string) {

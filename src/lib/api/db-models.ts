@@ -7,8 +7,10 @@ export function generateDbModel(projectId: string) {
   });
 }
 
-export function listDbModels(projectId: string) {
-  return apiRequest<DbModelDraft[]>(`/projects/${projectId}/db-models`);
+export function listDbModels(projectId: string, options?: { signal?: AbortSignal }) {
+  return apiRequest<DbModelDraft[]>(`/projects/${projectId}/db-models`, {
+    signal: options?.signal,
+  });
 }
 
 export function getDbModel(dbModelId: string) {

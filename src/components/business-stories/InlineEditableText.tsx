@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Textarea } from "@/components/ui/textarea";
 
 type InlineEditableTextProps = {
@@ -22,9 +23,10 @@ export function InlineEditableText({
   minRows = 4,
   disabled = false,
   className,
-  emptyText = "暂无内容",
+  emptyText,
   onSave,
 }: InlineEditableTextProps) {
+  const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -63,7 +65,7 @@ export function InlineEditableText({
       await onSave(nextValue);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存失败，请稍后重试。");
+      setError(err instanceof Error ? err.message : t.businessStories.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -101,7 +103,7 @@ export function InlineEditableText({
             }
           }}
         />
-        {saving ? <p className="text-xs text-muted-foreground">保存中...</p> : null}
+        {saving ? <p className="text-xs text-muted-foreground">{t.businessStories.saving}</p> : null}
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
     );
@@ -110,10 +112,10 @@ export function InlineEditableText({
   return (
     <p
       className={className}
-      title={disabled ? undefined : "双击编辑"}
+      title={disabled ? undefined : t.businessStories.doubleClickToEdit}
       onDoubleClick={disabled ? undefined : startEditing}
     >
-      {value.trim() ? value : emptyText}
+      {value.trim() ? value : emptyText ?? t.businessStories.noContent}
     </p>
   );
 }

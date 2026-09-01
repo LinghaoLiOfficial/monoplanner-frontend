@@ -5,8 +5,14 @@ import type {
   Requirement,
 } from "@/lib/types/requirement";
 
-export function getProjectRequirements(projectId: string) {
-  return apiRequest<Requirement[]>(`/projects/${projectId}/requirements`);
+type ApiRequestOptions = {
+  signal?: AbortSignal;
+};
+
+export function getProjectRequirements(projectId: string, options?: ApiRequestOptions) {
+  return apiRequest<Requirement[]>(`/projects/${projectId}/requirements`, {
+    signal: options?.signal,
+  });
 }
 
 export function createProjectRequirement(projectId: string, payload: CreateRequirementPayload) {
@@ -16,8 +22,11 @@ export function createProjectRequirement(projectId: string, payload: CreateRequi
   });
 }
 
-export function getRequirementBusinessStoryGeneration(requirementId: string) {
+export function getRequirementBusinessStoryGeneration(requirementId: string, options?: ApiRequestOptions) {
   return apiRequest<BusinessStoryGenerationProgress | null>(
-    `/requirements/${requirementId}/business-story-generation`
+    `/requirements/${requirementId}/business-story-generation`,
+    {
+      signal: options?.signal,
+    }
   );
 }

@@ -17,6 +17,7 @@ export type CurrentUser = {
   is_email_verified: boolean;
   avatar_seed: string;
   avatar_bg_color: string;
+  preferred_locale: "zh-CN" | "en";
 };
 
 export type AdminUser = {
@@ -27,6 +28,7 @@ export type AdminUser = {
   role: NonAdminUserRole;
   is_active: boolean;
   is_email_verified: boolean;
+  preferred_locale: "zh-CN" | "en";
   created_at: string;
   last_login_at?: string | null;
 };

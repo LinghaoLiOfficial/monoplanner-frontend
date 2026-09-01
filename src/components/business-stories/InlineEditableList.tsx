@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -35,12 +36,13 @@ export function InlineEditableList({
   ordered = false,
   placeholder,
   disabled = false,
-  emptyText = "暂无内容",
+  emptyText,
   listClassName,
   itemClassName,
   emptyClassName,
   onSave,
 }: InlineEditableListProps) {
+  const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(stringListToText(value));
   const [saving, setSaving] = useState(false);
@@ -79,7 +81,7 @@ export function InlineEditableList({
       await onSave(nextValue);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存失败，请稍后重试。");
+      setError(err instanceof Error ? err.message : t.businessStories.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -116,7 +118,7 @@ export function InlineEditableList({
             }
           }}
         />
-        {saving ? <p className="text-xs text-muted-foreground">保存中...</p> : null}
+        {saving ? <p className="text-xs text-muted-foreground">{t.businessStories.saving}</p> : null}
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
     );
@@ -128,10 +130,10 @@ export function InlineEditableList({
     return (
       <p
         className={cn("cursor-text rounded-md transition-colors hover:bg-muted/50", emptyClassName)}
-        title={disabled ? undefined : "双击编辑"}
+        title={disabled ? undefined : t.businessStories.doubleClickToEdit}
         onDoubleClick={disabled ? undefined : startEditing}
       >
-        {emptyText}
+        {emptyText ?? t.businessStories.noContent}
       </p>
     );
   }
@@ -139,7 +141,7 @@ export function InlineEditableList({
   return (
     <ListTag
       className={cn("cursor-text rounded-md transition-colors hover:bg-muted/50", listClassName)}
-      title={disabled ? undefined : "双击编辑"}
+      title={disabled ? undefined : t.businessStories.doubleClickToEdit}
       onDoubleClick={disabled ? undefined : startEditing}
     >
       {value.map((item, index) => (

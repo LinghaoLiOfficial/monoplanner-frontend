@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { ArrowUp } from "lucide-react";
 
 import { ErrorState } from "@/components/common/ErrorState";
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -23,11 +24,12 @@ type RequirementEditorProps = {
 export function RequirementEditor({
   onSave,
   compact = false,
-  title = "需求输入",
+  title,
   hideLabel = false,
   submitButton = "text",
   disabled = false,
 }: RequirementEditorProps) {
+  const { t } = useLanguage();
   const [rawText, setRawText] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function RequirementEditor({
     }
 
     if (!rawText.trim()) {
-      setError("请输入自然语言业务需求");
+      setError(t.forms.requirement.emptyError);
       return;
     }
 
@@ -51,7 +53,7 @@ export function RequirementEditor({
       await onSave(rawText.trim());
       setRawText("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存需求失败，请稍后重试");
+      setError(err instanceof Error ? err.message : t.forms.requirement.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -60,7 +62,7 @@ export function RequirementEditor({
   const content = (
     <form className={cn(compact ? "space-y-2" : "space-y-4")} onSubmit={handleSubmit}>
       <div className="space-y-2">
-        {hideLabel ? null : <Label htmlFor="requirement-raw-text">自然语言业务需求</Label>}
+        {hideLabel ? null : <Label htmlFor="requirement-raw-text">{t.forms.requirement.label}</Label>}
         {submitButton === "icon" ? (
           <div
             className={cn(
@@ -72,7 +74,7 @@ export function RequirementEditor({
               id="requirement-raw-text"
               value={rawText}
               onChange={(event) => setRawText(event.target.value)}
-              placeholder="描述你希望 LLM 理解的任何需求、功能、流程、架构、约束或技术上下文，无论是单个功能还是多个模块"
+              placeholder={t.forms.requirement.placeholder}
               disabled={inputDisabled}
               className={cn(
                 compact ? "min-h-20 py-2 leading-6" : "min-h-44",
@@ -83,7 +85,7 @@ export function RequirementEditor({
               type="submit"
               size="icon"
               disabled={inputDisabled}
-              aria-label="保存需求"
+              aria-label={t.forms.requirement.save}
               className="self-end"
             >
               <ArrowUp className="size-5 stroke-[3]" aria-hidden="true" />
@@ -94,7 +96,7 @@ export function RequirementEditor({
             id="requirement-raw-text"
             value={rawText}
             onChange={(event) => setRawText(event.target.value)}
-            placeholder="描述你希望 LLM 理解的任何需求、功能、流程、架构、约束或技术上下文，无论是单个功能还是多个模块"
+            placeholder={t.forms.requirement.placeholder}
             disabled={inputDisabled}
             className={compact ? "min-h-20" : "min-h-44"}
           />
@@ -105,7 +107,7 @@ export function RequirementEditor({
         null
       ) : (
         <Button type="submit" disabled={inputDisabled}>
-          {saving ? "正在保存..." : "保存需求"}
+          {saving ? t.forms.requirement.saving : t.forms.requirement.save}
         </Button>
       )}
     </form>
@@ -118,8 +120,8 @@ export function RequirementEditor({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>保存原始业务需求，后续由后端生成敏捷业务需求池条目</CardDescription>
+        <CardTitle>{title ?? t.forms.requirement.title}</CardTitle>
+        <CardDescription>{t.forms.requirement.description}</CardDescription>
       </CardHeader>
       <CardContent>{content}</CardContent>
     </Card>

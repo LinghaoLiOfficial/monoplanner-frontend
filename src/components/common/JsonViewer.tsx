@@ -1,15 +1,17 @@
 import { CopyButton } from "@/components/common/CopyButton";
+import { useLanguage } from "@/components/language/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function JsonViewer({
   data,
   title = "JSON",
-  copyLabel = "复制 JSON",
+  copyLabel,
 }: {
   data: unknown;
   title?: string;
   copyLabel?: string;
 }) {
+  const { t } = useLanguage();
   const json = JSON.stringify(data, null, 2);
 
   return (
@@ -17,7 +19,7 @@ export function JsonViewer({
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle>{title}</CardTitle>
-          <CopyButton value={json} label={copyLabel} />
+          <CopyButton value={json} label={copyLabel ?? t.common.copyJson} />
         </div>
       </CardHeader>
       <CardContent>

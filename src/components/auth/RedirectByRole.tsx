@@ -13,15 +13,15 @@ type RedirectByRoleProps = {
 
 export function RedirectByRole({ children, redirectTo }: RedirectByRoleProps) {
   const router = useRouter();
-  const { loading, user, isAdmin } = useAuth();
+  const { loading, user } = useAuth();
 
   useEffect(() => {
     if (loading || !user) {
       return;
     }
 
-    router.replace(redirectTo ?? (isAdmin ? "/admin" : "/projects"));
-  }, [isAdmin, loading, redirectTo, router, user]);
+    router.replace(redirectTo ?? "/projects");
+  }, [loading, redirectTo, router, user]);
 
   if (loading) {
     return <LoadingState label="正在恢复登录态..." />;

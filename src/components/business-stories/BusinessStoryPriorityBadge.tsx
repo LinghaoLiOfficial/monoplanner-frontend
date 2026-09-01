@@ -1,20 +1,11 @@
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/language-provider";
+import { dictionaries } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { BusinessStoryPriority } from "@/lib/types/business-story";
 
-const priorityLabels: Record<BusinessStoryPriority, string> = {
-  p1_must: "P1 Must 必须完成",
-  p2_should: "P2 Should 应该完成",
-  p3_could: "P3 Could 可以完成",
-  p4_wont: "P4 Won't 本阶段不做",
-};
-
-const priorityBadgeLabels: Record<BusinessStoryPriority, string> = {
-  p1_must: "P1",
-  p2_should: "P2",
-  p3_could: "P3",
-  p4_wont: "P4",
-};
+const priorityLabels = dictionaries["zh-CN"].businessStories.priorities;
+const priorityBadgeLabels = dictionaries["zh-CN"].businessStories.priorityBadges;
 
 const priorityClasses: Record<BusinessStoryPriority, string> = {
   p1_must: "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300",
@@ -28,9 +19,11 @@ export function BusinessStoryPriorityBadge({
 }: {
   priority: BusinessStoryPriority;
 }) {
+  const { t } = useLanguage();
+
   return (
     <Badge variant="outline" className={cn("whitespace-nowrap", priorityClasses[priority])}>
-      {priorityBadgeLabels[priority]}
+      {t.businessStories.priorityBadges[priority]}
     </Badge>
   );
 }

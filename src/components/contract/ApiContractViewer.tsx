@@ -4,24 +4,27 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { JsonViewer } from "@/components/common/JsonViewer";
 import { EndpointTable } from "@/components/contract/EndpointTable";
 import { SchemaList } from "@/components/contract/SchemaList";
+import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ApiContractDraft, LegacyApiContractContent } from "@/lib/types/api-contract";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
 export function ApiContractViewer({ contract }: { contract: ApiContractDraft | null }) {
+  const { locale, t } = useLanguage();
+
   if (!contract) {
     return (
       <EmptyState
         icon={Code2}
-        title="还没有 API 契约"
-        description="请先生成项目蓝图，然后生成 API 契约。"
+        title={t.designAssets.pages.apiContract.title}
+        description={t.designAssets.pages.apiContract.emptyDescription}
       />
     );
   }
@@ -45,13 +48,13 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
             </div>
           </div>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">创建时间：{formatDate(contract.created_at)}</CardContent>
+        <CardContent className="text-sm text-muted-foreground">{t.common.createdAt}: {formatDate(contract.created_at, locale)}</CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Resources & Endpoints</CardTitle>
-          <CardDescription>按资源分组展示接口契约草案</CardDescription>
+          <CardDescription>{t.designAssets.viewer.endpointDashboardHint}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           {resources.map((resource) => (
@@ -69,14 +72,14 @@ export function ApiContractViewer({ contract }: { contract: ApiContractDraft | n
       <Card>
         <CardHeader>
           <CardTitle>Schemas</CardTitle>
-          <CardDescription>接口请求和响应中涉及的数据结构</CardDescription>
+          <CardDescription>{t.designAssets.legacySections.schemas}</CardDescription>
         </CardHeader>
         <CardContent>
           <SchemaList schemas={schemas} />
         </CardContent>
       </Card>
 
-      <JsonViewer data={contract} title="完整 API Contract JSON" />
+      <JsonViewer data={contract} title={`${t.designAssets.pages.apiContract.title} ${t.designAssets.versions.fullJson}`} />
     </div>
   );
 }

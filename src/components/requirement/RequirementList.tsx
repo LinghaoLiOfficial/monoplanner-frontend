@@ -4,6 +4,7 @@ import { MessageSquareText, RotateCcw, Triangle } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/EmptyState";
+import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -22,8 +23,8 @@ import type {
 
 const PAGE_SIZE = 5;
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -52,7 +53,13 @@ function getStatusBadgeClassName(status: RequirementProgressStatus) {
 function getGenerationMessage(
   requirement: Requirement,
   generation: BusinessStoryGenerationProgress | null | undefined,
-  status: RequirementProgressStatus
+  status: RequirementProgressStatus,
+  labels: {
+    retryLater: string;
+    updateFailed: string;
+    updateDone: string;
+    updating: string;
+  }
 ) {
   const backendText = requirement.progress_text || requirement.progress_label || generation?.message;
 
@@ -61,16 +68,16 @@ function getGenerationMessage(
   }
 
   if (status === "failed") {
-    const errorMessage = generation?.error_message || "请稍后重试";
+    const errorMessage = generation?.error_message || labels.retryLater;
 
-    return stripTrailingProgressPunctuation(`更新失败：${errorMessage}`);
+    return stripTrailingProgressPunctuation(`${labels.updateFailed}: ${errorMessage}`);
   }
 
   if (status === "success") {
-    return "已完成业务需求故事更新";
+    return labels.updateDone;
   }
 
-  return "正在更新业务需求故事";
+  return labels.updating;
 }
 
 function getProgressValue(generation: BusinessStoryGenerationProgress | null | undefined) {
@@ -88,6 +95,7 @@ function RequirementGenerationProgress({
   requirement: Requirement;
   status: RequirementProgressStatus;
 }) {
+  const { t } = useLanguage();
   const generation = requirement.business_story_generation;
   const progress = getProgressValue(generation);
   const isWarning = status === "failed";
@@ -101,7 +109,7 @@ function RequirementGenerationProgress({
             isWarning ? "text-destructive" : "text-muted-foreground"
           )}
         >
-          {getGenerationMessage(requirement, generation, status)}
+          {getGenerationMessage(requirement, generation, status, t.forms.requirement)}
         </span>
         <span className="shrink-0 tabular-nums text-muted-foreground">{progress}%</span>
       </div>
@@ -129,6 +137,7 @@ export function RequirementList({
   requirements: Requirement[];
   onRetryBusinessStoryGeneration?: (requirementId: string) => void;
 }) {
+  const { locale, t } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRequirementIds, setExpandedRequirementIds] = useState<Set<string>>(() => new Set());
   const totalPages = Math.ceil(requirements.length / PAGE_SIZE);
@@ -156,7 +165,7 @@ export function RequirementList({
     return (
       <EmptyState
         icon={MessageSquareText}
-        title="暂无需求历史"
+        title={t.forms.requirement.noHistory}
       />
     );
   }
@@ -187,7 +196,7 @@ export function RequirementList({
                     {getRequirementProgressStatusLabel(status)}
                   </Badge>
                 </div>
-                <span className="text-xs text-muted-foreground">{formatDate(requirement.created_at)}</span>
+                <span className="text-xs text-muted-foreground">{formatDate(requirement.created_at, locale)}</span>
               </div>
             </CardHeader>
             <CardContent>
@@ -210,7 +219,7 @@ export function RequirementList({
                     className="h-7 gap-1.5 px-3 text-xs"
                   >
                     <RotateCcw className="size-3" />
-                    重试
+                    {t.forms.requirement.retry}
                   </Button>
                 ) : null}
                 <Button
@@ -222,7 +231,7 @@ export function RequirementList({
                   <Triangle
                     className={cn("size-3 fill-current stroke-current", expanded ? "" : "rotate-180")}
                   />
-                  {expanded ? "收起" : "展开"}
+                  {expanded ? t.forms.requirement.collapse : t.forms.requirement.expand}
                 </Button>
               </div>
               <RequirementGenerationProgress

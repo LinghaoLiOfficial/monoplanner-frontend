@@ -2,6 +2,7 @@ import { FolderPlus } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/common/EmptyState";
+import { useLanguage } from "@/components/language/language-provider";
 import { ProjectCard } from "@/components/project/ProjectCard";
 import { Button } from "@/components/ui/button";
 import type { Project } from "@/lib/types/project";
@@ -17,19 +18,21 @@ export function ProjectList({
   hasSearch = false,
   onDeleteProject,
 }: ProjectListProps) {
+  const { t } = useLanguage();
+
   if (projects.length === 0) {
     if (hasSearch) {
-      return <EmptyState title="无匹配项目" />;
+      return <EmptyState title={t.projectsHome.noMatch} />;
     }
 
     return (
       <EmptyState
         icon={FolderPlus}
-        title="还没有项目"
-        description="还没有项目，创建第一个项目开始编排你的web全栈程序"
+        title={t.projectsHome.emptyTitle}
+        description={t.projectsHome.emptyDescription}
         action={
           <Button asChild>
-            <Link href="/projects/new">创建第一个项目</Link>
+            <Link href="/projects/new">{t.projectsHome.createFirst}</Link>
           </Button>
         }
       />

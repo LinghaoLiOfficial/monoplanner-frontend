@@ -1,9 +1,12 @@
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/language-provider";
 import type { DbIndex, DbRelationship } from "@/lib/types/db-model";
 
 export function RelationshipList({ relationships }: { relationships: DbRelationship[] }) {
+  const { t } = useLanguage();
+
   if (relationships.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 relationships</p>;
+    return <p className="text-sm text-muted-foreground">{t.designAssets.viewer.noRelationships}</p>;
   }
 
   return (
@@ -23,8 +26,10 @@ export function RelationshipList({ relationships }: { relationships: DbRelations
 }
 
 export function IndexList({ indexes }: { indexes: DbIndex[] }) {
+  const { t } = useLanguage();
+
   if (indexes.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 indexes</p>;
+    return <p className="text-sm text-muted-foreground">{t.designAssets.viewer.noIndexes}</p>;
   }
 
   return (

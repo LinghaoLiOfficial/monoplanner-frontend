@@ -2,16 +2,18 @@ import { apiRequest } from "@/lib/api/client";
 import type { BackendImplementation } from "@/lib/types/backend-implementation";
 import type { BackendServiceDesign } from "@/lib/types/backend-service-design";
 
-export function listBackendImplementationVersions(projectId: string) {
-  return apiRequest<BackendImplementation[]>(`/projects/${projectId}/backend-implementations`);
+export function listBackendImplementationVersions(projectId: string, options?: { signal?: AbortSignal }) {
+  return apiRequest<BackendImplementation[]>(`/projects/${projectId}/backend-implementations`, {
+    signal: options?.signal,
+  });
 }
 
-export function listBackendServiceDesigns(projectId: string) {
-  return listBackendImplementationVersions(projectId);
+export function listBackendServiceDesigns(projectId: string, options?: { signal?: AbortSignal }) {
+  return listBackendImplementationVersions(projectId, options);
 }
 
-export function listBackendImplementations(projectId: string) {
-  return listBackendImplementationVersions(projectId);
+export function listBackendImplementations(projectId: string, options?: { signal?: AbortSignal }) {
+  return listBackendImplementationVersions(projectId, options);
 }
 
 export function getBackendImplementationVersion(id: string) {

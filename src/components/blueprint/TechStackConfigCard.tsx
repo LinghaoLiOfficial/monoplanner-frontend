@@ -3,6 +3,7 @@
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,17 +11,7 @@ import { FieldHint } from "@/components/ui/field-hint";
 import { Input } from "@/components/ui/input";
 import type { TechStackItem } from "@/lib/types/tech-stack";
 
-const typeLabels: Record<TechStackItem["type"], string> = {
-  framework: "框架",
-  language: "语言",
-  ui_library: "UI 库",
-  package_manager: "包管理器",
-  database: "数据库",
-  orm: "ORM",
-  migration_tool: "迁移工具",
-  runtime: "运行时",
-  build_tool: "构建工具",
-};
+type TechStackTypeLabels = Record<TechStackItem["type"], string>;
 
 function createTechStackItem(name: string): TechStackItem {
   return {
@@ -51,6 +42,19 @@ function StackItemRow({
   disabled?: boolean;
   onRemove: () => void;
 }) {
+  const { t } = useLanguage();
+  const typeLabels: TechStackTypeLabels = {
+    framework: t.forms.techStack.framework,
+    language: t.forms.techStack.language,
+    ui_library: t.forms.techStack.uiLibrary,
+    package_manager: t.forms.techStack.packageManager,
+    database: t.forms.techStack.database,
+    orm: t.forms.techStack.orm,
+    migration_tool: t.forms.techStack.migrationTool,
+    runtime: t.forms.techStack.runtime,
+    build_tool: t.forms.techStack.buildTool,
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border/60 px-3 py-2">
       <span className="font-medium text-foreground">{item.name}</span>
@@ -72,7 +76,7 @@ function StackItemRow({
         className="ml-auto size-7"
         disabled={disabled}
         onClick={onRemove}
-        aria-label={`移除 ${item.name}`}
+        aria-label={t.forms.techStack.remove(item.name)}
       >
         <X className="size-4" />
       </Button>
@@ -96,6 +100,7 @@ function StackColumn({
   onChange: (items: TechStackItem[]) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const { t } = useLanguage();
 
   const handleAdd = () => {
     const nextItems = appendStackItem(items, draft);
@@ -122,7 +127,7 @@ function StackColumn({
           ))
         ) : (
           <div className="rounded-md border border-dashed border-border/60 px-3 py-4 text-sm text-muted-foreground">
-            保存时将使用默认技术栈。
+            {t.forms.techStack.defaultStack}
           </div>
         )}
       </div>
@@ -141,7 +146,7 @@ function StackColumn({
         />
         <Button type="button" variant="outline" size="icon" disabled={disabled || !draft.trim()} onClick={handleAdd}>
           <Plus className="size-4" />
-          <span className="sr-only">添加技术项</span>
+          <span className="sr-only">{t.forms.techStack.addItem}</span>
         </Button>
       </div>
     </div>
@@ -165,22 +170,24 @@ export function TechStackConfigCard({
   onBackendStackChange: (items: TechStackItem[]) => void;
   onSave: () => void | Promise<void>;
 }) {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-5">
       <div className="grid gap-5 lg:grid-cols-2">
         <StackColumn
-          title="前端技术栈"
-          description="确定系统中使用的框架、语言、UI库、包管理器等前端相关技术项"
+          title={t.forms.techStack.frontendTitle}
+          description={t.forms.techStack.frontendDescription}
           items={frontendStack}
-          placeholder="添加新的前端技术"
+          placeholder={t.forms.techStack.frontendPlaceholder}
           disabled={saving}
           onChange={onFrontendStackChange}
         />
         <StackColumn
-          title="后端技术栈"
-          description="确定系统中使用的语言、框架、数据库和ORM等后端相关技术项"
+          title={t.forms.techStack.backendTitle}
+          description={t.forms.techStack.backendDescription}
           items={backendStack}
-          placeholder="添加新的后端技术"
+          placeholder={t.forms.techStack.backendPlaceholder}
           disabled={saving}
           onChange={onBackendStackChange}
         />
@@ -194,7 +201,7 @@ export function TechStackConfigCard({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={() => void onSave()} disabled={saving}>
-          保存配置
+          {t.forms.techStack.saveConfig}
         </Button>
       </div>
     </div>

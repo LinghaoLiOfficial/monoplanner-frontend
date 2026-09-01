@@ -1,3 +1,178 @@
+## 2026-09-01 17:36 +08 - 修复首次进入受保护路由永久加载
+
+- Request: 系统性轮询治理后，重新运行前端首次进入任意 URL 一直显示“加载中...”。
+- Actions: 复现 `/projects` 首屏 SSR 的 `RequireAuth` 全屏加载态，检查浏览器实际跳转与 Next dev 日志；为 `AuthProvider.refreshUser()` 的 `/auth/me` 恢复请求增加 5 秒 `AbortController` 超时兜底，并让 `getCurrentUser()` 支持 `AbortSignal`。
+- Result: 后端认证接口悬挂或被长任务拖住时，前端不会无限停留在认证恢复 loading；超时后会清空用户并允许受保护路由跳转登录页。
+- Verification: `pnpm lint`、`pnpm build` 通过；浏览器访问 `/projects` 7 秒内从全屏加载退出并跳转 `/login?loginRequired=1&redirectTo=%2Fprojects`。
+
+## 2026-09-01 17:22 +08 - 系统性治理 LLM 任务运行时前端卡顿
+
+- Request: 按既定计划修复 LLM 任务运行时切换模块导致 Next 长时间 Rendering 和 RSC payload fetch 失败的问题。
+- Actions: 新增 `src/lib/async-control.ts`，扩展核心 API 列表/任务请求支持 `AbortSignal`；为原始需求、敏捷业务需求池、变更集、指令集合和版本资产页加入卸载取消、静默刷新防重入和 mounted guard；`StreamingGenerationPanel` 卸载时自动 abort；项目侧边导航禁用动态模块预取。
+- Result: 项目详情页在长任务运行期间切换模块时，旧页面在途请求和轮询会被取消，后台刷新不会叠加，降低 Next dev 的 RSC/HMR 请求压力。
+- Verification: `pnpm lint`、`pnpm build`、`git diff --check` 通过。
+
+## 2026-09-01 17:08 +08 - 对齐 UX 步骤 Badge 与标题
+
+- Request: 步骤 badge 需要与步骤标题水平居中。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 标题行，将 flex 对齐从 `items-start` 改为 `items-center`。
+- Result: UX 业务逻辑流步骤标题左侧 badge 与标题文字在垂直方向居中对齐。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 17:07 +08 - 为 UX 步骤标题增加步骤 Badge
+
+- Request: 为每个步骤标题的左侧增加步骤文本 badge，黑色底白色字。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 变体，在步骤标题行左侧渲染 `step.meta` badge，并使用 `bg-foreground text-background` 的黑底白字样式。
+- Result: UX 业务逻辑流每个步骤标题左侧显示黑底白字的“步骤 N”标识。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 17:01 +08 - 移除 UX 步骤标记组合
+
+- Request: 去除步骤圆点和步骤文本的组合。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 变体，删除卡片内部左侧的步骤圆点、步骤文本和外框，仅保留步骤内容卡片。
+- Result: UX 业务逻辑流步骤不再显示圆点或步骤文本组合，只展示步骤内容本身。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:59 +08 - 为 UX 步骤标记增加圆角框
+
+- Request: 步骤圆点和步骤文本的组合外部增加细黑色圆角框，并与右侧所有内容的组合水平居中对齐。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 变体，为步骤标记组合增加 `border border-foreground/80 rounded-md` 框，并将卡片内网格设置为 `items-center`。
+- Result: UX 业务逻辑流每个步骤卡片内部左侧标记组合有细黑色圆角框，并与右侧内容整体垂直居中对齐。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:56 +08 - 将 UX 步骤标记移入内容卡片
+
+- Request: 将上述步骤圆点和步骤文本放到右侧的步骤内容卡片中。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 变体，移除外部左侧步骤栏，将步骤内容卡片内部改为左侧步骤标记列和右侧内容列。
+- Result: UX 业务逻辑流中步骤圆点与步骤文本位于每个步骤内容卡片内部左侧，步骤文本仍在圆点下方。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:53 +08 - 使用 SVG 替换应用 Logo
+
+- Request: 将顶部导航栏中的系统 logo 和浏览器标签页的 logo 都改为用户提供的 `logo.svg`。
+- Actions: 将 `/Users/llh/Downloads/logo.svg` 复制为 `public/logo.svg`；更新 `src/components/layout/TopNav.tsx` 和 `src/components/layout/site-header.tsx` 使用 `/logo.svg`；更新 `src/app/layout.tsx` metadata 中的 icon、shortcut 和 apple icon 指向 `/logo.svg`。
+- Result: 应用顶部品牌 logo 和浏览器标签页图标切换为新的 SVG 图形。
+- Verification: `pnpm exec eslint src/components/layout/TopNav.tsx src/components/layout/site-header.tsx src/app/layout.tsx`、`pnpm exec next typegen`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:47 +08 - 修正 UX 步骤圆点居中对齐
+
+- Request: 根据截图检查，修改后的步骤圆点没有与右侧步骤内容卡片水平居中。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 变体，将步骤行从 `items-start` 调整为 `items-center`，让左侧圆点和步骤文本整体相对右侧内容卡片垂直居中。
+- Result: UX 业务逻辑流的左侧步骤组与右侧步骤内容卡片垂直居中对齐，步骤文本仍位于圆点下方。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:45 +08 - UX 步骤圆点改回环状样式
+
+- Request: 修改后的双层步骤圆点太难看，改回最早的环状步骤圆点，并保持与右侧卡片水平对齐、步骤文本置于圆点下方。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 变体，撤回双层空心圆点，复用原有环状步骤圆点样式；保留左侧固定步骤栏和顶部对齐布局。
+- Result: UX 业务逻辑流左侧步骤圆点恢复为环状样式，圆点与右侧卡片顶部对齐，步骤文本位于圆点下方。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:41 +08 - 对齐 UX 步骤栏并修正双层圆点
+
+- Request: 需要与右侧步骤内容卡片水平对齐，并且当前的步骤圆点错误地没有双层，只有一个黑点。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 的 `dotLabel` 变体，移除步骤栏顶部内边距使其与右侧内容卡片顶端对齐，并把内层实心点改成第二层空心圆圈。
+- Result: UX 业务逻辑流的左侧步骤栏与右侧卡片顶部水平对齐，圆点恢复为双层空心结构。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:38 +08 - 固定 UX 业务逻辑流步骤栏在卡片左侧
+
+- Request: UX 业务逻辑流的步骤圆点和步骤文本应该在步骤内容卡片左侧。
+- Actions: 更新 `src/components/design-assets/visual-dashboard.tsx` 中 `FlowTimeline` 的 `dotLabel` 变体，将网格布局改为横向 flex：左侧固定步骤栏显示双层圆点和步骤文本，右侧内容卡片占据剩余宽度。
+- Result: 步骤圆点与步骤文本稳定显示在步骤内容卡片左侧，步骤文本仍位于圆点下方。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:36 +08 - 调整 UX 业务逻辑流步骤圆点布局
+
+- Request: 将 UX 业务逻辑流步骤圆点改为双层圆点，并将步骤文本移动到圆点正下方。
+- Actions: 扩展 `src/components/design-assets/visual-dashboard.tsx` 的 `FlowTimeline`，新增 `variant="dotLabel"` 双层圆点布局；在 `src/components/ux-design/UXDesignContentViewer.tsx` 的业务逻辑流中启用该变体。
+- Result: UX 业务逻辑流步骤列现在显示双层圆点，步骤文本位于对应圆点下方；其他时间线默认样式不变。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:32 +08 - 去除 UX 业务逻辑流步骤连接线
+
+- Request: 去除 UX 用户体验设计模块中业务逻辑流卡片里不同步骤之间的竖线连接线。
+- Actions: 为 `src/components/design-assets/visual-dashboard.tsx` 的 `FlowTimeline` 增加 `showConnectors` 可选参数；在 `src/components/ux-design/UXDesignContentViewer.tsx` 的业务逻辑流调用处设置 `showConnectors={false}`。
+- Result: UX 业务逻辑流步骤之间不再显示竖向连接线，其他使用 `FlowTimeline` 的模块默认行为不变。
+- Verification: `pnpm exec eslint src/components/design-assets/visual-dashboard.tsx src/components/ux-design/UXDesignContentViewer.tsx`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:24 +08 - 替换应用导航和标签页 Logo
+
+- Request: 将顶部导航栏中的系统 logo 和浏览器标签页的 logo 都改为用户提供的图片。
+- Actions: 将 `/Users/llh/Downloads/logo.png` 复制为 `public/logo.png` 与 `src/app/icon.png`；更新 `src/components/layout/TopNav.tsx` 和 `src/components/layout/site-header.tsx` 使用 `next/image` 展示该图片；在 `src/app/layout.tsx` 的 metadata 中显式声明 icon、shortcut 和 apple icon。
+- Result: 应用顶部品牌 logo 和浏览器标签页图标都使用新的图片资源。
+- Verification: `pnpm exec eslint src/components/layout/TopNav.tsx src/components/layout/site-header.tsx src/app/layout.tsx`、`pnpm exec next typegen`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 16:07 +08 - 缩小项目配置开发语言选项宽度
+
+- Request: 大幅度缩小开发语言中的选项宽度。
+- Actions: 更新 `src/app/projects/[projectId]/config/page.tsx`，将开发语言选项容器从两列铺满网格改为紧凑横向 `flex` 排列，并把单个选项宽度收窄为 `w-32`。
+- Result: 项目配置页中的开发语言选项不再铺满表单列宽，视觉宽度明显缩小。
+- Verification: `pnpm exec eslint 'src/app/projects/[projectId]/config/page.tsx'` 通过。
+
+## 2026-09-01 16:00 +08 - 项目配置开发语言只读下移
+
+- Request: 将项目配置模块中的开发语言移动到项目名称下方，并且禁止改变。
+- Actions: 更新 `src/app/projects/[projectId]/config/page.tsx`，让项目名称与开发语言各自占满一行，开发语言位于项目名称下方；将开发语言 radio 改为禁用只读展示，保存时继续提交当前项目已有的 `llm_prompt_language`。
+- Result: 项目配置页中开发语言不再与项目名称并排，也无法在配置页被用户修改。
+- Verification: `pnpm exec eslint 'src/app/projects/[projectId]/config/page.tsx'` 通过。
+
+## 2026-09-01 14:25 +08 - 排查并优化 Next 首页 Rendering 卡顿
+
+- Request: 评估前端严重卡顿，Next 一直显示 Rendering 的问题。
+- Actions: 检查 Next dev/build/lint、运行中的端口与 `.next/dev` 日志，使用浏览器复现首页水合状态；将 `src/app/(marketing)/page.tsx` 从客户端组件改回服务端组件并直接读取默认字典，删除 `src/app/(marketing)/loading.tsx` 的全屏 route loading 边界。
+- Result: 首页首屏不再先输出固定全屏加载遮罩，也不再通过 `ClientPageRoot` 承载整页内容；热缓存请求约 67ms。发现使用 `127.0.0.1` 访问 dev server 会触发 Next dev HMR 跨源阻塞，开发时应使用 `localhost:3000` 或配置 `allowedDevOrigins`。
+- Verification: `pnpm lint`、`pnpm build` 通过；`curl http://localhost:3000/` 确认不再包含 `(marketing)/loading.tsx`、全屏 loading 遮罩或 `ClientPageRoot`。
+
+## 2026-08-31 23:54 +08 - 稳定登录态恢复期间的用户菜单
+
+- Request: 实现专业评估中提出的方案，避免用户菜单先显示“登录/注册”，再由 `/auth/me` 恢复为已登录菜单。
+- Actions: 更新 `src/components/auth/AuthProvider.tsx`，将 `refreshUser()` 的 `loading` 生命周期收敛到请求自身，并通过递增请求 id 忽略过期的 `/auth/me` 恢复结果；初始恢复通过 microtask 调度，避免 effect 同步 setState lint 问题。`UserMenu` 保持在 `loading` 阶段显示骨架占位。
+- Result: 登录态未知时不会渲染未登录按钮，开发模式或快速刷新下的并发恢复请求也不会提前关闭 loading 或用旧结果覆盖新状态。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`pnpm build`、`git diff --check` 通过。
+
+## 2026-08-31 23:38 +08 - 语言偏好改为数据库驱动
+
+- Request: 疯狂刷新首页后出现登录信息丢失、主题切换无效和页面转圈卡顿，要求去除 `localStorage` 中的语言选择，改为读取保存在数据库中的用户偏好，默认中文。
+- Actions: 移除语言选择的 `localStorage` 和 cookie 持久化；根布局恢复静态默认语言初始化；`LanguageProvider` 移入 `AuthProvider` 内部并以 `user.preferred_locale` 作为登录用户语言来源；语言切换通过 `PATCH /auth/me` 保存到数据库；更新前端用户类型。
+- Result: 语言状态不再使用浏览器本地存储或语言 cookie；未登录默认使用 `NEXT_PUBLIC_DEFAULT_LOCALE`，登录后读取数据库偏好，用户切换语言后持久化到后端用户资料。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`pnpm build`、`git diff --check` 通过。
+
+## 2026-08-31 23:24 +08 - 修复首页刷新语言和登录态闪变
+
+- Request: 排查并修复刷新首页时偶发出现中英文/登录态两种界面，以及页面转圈卡顿、无法点击的问题。
+- Actions: 检查首页、语言 Provider、根布局和用户菜单；让语言偏好同时写入 `localStorage` 与 `monoplanner-locale` cookie，服务端渲染从 cookie 初始化 `<html lang>` 和 `LanguageProvider`；用户菜单在鉴权恢复期间改为显示骨架占位。
+- Result: 刷新时不再先按环境默认语言渲染再切到用户语言，也不再短暂显示未登录导航后切到用户菜单，首页首屏状态更稳定。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`pnpm build` 和 `git diff --check` 通过。
+
+## 2026-08-31 18:52 +08 - 增加前端语言选择框架
+
+- Request: 为当前系统增加语言选择功能，支持通过环境变量配置默认语言，并提供简体中文和英文选项。
+- Actions: 新增轻量 i18n 字典、`LanguageProvider` 和 `LanguageSelect`；接入 `AppProviders`、根布局、顶部导航、用户菜单、主题按钮、项目工作台导航和通用状态组件；新增 `NEXT_PUBLIC_DEFAULT_LOCALE` 环境变量示例。
+- Result: 前端核心壳层可在 `zh-CN` 与 `en` 间切换，用户选择写入 `localStorage` 并优先于环境默认值，`html lang` 会随默认值和客户端选择同步。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit` 和 `git diff --check` 通过。
+
+## 2026-08-29 11:28 +08 - 对齐项目卡片底部操作区
+
+- Request: 将项目列表中创建时间 badge、进入按钮和删除按钮向底部对齐，并确保项目描述最多显示 3 行后省略。
+- Actions: 更新 `src/components/project/ProjectCard.tsx`，将项目卡片改为纵向 flex 布局，内容区占满剩余空间，创建时间 badge 和按钮区通过 `mt-auto` 贴近底部；保留描述段落 `line-clamp-3`。
+- Result: 不同项目描述行数不再影响创建时间和操作按钮的纵向对齐，超长描述仍按 3 行截断显示省略。
+- Verification: `pnpm exec eslint src/components/project/ProjectCard.tsx` 通过。
+
+## 2026-08-29 11:00 +08 - 继续缩小项目卡片创建时间徽章
+
+- Request: 再缩小“我的项目”页面项目条目里创建时间 badge 的字体。
+- Actions: 将 `src/components/project/ProjectCard.tsx` 中创建时间徽章样式从普通字号进一步调为 `text-xs`，并保留轻字重。
+- Result: 创建时间 badge 的视觉优先级进一步降低，更适合作为辅助元信息。
+- Verification: 静态修改，未额外运行构建或测试。
+
+## 2026-08-29 10:59 +08 - 降低项目卡片创建时间字重
+
+- Request: 降低“我的项目”页面每个项目条目里创建时间文本的粗细程度。
+- Actions: 更新 `src/components/project/ProjectCard.tsx`，仅为创建时间 `Badge` 追加 `font-normal`，不影响项目名称、描述或其他按钮样式。
+- Result: 项目卡片中的创建时间显示更轻，视觉上不再和主要信息争抢注意力。
+- Verification: 静态检查差异，未额外运行构建或测试。
+
 ## 2026-08-26 12:45 +08 - 优化六大方案资产可视化展示
 
 - Request: 仅在前端展示层全面优化 UX、UI、前端工程实现、API 契约、后端工程实现和数据库模型六个模块的可视化效果。
@@ -945,3 +1120,143 @@
 - Actions: 更新 `src/components/ui/badge.tsx` 将通用 Badge 默认字号提升为 `text-sm`；更新方案资产可视化组件和 UX/UI/前端工程/API/后端工程/数据库模型查看器，把字段标签、说明、元信息和差异摘要等核心阅读文本从 `text-xs` 提升到 `text-sm`；保留 tooltip、代码、JSON、路径、schema 字段和装饰序号的小字号。
 - Result: 六类方案资产详情与共享 Badge 的核心阅读文字遵循 `text-sm` 最小字号基线，UX 页面低保真结构的“信息优先级”标签不再过小。
 - Verification: 目标文件 `pnpm exec eslint`、`pnpm exec tsc --noEmit` 和 `git diff --check` 通过；剩余 `text-xs` 经搜索确认集中在保留范围。
+
+## 2026-08-31 16:08 +08 - 增加 admin LLM 提示词模板中心
+
+- Request: 为 admin 用户增加一个只读的 LLM 提示词模板中心页面，按模块展示新主链路会触发的模板。
+- Actions: 新增 `/admin/llm-prompt-templates` 页面、admin 顶部导航入口和总览卡片；接入后端 admin-only 模板 API，并补充前端类型与 API client。
+- Result: admin 可以在控制面板中查看并复制各模块的新 LLM 提示词模板，页面不展示旧链路模板。
+- Verification: `pnpm exec tsc --noEmit`、`pnpm lint` 通过。
+
+## 2026-08-31 16:20 +08 - 允许 admin 使用普通项目工作台
+
+- Request: `role=admin` 的用户应具备普通 `user` 拥有的所有功能。
+- Actions: 移除项目工作区的 admin 专属重定向；登录页和已登录重定向默认进入 `/projects`；更新管理员首页权限文案。
+- Result: admin 登录后默认进入项目工作台，也可以手动进入 `/admin`、用户管理和 LLM 提示词模板中心。
+- Verification: `pnpm exec tsc --noEmit`、`pnpm lint` 通过。
+
+## 2026-08-31 16:35 +08 - 移除 admin 前端特殊路由
+
+- Request: admin 与 user 使用相同的前端路由规则，仅额外拥有用户管理和 LLM 提示词模板模块。
+- Actions: 将管理员页面迁移到 `/users` 和 `/llm-prompt-templates`；两个页面改用普通 `AppShell` 并保留 `RequireAdmin` 模块权限保护；更新顶部导航和用户菜单；删除 `/admin` 页面及独立管理壳层；恢复无关的 dashboard 示例页。
+- Result: admin 不再被要求进入 `/admin`，登录后与 user 一样进入 `/projects`，额外管理能力通过普通顶层应用路由访问；后端 `/admin/...` API 路径保持不变。
+- Verification: `pnpm exec next typegen`、`pnpm exec tsc --noEmit`、`pnpm lint`、`git diff --check` 和 `pnpm build` 通过；生产路由清单确认不再包含 `/admin`。
+
+## 2026-08-31 16:45 +08 - 修复 admin 页面首次加载错误
+
+- Request: 修复 admin 进入 `/users` 后触发全局错误边界的问题。
+- Actions: 将用户管理和 LLM 提示词模板页面的数据加载逻辑移入 `RequireAdmin` 权限守卫内部，避免认证态恢复完成前提前请求 admin API。
+- Result: admin-only 页面先完成登录与角色校验，再执行数据加载，避免首次打开时因未恢复 cookie 而触发错误跳转。
+- Verification: `pnpm exec tsc --noEmit`、`pnpm lint` 和 `pnpm build` 通过。
+
+## 2026-08-31 17:05 +08 - 修复用户管理接口契约错误
+
+- Request: 修复 admin 进入 `/users` 后出现全局错误边界及 `users.length` undefined 的问题。
+- Actions: 修正 `src/app/error.tsx`，移除嵌套的 `<html>/<body>`；根据后端真实契约将 `GET /admin/users` 按数组读取，并在前端完成筛选和分页；启用/禁用改为调用现有用户更新接口。
+- Result: 错误边界不再产生 HTML 嵌套 hydration 报错，用户管理页面不再读取不存在的 `response.items`；管理用户状态操作与后端接口一致。
+- Verification: `pnpm exec tsc --noEmit`、`pnpm lint`、`pnpm build` 和 `git diff --check` 通过。
+
+## 2026-08-31 17:20 +08 - 优化 LLM 提示词模板页面
+
+- Request: 移除模板总览和手动刷新，并修复部分模块内容超出屏幕的问题。
+- Actions: 删除英文辅助文案、模块总览卡片和刷新按钮；增加进入页面后的自动加载及可见状态下每 30 秒自动刷新；为任务卡、模块区和 prompt 代码块增加 `min-w-0`、最大宽度、断行和横向溢出约束。
+- Result: 模板中心布局不会被长 prompt 撑宽，页面内容保持在视口内，并持续自动同步后端模板。
+- Verification: `pnpm exec tsc --noEmit`、`pnpm lint`、`pnpm build` 和 `git diff --check` 通过。
+
+## 2026-08-31 17:35 +08 - 对照特征设计文档检查后端资产结构
+
+- Request: 核对后端是否存在《特征设计.md》中 UI 视觉设计资产的特征结构和冒泡阐述文段。
+- Actions: 对照下载文档，检查 `ui_design` 的 Prompt、Pydantic 输出 Schema、模板注册和资产生成服务。
+- Result: 后端已覆盖视觉系统、布局规则、组件样式规则等主要结构；字段解释存在于 Prompt 指令文本中，但没有独立的 Tooltip/冒泡文案模型或 API 字段。
+- Verification: 完成源码静态核对，未修改业务代码。
+
+## 2026-08-31 21:32 +08 - 扩展项目工作台右侧模块语言切换
+
+- Request: 将左侧模块导航栏右侧前端中硬编码的具体字段和文本也纳入语言选择功能。
+- Actions: 扩展 `src/lib/i18n.ts` 的业务故事、指令集合、一致性检查和版本资产页面字典；更新业务故事卡片/列表/历史浮层、原始需求页、指令集合页、一致性检查页、蓝图/前端页面/工具/后端服务/数据库模型页面，以及旧版 API/DB viewer 的硬编码 UI 文案。
+- Result: 项目工作台右侧核心模块的标题、筛选器、按钮、空态、错误兜底、日期格式、badge 文案和旧版兼容 viewer 文案会随 `zh-CN` / `en` 切换；业务/LLM 生成内容保持原文展示。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过；针对项目工作台右侧模块的中文硬编码扫描无 UI 文案残留。
+
+## 2026-08-31 23:05 +08 - 首页文案接入语言选择
+
+- Request: 将首页的文本也纳入语言选择功能。
+- Actions: 扩展 `src/lib/i18n.ts` 的 `marketing`、`projectsHome` 和 `projectForm` 字典；更新根营销首页、我的项目页、项目列表/卡片和新建项目表单，改为从 `useLanguage()` 读取 UI 文案。
+- Result: 根首页、项目首页和创建项目流程的标题、按钮、表格、空态、搜索、错误兜底、日期和选项标签会随 `zh-CN` / `en` 切换。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过；目标首页相关文件中文硬编码扫描无残留。
+
+## 2026-08-31 23:10 +08 - 语言切换改为圆形地球按钮
+
+- Request: 将语言切换改为与主题切换按钮类似的地球 icon 圆形按钮，点击后保持当前下拉框效果。
+- Actions: 更新 `src/components/language/LanguageSelect.tsx`，将 Select 触发器改为 `Globe2` 圆形 icon 按钮，隐藏原触发器箭头和可见文本，保留 Radix Select 弹层和选项逻辑。
+- Result: 顶部导航语言切换按钮视觉与主题切换按钮一致，点击后仍打开原语言选项下拉菜单。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过。
+
+## 2026-08-31 23:15 +08 - 语言按钮仅显示地球图标
+
+- Request: 语言切换按钮只需要地球 icon，不需要在圆形按钮内显示当前选中的语言文本。
+- Actions: 更新 `src/components/language/LanguageSelect.tsx`，从 Select 触发器中移除 `SelectValue`，仅保留 `Globe2` 图标；语言选项弹层保持不变。
+- Result: 顶部导航语言按钮不再显示当前语言文本，只显示地球图标。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过。
+
+## 2026-08-31 23:17 +08 - 居中语言切换地球图标
+
+- Request: 地球 icon 需要水平垂直居中于圆形按钮。
+- Actions: 更新 `src/components/language/LanguageSelect.tsx`，为 Select 触发器及其内部直接子 `span` 增加显式 flex 居中样式。
+- Result: 顶部导航语言切换按钮中的 `Globe2` 图标在圆形按钮内水平和垂直居中。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过。
+
+## 2026-09-01 12:38 +08 - LLM 提示词模板全局语言切换
+
+- Request: LLM 提示词模板模块只保留一个“简体中文 / English”全局 toggle，并放在标题文本右侧。
+- Actions: 更新 `src/app/llm-prompt-templates/page.tsx`，把语言状态提升到页面级，新增页面标题右侧 `LanguageToggle`，移除每个模板任务卡片内部的独立语言切换。
+- Result: `/llm-prompt-templates` 页面所有模板卡片共用同一个语言选择，切换一次即可同步查看全部任务的中文或英文 prompt 版本。
+- Verification: `pnpm lint` 通过。
+
+## 2026-09-01 12:39 +08 - LLM 提示词模板语言切换右对齐
+
+- Request: LLM 提示词模板页面的全局语言 toggle 位置不对，需要靠右对齐。
+- Actions: 更新 `src/app/llm-prompt-templates/page.tsx` 标题行布局，将标题与语言 toggle 改为 `justify-between` 左右分布。
+- Result: “LLM 提示词模板”标题保持左侧，全局“简体中文 / English”toggle 靠页面内容区右侧对齐。
+- Verification: `pnpm exec eslint src/app/llm-prompt-templates/page.tsx` 通过。
+
+## 2026-09-01 12:45 +08 - Admin 模块接入语言切换
+
+- Request: LLM 提示词模板和用户管理模块也需要纳入语言切换功能。
+- Actions: 扩展 `src/lib/i18n.ts` 的 `adminUsers` 与 `adminPromptTemplates` 双语字典；更新 `src/app/users/page.tsx` 和 `src/app/llm-prompt-templates/page.tsx`，将标题、说明、按钮、筛选器、状态、表头、空态、错误兜底、日期格式和模板语言 toggle 标签接入 `useLanguage()`。
+- Result: `/users` 与 `/llm-prompt-templates` 页面 UI 文案会随全局语言切换在简体中文和 English 间切换；后端返回的用户数据、模板名称和 prompt 正文保持原文展示。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit` 通过；`src/app/users/page.tsx` 与 `src/app/llm-prompt-templates/page.tsx` 中文硬编码扫描无残留。
+
+## 2026-09-01 12:48 +08 - 缩小 LLM 提示词模板复制按钮
+
+- Request: 缩小 LLM 提示词模板模块中所有的复制按钮。
+- Actions: 为 `src/components/common/CopyButton.tsx` 增加可选 `className` 样式入口；在 `src/app/llm-prompt-templates/page.tsx` 的 prompt 区复制按钮上使用更小的高度、字号和横向内边距。
+- Result: `/llm-prompt-templates` 页面中的复制按钮变为更紧凑的小尺寸，其他页面继续使用默认复制按钮样式。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit` 通过。
+
+## 2026-09-01 12:52 +08 - LLM 提示词模板内容卡片化滚动
+
+- Request: 将 LLM 提示词模板模块中的各个模块内容都放入一个大的卡片中，滚动条作用于该大卡片而不是整个页面。
+- Actions: 更新 `src/app/llm-prompt-templates/page.tsx`，把标题区下方内容统一放入一个 `Card`；将模块和任务内容放进该卡片的 `CardContent overflow-y-auto` 内；任务展示从嵌套 `Card` 改为轻量边框面板，并移除 prompt 块自身纵向滚动限制。
+- Result: `/llm-prompt-templates` 页面保持标题和语言切换固定在上方，所有模板模块在一个大卡片内部纵向滚动。
+- Verification: `pnpm lint`、`pnpm exec tsc --noEmit`、`pnpm exec eslint src/app/llm-prompt-templates/page.tsx` 通过。
+
+## 2026-09-01 13:05 +08 - 静默自动刷新避免页面抖动
+
+- Request: 修复 LLM 提示词模板页面定时刷新时回到骨架屏造成的抖动，并全面检查用户管理、原始用户需求、敏捷业务需求池、变更集、UX/UI/前端/API/后端/数据库模型和指令集合等模块是否具备自动更新且不破坏体验。
+- Actions: 将 `src/app/llm-prompt-templates/page.tsx` 改为仅首次加载显示骨架，后台 30 秒刷新静默更新；为 `src/app/users/page.tsx`、原始需求、敏捷业务需求池、变更集和指令集合页面补齐 30 秒可见状态下静默刷新；调整 `VersionedAssetPage` 与 `CompositeVersionedAssetPage` 的静默轮询失败处理，保留当前内容并在页面可见时才刷新。
+- Result: 目标模块均具备自动数据更新；后台刷新不再触发骨架屏、整页 loading 或错误态替换当前内容，刷新成功后再更新数据和清理错误。
+- Verification: `pnpm exec next typegen && pnpm exec tsc --noEmit`、`pnpm lint` 通过。
+
+## 2026-09-01 13:10 +08 - 分层调整自动刷新间隔
+
+- Request: 按评估规划实现自动刷新间隔：项目生成链路使用 3 秒，admin 管理模块保留 30 秒，并在页面回到前台时立即刷新。
+- Actions: 更新 LLM 提示词模板、用户管理、原始需求、敏捷业务需求池、变更集、指令集合、`VersionedAssetPage` 和 `CompositeVersionedAssetPage` 的刷新常量和 `visibilitychange` 处理；项目模块统一 3 秒静默刷新，admin 模块统一 30 秒静默刷新。
+- Result: 后端新数据在项目工作台相关页面最多约 3 秒内显示，低频 admin 页面仍保持较低请求频率；从后台切回页面时会立即静默同步一次。
+- Verification: `pnpm lint`、`pnpm exec next typegen && pnpm exec tsc --noEmit` 通过；刷新间隔扫描确认项目模块使用 3 秒，admin 模块使用 30 秒。
+
+## 2026-09-01 14:03 +08 - UI 视觉设计页评审能力增强
+
+- Request: 实现 UI 视觉设计模块深度改进中的前端可视化和评审体验。
+- Actions: 扩展 `src/lib/types/ui-design.ts` 新版 UI 设计类型；重构 `src/components/ui-design/UIDesignContentViewer.tsx`，新增 Token Catalog 可视化、交互状态矩阵、设计质量检查、证据来源、TBD、可访问性/响应式契约、布局详情和组件状态覆盖评审。
+- Result: UI 视觉设计页从文本型资产展示升级为结构化视觉评审界面；颜色、字体、间距、圆角、阴影 token 可预览和复制，组件规则可查看状态覆盖与实现提示，legacy 内容仍兼容读取。
+- Verification: `pnpm lint` 和 `pnpm build` 通过。

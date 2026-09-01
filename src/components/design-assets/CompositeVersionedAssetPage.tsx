@@ -10,14 +10,18 @@ import { DiffSummary } from "@/components/design-assets/DiffSummary";
 import { sortAssetsByVersion, VersionList } from "@/components/design-assets/VersionList";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
+import { useLanguage } from "@/components/language/language-provider";
+import { isAbortError, useInFlightRef, useMountedRef } from "@/lib/async-control";
 import type { VersionedDesignAsset } from "@/lib/types/design-asset";
+
+const PROJECT_REFRESH_INTERVAL_MS = 3000;
 
 type AssetGroupConfig<TAsset extends VersionedDesignAsset = VersionedDesignAsset> = {
   key: string;
   title: string;
   description: string;
   emptyDescription?: string;
-  listAssets: (projectId: string) => Promise<TAsset[]>;
+  listAssets: (projectId: string, options?: { signal?: AbortSignal }) => Promise<TAsset[]>;
   sections: Array<{ key: string; title: string }>;
   action?: ReactNode;
 };
@@ -39,6 +43,9 @@ export function CompositeVersionedAssetPage({
 }) {
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
+  const { t } = useLanguage();
+  const mountedRef = useMountedRef();
+  const refreshInFlightRef = useInFlightRef();
   const [groupStates, setGroupStates] = useState<Record<string, AssetGroupState>>(() =>
     Object.fromEntries(
       groups.map((group) => [
@@ -54,7 +61,7 @@ export function CompositeVersionedAssetPage({
   );
 
   const loadGroup = useCallback(
-    async (group: AssetGroupConfig, options?: { silent?: boolean }) => {
+    async (group: AssetGroupConfig, options?: { silent?: boolean; signal?: AbortSignal }) => {
       if (!options?.silent) {
         setGroupStates((current) => ({
           ...current,
@@ -67,32 +74,39 @@ export function CompositeVersionedAssetPage({
       }
 
       try {
-        const data = sortAssetsByVersion(await group.listAssets(projectId));
-        setGroupStates((current) => ({
-          ...current,
-          [group.key]: {
-            assets: data,
-            selectedId: current[group.key]?.selectedId ?? data[0]?.id ?? null,
-            loading: false,
-            error: null,
-          },
-        }));
+        const data = sortAssetsByVersion(await group.listAssets(projectId, { signal: options?.signal }));
+        if (mountedRef.current && !options?.signal?.aborted) {
+          setGroupStates((current) => ({
+            ...current,
+            [group.key]: {
+              assets: data,
+              selectedId: current[group.key]?.selectedId ?? data[0]?.id ?? null,
+              loading: false,
+              error: null,
+            },
+          }));
+        }
       } catch (err) {
-        setGroupStates((current) => ({
-          ...current,
-          [group.key]: {
-            assets: [],
-            selectedId: null,
-            loading: false,
-            error: err instanceof Error ? err.message : `加载${group.title}失败`,
-          },
-        }));
+        if (!isAbortError(err) && mountedRef.current) {
+          setGroupStates((current) => ({
+            ...current,
+            [group.key]: {
+              assets: options?.silent ? current[group.key]?.assets ?? [] : [],
+              selectedId: options?.silent ? current[group.key]?.selectedId ?? null : null,
+              loading: false,
+              error: options?.silent
+                ? current[group.key]?.error ?? null
+                : err instanceof Error ? err.message : t.designAssets.versions.loadFailed(group.title),
+            },
+          }));
+        }
       }
     },
-    [projectId]
+    [mountedRef, projectId, t.designAssets.versions]
   );
 
   useEffect(() => {
+    const controller = new AbortController();
     const initialState = Object.fromEntries(
       groups.map((group) => [
         group.key,
@@ -107,19 +121,42 @@ export function CompositeVersionedAssetPage({
 
     setGroupStates(initialState);
 
-    const loadGroups = async (options?: { silent?: boolean }) => {
-      await Promise.all(groups.map((group) => loadGroup(group, options)));
+    const loadGroups = async (options?: { silent?: boolean; signal?: AbortSignal }) => {
+      if (options?.silent && refreshInFlightRef.current) {
+        return;
+      }
+      if (options?.silent) {
+        refreshInFlightRef.current = true;
+      }
+      try {
+        await Promise.all(groups.map((group) => loadGroup(group, options)));
+      } finally {
+        if (options?.silent) {
+          refreshInFlightRef.current = false;
+        }
+      }
     };
 
-    void loadGroups();
+    void loadGroups({ signal: controller.signal });
     const interval = window.setInterval(() => {
-      void loadGroups({ silent: true });
-    }, 3000);
+      if (document.visibilityState === "visible") {
+        void loadGroups({ silent: true, signal: controller.signal });
+      }
+    }, PROJECT_REFRESH_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadGroups({ silent: true, signal: controller.signal });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      controller.abort();
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [groups, loadGroup]);
+  }, [groups, loadGroup, refreshInFlightRef]);
 
   return (
     <div className="space-y-6">
@@ -149,11 +186,11 @@ export function CompositeVersionedAssetPage({
                 </div>
                 {group.action}
               </div>
-              {state.loading ? <LoadingState label={`正在加载${group.title}...`} /> : null}
+              {state.loading ? <LoadingState label={t.designAssets.versions.loading(group.title)} /> : null}
               {!state.loading && state.error ? (
                 <ErrorState
                   message={state.error}
-                  actionLabel="重新加载"
+                  actionLabel={t.common.reload}
                   onAction={() => {
                     void loadGroup(group);
                   }}
@@ -161,7 +198,7 @@ export function CompositeVersionedAssetPage({
               ) : null}
               {!state.loading && !state.error && sortedAssets.length === 0 ? (
                 <p className="text-sm leading-6 text-muted-foreground">
-                  {group.emptyDescription ?? `暂无${group.title}版本`}
+                  {group.emptyDescription ?? t.designAssets.versions.noVersion(group.title)}
                 </p>
               ) : null}
               {!state.loading && !state.error && selectedAsset ? (
@@ -184,7 +221,7 @@ export function CompositeVersionedAssetPage({
                   <div className="space-y-4">
                     <AssetHeader
                       asset={selectedAsset}
-                      emptyTitle={`暂无${group.title}版本`}
+                      emptyTitle={t.designAssets.versions.noVersion(group.title)}
                       emptyDescription={group.emptyDescription}
                     />
                     <AssetContentSections content={selectedAsset.content as Record<string, unknown>} sections={group.sections} />

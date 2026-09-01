@@ -2,11 +2,13 @@
 
 import { MonitorCog, Moon, Sun } from "lucide-react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme/theme-provider";
 
 export function ThemeToggle() {
   const { mounted, resolvedTheme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const isDark = resolvedTheme === "dark";
 
   const icon = !mounted ? (
@@ -21,7 +23,7 @@ export function ThemeToggle() {
     <Button
       variant="outline"
       size="icon"
-      aria-label="切换主题"
+      aria-label={t.theme.toggle}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       disabled={!mounted}
     >

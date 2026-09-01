@@ -6,7 +6,7 @@ import { ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { LoadingState } from "@/components/common/LoadingState";
+import { FullScreenLoadingState } from "@/components/common/LoadingState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { buildLoginRequiredUrl } from "@/lib/auth/login-required";
@@ -22,7 +22,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
   }, [authenticated, loading, router]);
 
   if (loading || !authenticated) {
-    return <LoadingState label="正在检查管理员权限..." />;
+    return <FullScreenLoadingState label="加载中..." />;
   }
 
   if (!isAdmin) {
@@ -34,7 +34,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
             <div className="space-y-4">
               <div>
                 <AlertTitle>没有权限访问</AlertTitle>
-                <AlertDescription>管理员页面仅 admin 角色可访问。</AlertDescription>
+                <AlertDescription>该模块仅 admin 角色可访问。</AlertDescription>
               </div>
               <Button asChild variant="outline" size="sm">
                 <Link href="/projects">返回我的项目</Link>

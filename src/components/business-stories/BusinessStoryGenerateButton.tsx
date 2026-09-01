@@ -1,5 +1,6 @@
 import { Sparkles } from "lucide-react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 
 export function BusinessStoryGenerateButton({
@@ -9,10 +10,12 @@ export function BusinessStoryGenerateButton({
   loading: boolean;
   onClick: () => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <Button type="button" size="sm" onClick={onClick} disabled={loading}>
       <Sparkles className="size-4" />
-      {loading ? "正在生成业务需求故事..." : "生成业务需求故事"}
+      {loading ? t.businessStories.generating : t.businessStories.generate}
     </Button>
   );
 }

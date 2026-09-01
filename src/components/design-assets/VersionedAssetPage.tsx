@@ -11,8 +11,12 @@ import { AssetContentSections } from "@/components/design-assets/AssetContentSec
 import { AssetHeader } from "@/components/design-assets/AssetHeader";
 import { DiffSummary } from "@/components/design-assets/DiffSummary";
 import { sortAssetsByVersion, VersionList } from "@/components/design-assets/VersionList";
+import { useLanguage } from "@/components/language/language-provider";
+import { isAbortError, useInFlightRef, useMountedRef } from "@/lib/async-control";
 import type { VersionedDesignAsset } from "@/lib/types/design-asset";
 import { cn } from "@/lib/utils";
+
+const PROJECT_REFRESH_INTERVAL_MS = 3000;
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -33,7 +37,7 @@ export function VersionedAssetPage<TAsset extends VersionedDesignAsset>({
   description?: string;
   emptyDescription?: string;
   sections: Array<{ key: string; title: string }>;
-  listAssets: (projectId: string) => Promise<TAsset[]>;
+  listAssets: (projectId: string, options?: { signal?: AbortSignal }) => Promise<TAsset[]>;
   action?: ReactNode;
   renderContent?: (asset: TAsset, content: Record<string, unknown>, sections: Array<{ key: string; title: string }>) => ReactNode;
   titleIcon?: LucideIcon;
@@ -41,40 +45,74 @@ export function VersionedAssetPage<TAsset extends VersionedDesignAsset>({
 }) {
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
+  const { t } = useLanguage();
   const [assets, setAssets] = useState<TAsset[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useMountedRef();
+  const refreshInFlightRef = useInFlightRef();
 
   const sortedAssets = useMemo(() => sortAssetsByVersion(assets), [assets]);
   const selectedAsset = sortedAssets.find((asset) => asset.id === selectedId) ?? sortedAssets[0] ?? null;
 
-  const loadAssets = useCallback(async (options?: { silent?: boolean }) => {
+  const loadAssets = useCallback(async (options?: { silent?: boolean; signal?: AbortSignal }) => {
+    if (options?.silent && refreshInFlightRef.current) {
+      return;
+    }
+    if (options?.silent) {
+      refreshInFlightRef.current = true;
+    }
     if (!options?.silent) {
       setLoading(true);
+      setError(null);
     }
-    setError(null);
     try {
-      const data = sortAssetsByVersion(await listAssets(projectId));
-      setAssets(data);
-      setSelectedId((current) => current ?? data[0]?.id ?? null);
+      const data = sortAssetsByVersion(await listAssets(projectId, { signal: options?.signal }));
+      if (mountedRef.current && !options?.signal?.aborted) {
+        setAssets(data);
+        setSelectedId((current) => current ?? data[0]?.id ?? null);
+        setError(null);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : `加载${title}失败`);
+      if (isAbortError(err)) {
+        return;
+      }
+      if (!options?.silent && mountedRef.current) {
+        setError(err instanceof Error ? err.message : t.designAssets.versions.loadFailed(title));
+      }
     } finally {
-      if (!options?.silent) {
+      if (options?.silent) {
+        refreshInFlightRef.current = false;
+      }
+      if (!options?.silent && mountedRef.current) {
         setLoading(false);
       }
     }
-  }, [listAssets, projectId, title]);
+  }, [listAssets, mountedRef, projectId, refreshInFlightRef, t.designAssets.versions, title]);
 
   useEffect(() => {
+    const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadAssets();
+    void loadAssets({ signal: controller.signal });
     const interval = window.setInterval(() => {
-      void loadAssets({ silent: true });
-    }, 3000);
+      if (document.visibilityState === "visible") {
+        void loadAssets({ silent: true, signal: controller.signal });
+      }
+    }, PROJECT_REFRESH_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadAssets({ silent: true, signal: controller.signal });
+      }
+    };
 
-    return () => window.clearInterval(interval);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [loadAssets]);
 
   const showHeader = Boolean(description || action);
@@ -96,15 +134,15 @@ export function VersionedAssetPage<TAsset extends VersionedDesignAsset>({
         </div>
       ) : null}
 
-      {loading ? <LoadingState label={`正在加载${title}...`} /> : null}
-      {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadAssets} /> : null}
+      {loading ? <LoadingState label={t.designAssets.versions.loading(title)} /> : null}
+      {!loading && error ? <ErrorState message={error} actionLabel={t.common.reload} onAction={loadAssets} /> : null}
       {!loading && !error ? (
         <div className={cn("grid gap-4 lg:h-0 lg:min-h-0 lg:flex-1 lg:items-stretch", gridColumns)}>
           <VersionList assets={sortedAssets} selectedId={selectedAsset?.id ?? null} onSelect={setSelectedId} />
           <div className="min-w-0 space-y-4 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pr-4">
             <AssetHeader
               asset={selectedAsset}
-              emptyTitle={`暂无${title}版本`}
+              emptyTitle={t.designAssets.versions.noVersion(title)}
               emptyDescription={emptyDescription}
               titleIcon={TitleIcon}
             />

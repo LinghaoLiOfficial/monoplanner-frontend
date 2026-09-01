@@ -18,9 +18,14 @@ type BusinessStoryFilters = {
   include_history?: boolean;
 };
 
+type ApiRequestOptions = {
+  signal?: AbortSignal;
+};
+
 export function generateBusinessStories(
   projectId: string,
-  input: GenerateBusinessStoriesInput = {}
+  input: GenerateBusinessStoriesInput = {},
+  options?: ApiRequestOptions
 ) {
   const body: GenerateBusinessStoriesInput = {
     overwrite: input.overwrite ?? false,
@@ -35,15 +40,17 @@ export function generateBusinessStories(
     {
       method: "POST",
       body,
+      signal: options?.signal,
     }
   );
 }
 
-export function listBusinessStories(projectId: string, filters?: BusinessStoryFilters) {
+export function listBusinessStories(projectId: string, filters?: BusinessStoryFilters, options?: ApiRequestOptions) {
   return apiRequest<BusinessRequirementStory[]>(
     `/projects/${projectId}/business-stories`,
     {
       query: filters,
+      signal: options?.signal,
     }
   );
 }
@@ -74,8 +81,9 @@ export function selectBusinessStory(storyId: string) {
   });
 }
 
-export function executeBusinessStory(storyId: string) {
+export function executeBusinessStory(storyId: string, options?: ApiRequestOptions) {
   return apiRequest<GenerationRun>(`/business-stories/${storyId}/execute`, {
     method: "POST",
+    signal: options?.signal,
   });
 }

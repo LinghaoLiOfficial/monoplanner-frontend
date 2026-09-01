@@ -9,12 +9,14 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
 import { ConsistencyCheckPanel } from "@/components/consistency/ConsistencyCheckPanel";
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 import { getProjectBlueprints } from "@/lib/api/blueprints";
 import { getConsistencyCheck } from "@/lib/api/consistency";
 import type { ConsistencyCheck } from "@/lib/types/consistency";
 
 export default function ConsistencyPage() {
+  const { t } = useLanguage();
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
   const [check, setCheck] = useState<ConsistencyCheck | null>(null);
@@ -33,7 +35,7 @@ export default function ConsistencyPage() {
         setCheck(await getConsistencyCheck(projectId));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载一致性检查失败");
+      setError(err instanceof Error ? err.message : t.consistency.loadFailed);
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,7 @@ export default function ConsistencyPage() {
     try {
       setCheck(await getConsistencyCheck(projectId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "运行一致性检查失败");
+      setError(err instanceof Error ? err.message : t.consistency.checkFailed);
     } finally {
       setChecking(false);
     }
@@ -62,24 +64,24 @@ export default function ConsistencyPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
-            检查版本资产、API 契约、数据库模型和指令集合的一致性
+            {t.consistency.description}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" onClick={handleCheck} disabled={checking || !hasBlueprint}>
-            {checking ? "正在检查..." : "重新检查"}
+            {checking ? t.consistency.checking : t.consistency.recheck}
           </Button>
         </div>
       </div>
 
-      {loading ? <LoadingState label="正在加载一致性检查..." /> : null}
-      {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadData} /> : null}
+      {loading ? <LoadingState label={t.consistency.loading} /> : null}
+      {!loading && error ? <ErrorState message={error} actionLabel={t.common.reload} onAction={loadData} /> : null}
       {!loading && !error && !hasBlueprint ? (
         <EmptyState
           icon={ShieldCheck}
-          title="先准备版本资产"
-          description="一致性检查仍需要基于已有版本上下文运行"
-          action={<Button asChild><Link href={`/projects/${projectId}/frontend-implementation`}>前往版本资产</Link></Button>}
+          title={t.consistency.prepareAssetsTitle}
+          description={t.consistency.prepareAssetsDescription}
+          action={<Button asChild><Link href={`/projects/${projectId}/frontend-implementation`}>{t.consistency.goToAssets}</Link></Button>}
         />
       ) : null}
       {!loading && !error && hasBlueprint ? <ConsistencyCheckPanel check={check} /> : null}

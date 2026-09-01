@@ -1,18 +1,10 @@
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/language-provider";
+import { dictionaries } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { BusinessStoryStatus } from "@/lib/types/business-story";
 
-const statusLabels: Record<BusinessStoryStatus, string> = {
-  draft: "草稿",
-  ready: "就绪",
-  selected: "已选择",
-  applied: "已应用",
-  implemented: "已实现",
-  verified: "已验证",
-  in_progress: "进行中",
-  done: "已完成",
-  deferred: "已延期",
-};
+const statusLabels = dictionaries["zh-CN"].businessStories.statuses;
 
 const statusClasses: Record<BusinessStoryStatus, string> = {
   draft: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300",
@@ -31,9 +23,11 @@ export function BusinessStoryStatusBadge({
 }: {
   status: BusinessStoryStatus;
 }) {
+  const { t } = useLanguage();
+
   return (
     <Badge variant="outline" className={cn("whitespace-nowrap", statusClasses[status])}>
-      {statusLabels[status]}
+      {t.businessStories.statuses[status]}
     </Badge>
   );
 }

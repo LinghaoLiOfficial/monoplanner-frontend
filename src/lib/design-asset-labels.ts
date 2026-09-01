@@ -1,31 +1,12 @@
 import type { AffectedLayer, ImplementationScope } from "@/lib/types/business-story";
 import type { ChangeSetStatus } from "@/lib/types/change-set";
+import { dictionaries, type Locale } from "@/lib/i18n";
 
-export const implementationScopeLabels: Record<ImplementationScope, string> = {
-  frontend_only: "仅前端",
-  backend_only: "仅后端",
-  fullstack: "前后端",
-  non_code: "非代码",
-};
+const zh = dictionaries["zh-CN"];
 
-export const affectedLayerLabels: Record<AffectedLayer, string> = {
-  ux_design: "UX 用户体验设计",
-  ui_design: "UI 视觉设计",
-  frontend_implementation: "前端工程实现",
-  frontend_tools: "前端工程实现扩展",
-  api_contract: "API 契约",
-  backend_implementation: "后端工程实现",
-  backend_tools: "后端工程实现扩展",
-  database_model: "数据库模型",
-  db_model: "数据库模型",
-  frontend_pages: "前端工程实现",
-  backend_services: "后端工程实现",
-  database_models: "数据库模型",
-  project_blueprint: "历史蓝图",
-  prompt_pack: "PromptPack",
-  prompt_assets: "PromptPack",
-  documentation: "文档",
-};
+export const implementationScopeLabels: Record<ImplementationScope, string> = zh.designAssets.scopes;
+
+export const affectedLayerLabels: Record<AffectedLayer, string> = zh.designAssets.layers;
 
 export type BusinessStoryImpactScopeFilter =
   | ImplementationScope
@@ -37,16 +18,16 @@ export type BusinessStoryImpactScopeFilter =
   | "database_models";
 
 export const businessStoryImpactScopeLabels: Record<BusinessStoryImpactScopeFilter, string> = {
-  frontend_only: "仅前端",
-  backend_only: "仅后端",
-  fullstack: "前后端",
-  non_code: "非代码",
-  ux_design: "UX 用户体验设计",
-  ui_design: "UI 视觉设计",
-  frontend_implementation: "前端工程实现",
-  api_contract: "API 契约",
-  backend_implementation: "后端工程实现",
-  database_models: "数据库模型",
+  frontend_only: zh.designAssets.scopes.frontend_only,
+  backend_only: zh.designAssets.scopes.backend_only,
+  fullstack: zh.designAssets.scopes.fullstack,
+  non_code: zh.designAssets.scopes.non_code,
+  ux_design: zh.designAssets.layers.ux_design,
+  ui_design: zh.designAssets.layers.ui_design,
+  frontend_implementation: zh.designAssets.layers.frontend_implementation,
+  api_contract: zh.designAssets.layers.api_contract,
+  backend_implementation: zh.designAssets.layers.backend_implementation,
+  database_models: zh.designAssets.layers.database_models,
 };
 
 export const businessStoryImpactScopeOptions: BusinessStoryImpactScopeFilter[] = [
@@ -62,20 +43,36 @@ export const businessStoryImpactScopeOptions: BusinessStoryImpactScopeFilter[] =
   "database_models",
 ];
 
-export const changeSetStatusLabels: Record<ChangeSetStatus, string> = {
-  draft: "草稿",
-  ready: "就绪",
-  applied: "已应用",
-  discarded: "已放弃",
-  failed: "失败",
-};
+export const changeSetStatusLabels: Record<ChangeSetStatus, string> = zh.designAssets.statuses;
 
-export function formatDateTime(value?: string | null) {
-  if (!value) {
-    return "暂无时间";
+export function getImplementationScopeLabel(scope: ImplementationScope, locale: Locale) {
+  return dictionaries[locale].designAssets.scopes[scope] ?? scope;
+}
+
+export function getAffectedLayerLabel(layer: AffectedLayer | string, locale: Locale) {
+  const labels = dictionaries[locale].designAssets.layers as Record<string, string>;
+  return labels[layer] ?? layer;
+}
+
+export function getChangeSetStatusLabel(status: ChangeSetStatus, locale: Locale) {
+  return dictionaries[locale].designAssets.statuses[status] ?? status;
+}
+
+export function getBusinessStoryImpactScopeLabel(scope: BusinessStoryImpactScopeFilter, locale: Locale) {
+  if (scope in dictionaries[locale].designAssets.scopes) {
+    return dictionaries[locale].designAssets.scopes[scope as ImplementationScope];
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
+  const labels = dictionaries[locale].designAssets.layers as Record<string, string>;
+  return labels[scope] ?? scope;
+}
+
+export function formatDateTime(value?: string | null, locale: Locale = "zh-CN") {
+  if (!value) {
+    return locale === "en" ? "No time" : "暂无时间";
+  }
+
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));

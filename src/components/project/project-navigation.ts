@@ -13,47 +13,59 @@ import {
 } from "lucide-react";
 
 export type ProjectNavItem = {
-  label: string;
+  labelKey:
+    | "configuration"
+    | "rawRequirements"
+    | "businessRequirements"
+    | "changeSets"
+    | "uxDesign"
+    | "uiDesign"
+    | "frontendImplementation"
+    | "apiContract"
+    | "backendImplementation"
+    | "databaseModel"
+    | "delivery"
+    | "consistency";
   segment: string;
   icon: LucideIcon;
 };
 
 export type ProjectNavGroup = {
-  label: string;
+  labelKey: "constraints" | "requirements" | "assets" | "delivery";
   items: ProjectNavItem[];
 };
 
 export const projectNavGroups: ProjectNavGroup[] = [
   {
-    label: "全局约束",
+    labelKey: "constraints",
     items: [
-      { label: "项目配置", segment: "configuration", icon: Settings2 },
+      { labelKey: "configuration", segment: "configuration", icon: Settings2 },
     ],
   },
   {
-    label: "需求分析",
+    labelKey: "requirements",
     items: [
-      { label: "原始用户需求", segment: "raw-requirements", icon: FileText },
-      { label: "敏捷业务需求池", segment: "business-requirements", icon: ListChecks },
-      { label: "变更集", segment: "change-sets", icon: ScrollText },
+      { labelKey: "rawRequirements", segment: "raw-requirements", icon: FileText },
+      { labelKey: "businessRequirements", segment: "business-requirements", icon: ListChecks },
+      { labelKey: "changeSets", segment: "change-sets", icon: ScrollText },
     ],
   },
   {
-    label: "方案资产",
+    labelKey: "assets",
     items: [
-      { label: "UX 用户体验设计", segment: "ux-design", icon: DraftingCompass },
-      { label: "UI 视觉设计", segment: "ui-design", icon: Palette },
-      { label: "前端工程实现", segment: "frontend-implementation", icon: Code2 },
-      { label: "API 契约", segment: "api-contract", icon: Braces },
-      { label: "后端工程实现", segment: "backend-implementation", icon: Code2 },
-      { label: "数据库模型", segment: "database-model", icon: Database },
+      { labelKey: "uxDesign", segment: "ux-design", icon: DraftingCompass },
+      { labelKey: "uiDesign", segment: "ui-design", icon: Palette },
+      { labelKey: "frontendImplementation", segment: "frontend-implementation", icon: Code2 },
+      { labelKey: "apiContract", segment: "api-contract", icon: Braces },
+      { labelKey: "backendImplementation", segment: "backend-implementation", icon: Code2 },
+      { labelKey: "databaseModel", segment: "database-model", icon: Database },
     ],
   },
   {
-    label: "交付校验",
+    labelKey: "delivery",
     items: [
-      { label: "指令集合", segment: "delivery", icon: ScrollText },
-      { label: "一致性检查", segment: "consistency", icon: ClipboardCheck },
+      { labelKey: "delivery", segment: "delivery", icon: ScrollText },
+      { labelKey: "consistency", segment: "consistency", icon: ClipboardCheck },
     ],
   },
 ];

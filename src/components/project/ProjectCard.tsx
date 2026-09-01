@@ -1,12 +1,13 @@
 import Link from "next/link";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Project } from "@/lib/types/project";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -19,23 +20,27 @@ export function ProjectCard({
   project: Project;
   onDelete?: (project: Project) => void;
 }) {
+  const { locale, t } = useLanguage();
+
   return (
-    <Card className="h-full">
+    <Card className="flex h-full flex-col">
       <CardHeader>
         <CardTitle>{project.name}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-3 text-sm text-muted-foreground">
+      <CardContent className="flex flex-1 flex-col gap-5">
+        <div className="flex flex-1 flex-col space-y-3 text-sm text-muted-foreground">
           <p className="line-clamp-3 leading-6">
-            {project.description?.trim() || "暂无项目描述"}
+            {project.description?.trim() || t.projectsHome.noDescription}
           </p>
-          <Badge variant="outline" className="whitespace-nowrap">
-            创建时间：{formatDate(project.created_at)}
-          </Badge>
+          <div className="mt-auto">
+            <Badge variant="outline" className="whitespace-nowrap text-xs font-normal">
+              {t.projectsHome.createdAt(formatDate(project.created_at, locale))}
+            </Badge>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="mt-auto flex flex-wrap gap-2">
           <Button asChild>
-            <Link href={`/projects/${project.id}`}>进入</Link>
+            <Link href={`/projects/${project.id}`}>{t.projectsHome.enter}</Link>
           </Button>
           {onDelete ? (
             <Button
@@ -48,7 +53,7 @@ export function ProjectCard({
                 onDelete(project);
               }}
             >
-              删除
+              {t.projectsHome.delete}
             </Button>
           ) : null}
         </div>

@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ApiContractViewer } from "@/components/contract/ApiContractViewer";
+import { useLanguage } from "@/components/language/language-provider";
 import {
   MetricStrip,
   RelationshipMap,
@@ -33,8 +34,10 @@ function optionalString(value: unknown, fallback: string) {
 }
 
 function ErrorMatrix({ endpoint }: { endpoint: ApiEndpoint }) {
+  const { t } = useLanguage();
+
   if (endpoint.error_model.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">暂无错误模式</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{t.designAssets.viewer.noErrorModel}</p>;
   }
 
   return (
@@ -56,6 +59,8 @@ function ErrorMatrix({ endpoint }: { endpoint: ApiEndpoint }) {
 }
 
 function NewApiContractContentView({ contract, content }: { contract: ApiContractDraft; content: NewApiContractContent }) {
+  const { t } = useLanguage();
+  const labels = t.designAssets.viewer;
   const groups = Array.isArray(content.api_resource_groups) ? content.api_resource_groups : [];
   const endpoints = groups.flatMap((group) => group.endpoints);
   const authCount = endpoints.filter((endpoint) => endpoint.requires_auth).length;
@@ -69,18 +74,18 @@ function NewApiContractContentView({ contract, content }: { contract: ApiContrac
     <div className="space-y-4">
       <MetricStrip
         items={[
-          { label: "资源分组", value: groups.length, description: content.api_base_path || contract.base_path },
-          { label: "接口", value: endpoints.length, description: Object.entries(methodCounts).map(([method, count]) => `${method} ${count}`).join(" · ") || "暂无接口" },
-          { label: "需要登录", value: authCount, description: "requires_auth=true 的接口" },
-          { label: "错误场景", value: errorCount, description: optionalString(content.version_summary, contract.summary) },
+          { label: labels.resourceGroups, value: groups.length, description: content.api_base_path || contract.base_path },
+          { label: labels.endpoints, value: endpoints.length, description: Object.entries(methodCounts).map(([method, count]) => `${method} ${count}`).join(" · ") || labels.noEndpoints },
+          { label: labels.authRequired, value: authCount, description: "requires_auth=true" },
+          { label: labels.errorScenarios, value: errorCount, description: optionalString(content.version_summary, contract.summary) },
         ]}
       />
 
       <VisualSection
         title={
           <FieldHint
-            label="API 资源拓扑"
-            hint={optionalString(contract.summary, "暂无 API 摘要")}
+            label={labels.apiTopology}
+            hint={optionalString(contract.summary, labels.noApiSummary)}
             labelClassName="text-base font-semibold leading-6"
           />
         }
@@ -92,7 +97,7 @@ function NewApiContractContentView({ contract, content }: { contract: ApiContrac
               id: `group:${group.group_name}`,
               title: group.group_name,
               subtitle: group.group_purpose,
-              badge: <StatusBadge label={`${group.endpoints.length} 接口`} tone="muted" />,
+              badge: <StatusBadge label={`${group.endpoints.length} ${labels.endpoints}`} tone="muted" />,
               tone: "accent" as const,
             })),
             ...groups.flatMap((group) =>
@@ -108,10 +113,10 @@ function NewApiContractContentView({ contract, content }: { contract: ApiContrac
             group.endpoints.map((endpoint) => ({
               from: `group:${group.group_name}`,
               to: `endpoint:${group.group_name}:${endpoint.http_method}:${endpoint.endpoint_path}`,
-              label: endpoint.requires_auth ? "需要登录" : "公开",
+              label: endpoint.requires_auth ? labels.authRequired : labels.public,
             }))
           )}
-          emptyText="暂无 API 资源"
+          emptyText={labels.noApiResources}
         />
       </VisualSection>
 
@@ -119,7 +124,7 @@ function NewApiContractContentView({ contract, content }: { contract: ApiContrac
         title={
           <FieldHint
             label="Endpoint Dashboard"
-            hint="按资源分组展示 method、path、schema 和错误模型。"
+            hint={labels.endpointDashboardHint}
             labelClassName="text-base font-semibold leading-6"
           />
         }
@@ -134,7 +139,7 @@ function NewApiContractContentView({ contract, content }: { contract: ApiContrac
                     <h3 className="text-sm font-semibold">{group.group_name}</h3>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">{group.group_purpose}</p>
                   </div>
-                  <StatusBadge label={`${group.endpoints.length} 接口`} tone="muted" />
+                  <StatusBadge label={`${group.endpoints.length} ${labels.endpoints}`} tone="muted" />
                 </div>
                 <div className="space-y-3">
                   {group.endpoints.length > 0 ? (
@@ -145,24 +150,24 @@ function NewApiContractContentView({ contract, content }: { contract: ApiContrac
                             <Badge variant="outline" className={cn("shrink-0", methodClassName(endpoint.http_method))}>{endpoint.http_method}</Badge>
                             <code className="break-all text-xs">{endpoint.endpoint_path}</code>
                           </div>
-                          <StatusBadge label={endpoint.requires_auth ? "需要登录" : "公开"} tone={endpoint.requires_auth ? "default" : "muted"} />
+                          <StatusBadge label={endpoint.requires_auth ? labels.authRequired : labels.public} tone={endpoint.requires_auth ? "default" : "muted"} />
                         </div>
                         <p className="text-sm leading-6 text-muted-foreground">{endpoint.endpoint_purpose}</p>
                         <div className="grid gap-3 xl:grid-cols-2">
-                          <SchemaPanel title="请求结构" value={endpoint.request_schema} />
-                          <SchemaPanel title="响应结构" value={endpoint.response_schema} />
+                          <SchemaPanel title={labels.requestSchema} value={endpoint.request_schema} />
+                          <SchemaPanel title={labels.responseSchema} value={endpoint.response_schema} />
                         </div>
                         <ErrorMatrix endpoint={endpoint} />
                       </section>
                     ))
                   ) : (
-                    <p className="text-sm leading-6 text-muted-foreground">暂无接口</p>
+                    <p className="text-sm leading-6 text-muted-foreground">{labels.noEndpoints}</p>
                   )}
                 </div>
               </section>
             ))
           ) : (
-            <p className="text-sm leading-6 text-muted-foreground">暂无 API 资源分组</p>
+            <p className="text-sm leading-6 text-muted-foreground">{labels.noApiResourceGroups}</p>
           )}
         </div>
       </VisualSection>
@@ -172,11 +177,13 @@ function NewApiContractContentView({ contract, content }: { contract: ApiContrac
 }
 
 function LegacyApiContractContentView({ contract }: { contract: ApiContractDraft }) {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-4">
       <Alert>
         <AlertDescription>
-          这是历史 API 内容结构，保留兼容读取。新版资产会使用 API 前缀、API 资源分组、接口和错误模式契约。
+          {t.designAssets.viewer.legacyApi}
         </AlertDescription>
       </Alert>
       <ApiContractViewer contract={contract} />

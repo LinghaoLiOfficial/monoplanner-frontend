@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -25,13 +26,16 @@ function ProjectNavigationContent({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   return (
     <div className="flex h-full flex-col justify-start pt-2">
       <div className="space-y-5">
         {projectNavGroups.map((group) => (
-          <div key={group.label} className="space-y-2">
-            <p className="px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
+          <div key={group.labelKey} className="space-y-2">
+            <p className="px-2 text-xs font-medium text-muted-foreground">
+              {t.projectNav.groups[group.labelKey]}
+            </p>
             <div className="space-y-1">
               {group.items.map((item) => {
                 const href = getProjectNavHref(projectId, item.segment);
@@ -40,8 +44,9 @@ function ProjectNavigationContent({
 
                 return (
                   <Link
-                    key={item.label}
+                    key={item.labelKey}
                     href={href}
+                    prefetch={false}
                     onClick={onNavigate}
                     className={cn(
                       "flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
@@ -49,7 +54,7 @@ function ProjectNavigationContent({
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate">{t.projectNav.items[item.labelKey]}</span>
                   </Link>
                 );
               })}
@@ -72,6 +77,7 @@ export function ProjectSidebar({ projectId }: { projectId: string }) {
 export function ProjectMobileNav({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { t } = useLanguage();
   const currentItem = getProjectNavItems().find((item) => pathname === getProjectNavHref(projectId, item.segment));
 
   return (
@@ -81,15 +87,15 @@ export function ProjectMobileNav({ projectId }: { projectId: string }) {
           <Button variant="outline" className="w-full justify-between rounded-2xl">
             <span className="flex items-center gap-2">
               <Menu className="size-4" />
-              {currentItem?.label ?? "项目导航"}
+              {currentItem ? t.projectNav.items[currentItem.labelKey] : t.projectNav.fallbackTitle}
             </span>
-            <span className="text-xs text-muted-foreground">切换</span>
+            <span className="text-xs text-muted-foreground">{t.projectNav.switch}</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>项目导航</SheetTitle>
-            <SheetDescription>切换当前项目的工作区页面</SheetDescription>
+            <SheetTitle>{t.projectNav.sheetTitle}</SheetTitle>
+            <SheetDescription>{t.projectNav.sheetDescription}</SheetDescription>
           </SheetHeader>
           <ProjectNavigationContent projectId={projectId} onNavigate={() => setOpen(false)} />
         </SheetContent>

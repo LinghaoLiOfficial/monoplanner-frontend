@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Braces, GitBranch } from "lucide-react";
+import Image from "next/image";
+import { GitBranch } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -12,9 +13,14 @@ export function SiteHeader() {
       <div className="rounded-full border border-border/70 bg-background/80 px-4 py-3 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Braces className="size-5" />
-            </div>
+            <Image
+              src="/logo.svg"
+              alt={env.NEXT_PUBLIC_APP_NAME}
+              width={40}
+              height={40}
+              className="size-10 rounded-full object-cover"
+              priority
+            />
             <div>
               <div className="text-sm text-muted-foreground">Project</div>
               <div className="font-medium">{env.NEXT_PUBLIC_APP_NAME}</div>

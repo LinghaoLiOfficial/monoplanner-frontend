@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowRight, Circle, Database, FileJson, GitBranch, Route, Workflow } from "lucide-react";
 
 import { JsonViewer } from "@/components/common/JsonViewer";
+import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -83,6 +84,8 @@ export function VisualSection({
   children?: ReactNode;
   empty?: boolean | ReactNode;
 }) {
+  const { t } = useLanguage();
+
   return (
     <section className="space-y-4 rounded-lg border border-border/70 bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -101,7 +104,7 @@ export function VisualSection({
       </div>
       {empty ? (
         <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
-          {typeof empty === "boolean" ? "暂无数据" : empty}
+          {typeof empty === "boolean" ? t.common.noData : empty}
         </div>
       ) : (
         children
@@ -110,20 +113,51 @@ export function VisualSection({
   );
 }
 
-export function FlowTimeline({ steps }: { steps: TimelineStep[] }) {
+export function FlowTimeline({
+  steps,
+  showConnectors = true,
+  variant = "default",
+}: {
+  steps: TimelineStep[];
+  showConnectors?: boolean;
+  variant?: "default" | "dotLabel";
+}) {
+  const { t } = useLanguage();
+
   if (steps.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">暂无步骤</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{t.designAssets.visual.noSteps}</p>;
   }
 
   return (
     <ol className="space-y-3">
       {steps.map((step, index) => {
         const tone = step.tone ?? "default";
+        const dot = <span className={cn("z-10 h-3 w-3 rounded-full border-2", dotToneClasses[tone])} />;
+
+        if (variant === "dotLabel") {
+          return (
+            <li key={index}>
+              <div className="min-w-0 rounded-lg border border-border/70 bg-background/70 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {step.meta ? (
+                    <span className="shrink-0 rounded-md bg-foreground px-2 py-1 text-xs font-medium leading-none text-background">
+                      {step.meta}
+                    </span>
+                  ) : null}
+                  <div className="min-w-0 flex-1 text-sm font-medium leading-6">{step.title}</div>
+                </div>
+                {step.description ? <div className="mt-1 text-sm leading-6 text-muted-foreground">{step.description}</div> : null}
+                {step.details ? <div className="mt-3">{step.details}</div> : null}
+              </div>
+            </li>
+          );
+        }
+
         return (
           <li key={index} className="grid grid-cols-[1.5rem_auto_minmax(0,1fr)] items-stretch gap-x-1 [&>*:nth-child(3)]:ml-2">
             <div className="relative flex h-full items-center justify-center">
-              <span className={cn("z-10 h-3 w-3 rounded-full border-2", dotToneClasses[tone])} />
-              {index < steps.length - 1 ? <span className="absolute top-1/2 h-[calc(100%+0.75rem)] w-px bg-border" /> : null}
+              {dot}
+              {showConnectors && index < steps.length - 1 ? <span className="absolute top-1/2 h-[calc(100%+0.75rem)] w-px bg-border" /> : null}
             </div>
             <div className="flex items-center whitespace-nowrap text-sm text-muted-foreground">{step.meta}</div>
             <div className="rounded-lg border border-border/70 bg-background/70 p-3">
@@ -143,14 +177,16 @@ export function FlowTimeline({ steps }: { steps: TimelineStep[] }) {
 export function RelationshipMap({
   nodes,
   edges = [],
-  emptyText = "暂无关系",
+  emptyText,
 }: {
   nodes: RelationshipNode[];
   edges?: RelationshipEdge[];
   emptyText?: string;
 }) {
+  const { t } = useLanguage();
+
   if (nodes.length === 0 && edges.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">{emptyText}</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{emptyText ?? t.designAssets.visual.noRelationship}</p>;
   }
 
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
@@ -192,7 +228,7 @@ export function RelationshipMap({
   );
 }
 
-function schemaRows(value: unknown): Array<{ name: string; type: string; required: string; description: string }> {
+function schemaRows(value: unknown, labels: { yes: string; no: string }): Array<{ name: string; type: string; required: string; description: string }> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return [];
   }
@@ -205,7 +241,7 @@ function schemaRows(value: unknown): Array<{ name: string; type: string; require
       return {
         name,
         type: String(item.type ?? item.format ?? "-"),
-        required: required.includes(name) ? "是" : "否",
+        required: required.includes(name) ? labels.yes : labels.no,
         description: String(item.description ?? item.title ?? "-"),
       };
     });
@@ -219,7 +255,8 @@ function schemaRows(value: unknown): Array<{ name: string; type: string; require
 }
 
 export function SchemaPanel({ title, value }: { title: ReactNode; value: unknown }) {
-  const rows = schemaRows(value);
+  const { t } = useLanguage();
+  const rows = schemaRows(value, { yes: t.common.yes, no: t.common.no });
   return (
     <div className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-3">
       <div className="flex items-center gap-2 text-sm font-medium">
@@ -231,10 +268,10 @@ export function SchemaPanel({ title, value }: { title: ReactNode; value: unknown
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>字段</TableHead>
-                <TableHead>类型</TableHead>
-                <TableHead>必填</TableHead>
-                <TableHead>说明</TableHead>
+                <TableHead>{t.designAssets.visual.field}</TableHead>
+                <TableHead>{t.designAssets.visual.type}</TableHead>
+                <TableHead>{t.designAssets.visual.required}</TableHead>
+                <TableHead>{t.designAssets.visual.description}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -272,9 +309,11 @@ export function StatusBadge({ label, tone = "default" }: { label: ReactNode; ton
   );
 }
 
-export function TextChips({ values, emptyText = "暂无", numbered = false }: { values: string[]; emptyText?: string; numbered?: boolean }) {
+export function TextChips({ values, emptyText, numbered = false }: { values: string[]; emptyText?: string; numbered?: boolean }) {
+  const { t } = useLanguage();
+
   if (values.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">{emptyText}</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{emptyText ?? t.common.empty}</p>;
   }
   return (
     <div className="flex flex-wrap gap-2">
@@ -294,13 +333,16 @@ export function TextChips({ values, emptyText = "暂无", numbered = false }: { 
 
 export function KeyValueTable({
   rows,
-  columns = ["名称", "用途", "必需"],
+  columns,
 }: {
   rows: Array<{ key: ReactNode; value: ReactNode; meta?: ReactNode }>;
   columns?: [string, string, string];
 }) {
+  const { t } = useLanguage();
+  const resolvedColumns = columns ?? t.designAssets.visual.columns;
+
   if (rows.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">暂无数据</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{t.common.noData}</p>;
   }
 
   return (
@@ -308,9 +350,9 @@ export function KeyValueTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{columns[0]}</TableHead>
-            <TableHead>{columns[1]}</TableHead>
-            <TableHead>{columns[2]}</TableHead>
+            <TableHead>{resolvedColumns[0]}</TableHead>
+            <TableHead>{resolvedColumns[1]}</TableHead>
+            <TableHead>{resolvedColumns[2]}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -327,8 +369,10 @@ export function KeyValueTable({
   );
 }
 
-export function JsonDebugCard({ data, title = "完整 JSON" }: { data: unknown; title?: string }) {
-  return <JsonViewer data={data} title={title} />;
+export function JsonDebugCard({ data, title }: { data: unknown; title?: string }) {
+  const { t } = useLanguage();
+
+  return <JsonViewer data={data} title={title ?? t.designAssets.versions.fullJson} />;
 }
 
 export const visualIcons = {

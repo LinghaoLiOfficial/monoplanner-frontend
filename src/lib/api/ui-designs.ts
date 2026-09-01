@@ -7,8 +7,10 @@ type UpdateDesignAssetInput = {
   content?: unknown;
 };
 
-export function listUIDesigns(projectId: string) {
-  return apiRequest<UIDesign[]>(`/projects/${projectId}/ui-designs`);
+export function listUIDesigns(projectId: string, options?: { signal?: AbortSignal }) {
+  return apiRequest<UIDesign[]>(`/projects/${projectId}/ui-designs`, {
+    signal: options?.signal,
+  });
 }
 
 export function getUIDesign(uiDesignId: string) {

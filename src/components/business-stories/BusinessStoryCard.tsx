@@ -7,15 +7,12 @@ import {
   AffectedLayerBadge,
 } from "@/components/business-stories/AffectedLayerBadge";
 import { FieldDefinitionHeading } from "@/components/business-stories/BusinessRequirementFieldDefinition";
-import {
-  BusinessStoryPriorityBadge,
-  priorityBadgeLabels,
-  priorityLabels,
-} from "@/components/business-stories/BusinessStoryPriorityBadge";
+import { BusinessStoryPriorityBadge } from "@/components/business-stories/BusinessStoryPriorityBadge";
 import { ImplementationScopeBadge } from "@/components/business-stories/ImplementationScopeBadge";
 import { InlineEditableList } from "@/components/business-stories/InlineEditableList";
 import { InlineEditableText } from "@/components/business-stories/InlineEditableText";
 import { ErrorState } from "@/components/common/ErrorState";
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FieldHint } from "@/components/ui/field-hint";
@@ -37,12 +34,12 @@ import type {
 } from "@/lib/types/business-story";
 import type { GenerationRun } from "@/lib/types/generation-run";
 
-const priorities = Object.keys(priorityLabels) as BusinessStoryPriority[];
+const priorities: BusinessStoryPriority[] = ["p1_must", "p2_should", "p3_could", "p4_wont"];
 const storyTextBlockClassName =
   "cursor-text rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm leading-7 text-muted-foreground transition-colors hover:bg-muted/50";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -113,6 +110,8 @@ function clampProgress(value: number) {
 }
 
 function BusinessStoryExecutionProgress({ run }: { run?: GenerationRun }) {
+  const { t } = useLanguage();
+
   if (!run) {
     return null;
   }
@@ -121,7 +120,7 @@ function BusinessStoryExecutionProgress({ run }: { run?: GenerationRun }) {
   const isWarning = ["failed", "error", "cancelled"].includes(run.status);
   const message =
     run.message ||
-    (isWarning ? run.error_message || "变更集生成失败" : "正在生成分层变更集");
+    (isWarning ? run.error_message || t.businessStories.generationFailed : t.businessStories.generatingChangeSet);
 
   return (
     <div className="mt-4 border-t border-border/60 pt-4">
@@ -153,6 +152,7 @@ function InlineEditableDataRules({
   disabled?: boolean;
   onSave: (nextValue: DataRule[]) => Promise<void> | void;
 }) {
+  const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(formatDataRulesForEditing(value));
   const [saving, setSaving] = useState(false);
@@ -191,7 +191,7 @@ function InlineEditableDataRules({
       await onSave(nextValue);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存失败，请稍后重试。");
+      setError(err instanceof Error ? err.message : t.businessStories.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -212,8 +212,8 @@ function InlineEditableDataRules({
       <div className="space-y-2">
         <Textarea
           ref={textareaRef}
-          aria-label="编辑数据规则"
-          placeholder="title：必填，1～100 个字符"
+          aria-label={t.businessStories.editDataRules}
+          placeholder={t.businessStories.dataRulesPlaceholder}
           value={draft}
           disabled={disabled || saving}
           onChange={(event) => setDraft(event.target.value)}
@@ -228,7 +228,7 @@ function InlineEditableDataRules({
             }
           }}
         />
-        {saving ? <p className="text-xs text-muted-foreground">保存中...</p> : null}
+        {saving ? <p className="text-xs text-muted-foreground">{t.businessStories.saving}</p> : null}
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
     );
@@ -238,7 +238,7 @@ function InlineEditableDataRules({
     return (
       <ul
         className={cn(storyTextBlockClassName, "space-y-2")}
-        title={disabled ? undefined : "双击编辑"}
+        title={disabled ? undefined : t.businessStories.doubleClickToEdit}
         onDoubleClick={disabled ? undefined : startEditing}
       >
         {value.map((rule, index) => (
@@ -254,10 +254,10 @@ function InlineEditableDataRules({
   return (
     <p
       className={storyTextBlockClassName}
-      title={disabled ? undefined : "双击编辑"}
+      title={disabled ? undefined : t.businessStories.doubleClickToEdit}
       onDoubleClick={disabled ? undefined : startEditing}
     >
-      暂无数据规则
+      {t.businessStories.noDataRules}
     </p>
   );
 }
@@ -327,6 +327,7 @@ export function BusinessStoryCard({
   onDelete?: (story: BusinessRequirementStory) => void;
   readOnly?: boolean;
 }) {
+  const { locale, t } = useLanguage();
   const [updatingField, setUpdatingField] = useState<"priority" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requirementName = story.requirement_name ?? story.title;
@@ -348,7 +349,7 @@ export function BusinessStoryCard({
     try {
       await onPriorityChange(story.id, priority);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "更新优先级失败");
+      setError(err instanceof Error ? err.message : t.businessStories.updatePriorityFailed);
     } finally {
       setUpdatingField(null);
     }
@@ -366,7 +367,7 @@ export function BusinessStoryCard({
           variant="ghost"
           size="icon"
           className="absolute right-4 top-4 size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          aria-label={`删除业务需求故事：${story.title}`}
+          aria-label={`${t.businessStories.confirmDelete}: ${story.title}`}
           onClick={() => onDelete(story)}
         >
           <X className="size-4" />
@@ -379,8 +380,8 @@ export function BusinessStoryCard({
               <div className="flex min-w-0 items-start gap-1.5">
                 <InlineEditableText
                   value={requirementName}
-                  ariaLabel="编辑需求名称"
-                  placeholder="请输入需求名称"
+                  ariaLabel={t.businessStories.editRequirementName}
+                  placeholder={t.businessStories.requirementNamePlaceholder}
                   minRows={1}
                   disabled={readOnly}
                   className="min-w-0 cursor-text text-xl font-semibold leading-7 transition-colors hover:text-primary"
@@ -401,17 +402,21 @@ export function BusinessStoryCard({
                 {story.vertical_slice_note}
               </p>
             ) : null}
-            <p className="text-xs text-muted-foreground">创建于 {formatDate(story.created_at)}</p>
+            <p className="text-xs text-muted-foreground">
+              {t.businessStories.createdAt(formatDate(story.created_at, locale))}
+            </p>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              {story.applied_at ? <span>已应用于 {formatDate(story.applied_at)}</span> : null}
+              {story.applied_at ? (
+                <span>{t.businessStories.appliedAt(formatDate(story.applied_at, locale))}</span>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-wrap gap-2 lg:justify-end">
             <InlineSelect
-              label="优先级"
+              label={t.businessStories.priority}
               value={story.priority}
               options={priorities}
-              labels={priorityBadgeLabels}
+              labels={t.businessStories.priorityBadges}
               disabled={readOnly || updatingField !== null}
               className="w-24"
               onChange={handlePriorityChange}
@@ -422,10 +427,10 @@ export function BusinessStoryCard({
                 size="sm"
                 className="ml-2 self-end"
                 disabled={executing || executionBlocked}
-                title={executionBlocked ? "已有其他需求正在执行，请等待完成" : undefined}
+                title={executionBlocked ? t.businessStories.blockedExecution : undefined}
                 onClick={() => onExecute(story)}
               >
-                {executing ? "执行中..." : executionFailed ? "重试" : "执行"}
+                {executing ? t.businessStories.executing : executionFailed ? t.businessStories.retry : t.businessStories.execute}
               </Button>
             ) : null}
           </div>
@@ -433,7 +438,7 @@ export function BusinessStoryCard({
         <BusinessStoryExecutionProgress run={executionProgress} />
       </CardHeader>
       <CardContent className="space-y-5">
-        {error ? <ErrorState title="更新失败" message={error} /> : null}
+        {error ? <ErrorState title={t.businessStories.updateFailed} message={error} /> : null}
 
         <StorySection
           definition={businessRequirementFieldDefinitionByKey.impact_scope}
@@ -446,7 +451,7 @@ export function BusinessStoryCard({
                 <AffectedLayerBadge key={layer} layer={layer} />
               ))
             ) : (
-              <span className="text-sm leading-7 text-muted-foreground">暂无影响层</span>
+              <span className="text-sm leading-7 text-muted-foreground">{t.businessStories.noAffectedLayers}</span>
             )}
           </div>
         </StorySection>
@@ -454,8 +459,8 @@ export function BusinessStoryCard({
         <StorySection definition={businessRequirementFieldDefinitionByKey.user_story}>
           <InlineEditableText
             value={story.user_story}
-            ariaLabel="编辑用户故事"
-            placeholder="请输入用户故事"
+            ariaLabel={t.businessStories.editUserStory}
+            placeholder={t.businessStories.userStoryPlaceholder}
             disabled={readOnly}
             className={storyTextBlockClassName}
             onSave={(userStory) => handleFieldSave({ user_story: userStory })}
@@ -472,9 +477,9 @@ export function BusinessStoryCard({
               />
               <InlineEditableList
                 value={includedScope}
-                ariaLabel="编辑业务范围包含"
-                placeholder="每行输入一个包含范围"
-                emptyText="暂无包含范围"
+                ariaLabel={t.businessStories.editIncludedScope}
+                placeholder={t.businessStories.includedScopePlaceholder}
+                emptyText={t.businessStories.noIncludedScope}
                 listClassName="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-muted-foreground"
                 emptyClassName="mt-3 text-sm text-muted-foreground"
                 disabled={readOnly}
@@ -496,9 +501,9 @@ export function BusinessStoryCard({
               />
               <InlineEditableList
                 value={excludedScope}
-                ariaLabel="编辑业务范围不包含"
-                placeholder="每行输入一个不包含范围"
-                emptyText="暂无排除范围"
+                ariaLabel={t.businessStories.editExcludedScope}
+                placeholder={t.businessStories.excludedScopePlaceholder}
+                emptyText={t.businessStories.noExcludedScope}
                 listClassName="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-muted-foreground"
                 emptyClassName="mt-3 text-sm text-muted-foreground"
                 disabled={readOnly}
@@ -518,10 +523,10 @@ export function BusinessStoryCard({
         <StorySection definition={businessRequirementFieldDefinitionByKey.execution_note}>
           <InlineEditableText
             value={executionNote}
-            ariaLabel="编辑执行说明"
-            placeholder="请输入执行说明"
+            ariaLabel={t.businessStories.editExecutionNote}
+            placeholder={t.businessStories.executionNotePlaceholder}
             className={storyTextBlockClassName}
-            emptyText="暂无执行说明"
+            emptyText={t.businessStories.noExecutionNote}
             disabled={readOnly}
             onSave={(executionNotes) => handleFieldSave({ execution_notes: executionNotes || null })}
           />
@@ -538,10 +543,10 @@ export function BusinessStoryCard({
         <StorySection definition={businessRequirementFieldDefinitionByKey.acceptance_criteria}>
           <InlineEditableList
             value={story.acceptance_criteria}
-            ariaLabel="编辑验收标准"
+            ariaLabel={t.businessStories.editAcceptanceCriteria}
             ordered
-            placeholder="每行输入一条验收标准"
-            emptyText="暂无验收标准"
+            placeholder={t.businessStories.acceptanceCriteriaPlaceholder}
+            emptyText={t.businessStories.noAcceptanceCriteria}
             listClassName={cn(storyTextBlockClassName, "list-decimal space-y-2 pl-9")}
             emptyClassName={storyTextBlockClassName}
             disabled={readOnly}

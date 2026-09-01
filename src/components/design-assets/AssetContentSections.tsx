@@ -1,4 +1,5 @@
 import { JsonViewer } from "@/components/common/JsonViewer";
+import { useLanguage } from "@/components/language/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -6,9 +7,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function HumanValue({ value }: { value: unknown }) {
+  const { t } = useLanguage();
+
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return <p className="text-sm text-muted-foreground">暂无</p>;
+      return <p className="text-sm text-muted-foreground">{t.common.empty}</p>;
     }
 
     return (
@@ -34,7 +37,7 @@ function HumanValue({ value }: { value: unknown }) {
     );
   }
 
-  return <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{String(value ?? "暂无")}</p>;
+  return <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{String(value ?? t.common.empty)}</p>;
 }
 
 export function AssetContentSections({
@@ -44,6 +47,8 @@ export function AssetContentSections({
   content: Record<string, unknown>;
   sections: Array<{ key: string; title: string }>;
 }) {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-4">
       {sections.map((section) => (
@@ -56,7 +61,7 @@ export function AssetContentSections({
           </CardContent>
         </Card>
       ))}
-      <JsonViewer title="完整 JSON" data={content} />
+      <JsonViewer title={t.designAssets.versions.fullJson} data={content} />
     </div>
   );
 }

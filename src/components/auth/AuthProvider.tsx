@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -10,6 +10,7 @@ import {
   register,
   updateMe,
 } from "@/lib/api/auth";
+import { isAbortError } from "@/lib/async-control";
 import type { LoginInput, RegisterInput, UpdateMeInput } from "@/lib/types/auth";
 import type { CurrentUser } from "@/lib/types/user";
 
@@ -27,50 +28,56 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const AUTH_RESTORE_TIMEOUT_MS = 5000;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refreshRequestRef = useRef(0);
 
   const refreshUser = useCallback(async () => {
+    const requestId = refreshRequestRef.current + 1;
+    refreshRequestRef.current = requestId;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), AUTH_RESTORE_TIMEOUT_MS);
+    setLoading(true);
     setError(null);
 
     try {
-      setUser(await getCurrentUser());
+      const currentUser = await getCurrentUser({ signal: controller.signal });
+      if (refreshRequestRef.current === requestId) {
+        setUser(currentUser);
+      }
     } catch (err) {
+      if (refreshRequestRef.current !== requestId) {
+        return;
+      }
+
       if (err instanceof ApiError && err.status === 401) {
         setUser(null);
         return;
       }
 
-      setError(err instanceof Error ? err.message : "恢复登录态失败");
+      setError(isAbortError(err) ? "恢复登录态超时" : err instanceof Error ? err.message : "恢复登录态失败");
       setUser(null);
+    } finally {
+      window.clearTimeout(timeout);
+      if (refreshRequestRef.current === requestId) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function restoreSession() {
-      setLoading(true);
-      await refreshUser();
-
-      if (mounted) {
-        setLoading(false);
-      }
-    }
-
-    void restoreSession();
-
-    return () => {
-      mounted = false;
-    };
+    queueMicrotask(() => void refreshUser());
   }, [refreshUser]);
 
   const loginWithPassword = useCallback(async (input: LoginInput) => {
     const response = await login(input);
+    refreshRequestRef.current += 1;
     setUser(response.user);
+    setLoading(false);
     setError(null);
     return response.user;
   }, []);
@@ -82,8 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: input.email,
       password: input.password,
     });
+    refreshRequestRef.current += 1;
     setError(null);
     setUser(response.user);
+    setLoading(false);
     return response.user;
   }, []);
 
@@ -91,14 +100,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logout();
     } finally {
+      refreshRequestRef.current += 1;
       setUser(null);
+      setLoading(false);
       setError(null);
     }
   }, []);
 
   const updateCurrentUser = useCallback(async (input: UpdateMeInput) => {
     const updatedUser = await updateMe(input);
+    refreshRequestRef.current += 1;
     setUser(updatedUser);
+    setLoading(false);
     setError(null);
     return updatedUser;
   }, []);

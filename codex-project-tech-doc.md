@@ -24,13 +24,22 @@
 - `src/components/project/ProjectWorkspaceShell.tsx`：具体项目页侧栏与右侧主内容外壳；桌面端右侧主内容容器固定在卡片式工作区内并使用 `overflow-hidden`，不生成自身滚动条。
 - `src/app/projects/[projectId]/layout.tsx`：项目工作区公共布局；进入任意项目页面时调用项目打开记录接口，不阻塞页面正常加载。
 - `src/components/project/ProjectSidebar.tsx`：具体项目页左侧导航容器，桌面端将分组内容靠上展示并保留少量顶部间距，移动端仍通过 Sheet 抽屉呈现。
+- `src/components/project/ProjectSidebar.tsx`：项目模块导航链接设置 `prefetch={false}`，降低 LLM 任务运行时 Next dev 对多个动态项目路由的 RSC 预取压力。
 - `src/components/layout/dashboard-sidebar.tsx`：桌面端全局左侧导航栏，使用 flex 垂直居中展示标题和导航链接，移动端仍通过 Sheet 抽屉呈现。
 - `src/components/layout/AppShell.tsx`：应用主外壳；项目详情态的 `<main>` 使用 `h-screen overflow-hidden` 固定在视口内，不生成自身滚动条，非项目详情页面继续使用 `min-h-screen`。
+- `src/components/layout/TopNav.tsx`：顶部导航品牌区使用 `/logo.svg` 的图片 logo，替代原 lucide 图标。
+- `public/logo.svg`：应用品牌 logo 静态资源；`src/app/layout.tsx` 的 metadata 显式将浏览器标签页 icon、shortcut icon 和 apple icon 指向 `/logo.svg`。
 - `src/components/project/GenerationActionPanel.tsx`：主流程入口，承接业务故事池、变更集、版本资产和指令集合的主链路。
 - `src/components/ui/card.tsx`：通用卡片组件；默认卡片圆角为 `rounded-lg`，使用无阴影灰色细边 `border-gray-200 dark:border-gray-800`，`CardTitle` 默认字号统一为 `text-lg`。
 - `src/components/ui/select.tsx`：基于 `@radix-ui/react-select` 的 shadcn/ui 风格通用下拉框组件，统一触发器、弹层、选中态、滚动按钮和 lucide 箭头位置。
+- `src/lib/i18n.ts`、`src/components/language/language-provider.tsx`、`src/components/language/LanguageSelect.tsx`：轻量前端语言框架，当前支持 `zh-CN` 与 `en`；未登录默认语言来自 `NEXT_PUBLIC_DEFAULT_LOCALE`，登录后以 `/auth/me` 返回的 `user.preferred_locale` 为权威来源；语言选择不再写入浏览器 `localStorage` 或语言 cookie，切换时通过 `PATCH /auth/me` 保存到数据库；顶部导航语言切换使用与主题切换一致的圆形 `Globe2` icon Select 触发器，按钮内不显示当前语言文本，并通过触发器与内部 `span` 的 flex 样式保持图标居中。
+- `src/app/(marketing)/page.tsx`：公开营销首页保持服务端组件，直接使用 `getDictionary(defaultLocale)` 渲染默认语言首屏文案，避免公开首页为了读取客户端语言上下文而整页水合；营销路由不设置全屏 `loading.tsx`，防止 Next dev 下首页长期被固定加载遮罩覆盖。
+- `src/components/user/UserMenu.tsx`：顶部导航用户菜单；在 `useAuth()` 恢复登录态的 `loading` 阶段显示圆角骨架占位，避免刷新时短暂出现“登录/注册”后再切换为用户菜单。
+- `src/lib/i18n.ts`：当前集中存放应用级双语文案字典，包括营销首页、项目首页、创建项目表单、顶部导航、项目工作台左侧导航、通用状态、项目配置、原始需求、敏捷业务需求池、变更集、方案资产 viewer、指令集合、一致性检查、用户管理和 LLM 提示词模板等前端 UI 文案。
 - `src/lib/auth/login-required.ts`：登录失效跳转工具，统一生成 `/login?loginRequired=1` 和可选 `redirectTo` 参数；客户端 API 401 和前端路由守卫复用该逻辑。
 - `src/lib/api/client.ts`：通用 API request 封装；浏览器端收到 401 响应时默认直接跳转到登录页，并让登录页显示“请先登录”的 warning 全局提示；登录态静默恢复请求可通过 `redirectOnUnauthorized: false` 关闭自动跳转，避免公开页面误跳登录页。
+- `src/lib/async-control.ts`：前端长任务和轮询控制工具，提供 `isAbortError`、`useMountedRef` 和 `useInFlightRef`；项目详情页的静默刷新、任务轮询和卸载取消统一依赖它，避免页面切换后旧请求继续更新状态或叠加请求。
+- `src/components/auth/AuthProvider.tsx`：客户端登录态 Provider；`refreshUser()` 自身负责 `loading` 开关，并使用递增请求 id 忽略过期的 `/auth/me` 结果，避免 React 开发模式、快速刷新或重复恢复请求提前关闭 loading 或覆盖新用户状态；`/auth/me` 恢复请求有 5 秒 `AbortController` 超时兜底，防止后端认证接口悬挂时受保护路由永久显示全屏“加载中...”。
 - `src/app/projects/[projectId]/business-stories/page.tsx`：敏捷业务需求池页面把优先级统计卡放在上方，统计卡不显示标题，内部用总数、P1、P2、P3、P4 五个等宽展开的参考指标卡样式数字块突出数量；优先级、影响范围和关键词三个全局筛选控件位于数字统计卡下方，并同时限定需求列表和需求详情的展示条目；其中“影响范围”下拉使用固定平铺选项，覆盖 `全部`、`非代码`、`前后端`、`仅前端`、`仅后端`、`UX 用户体验设计`、`UI 视觉设计`、`前端工程实现`、`API 契约`、`后端工程实现`、`数据库模型`，既能筛 `implementation_scope` 也能按相关 `affected_layers` 过滤；需求列表卡片和需求详情卡片放入同一个组合容器；两张卡统一使用同一套卡片视觉，并在桌面端随外层网格拉伸为同高；“需求列表”和“需求详情”标题位于 `CardHeader` 并带 `size-5` 语义图标，各自内容区独立承接内部滚动；当前需求故事列表通过 `showCurrentStoryList` 正常渲染。
 - `src/app/projects/[projectId]/business-stories/page.tsx`：当前主列表显示 `is_current !== false` 且未成功执行的需求；若对应 `execution_generation_run_id` 的任务已完成，即使后端故事状态尚未归档，前端也会从当前列表隐藏并归入历史执行记录。“历史执行记录”按钮默认关闭，点击后按需请求 `include_history=true`，通过 Portal 挂载到 `document.body` 的全局固定浮层展示状态为 `applied/implemented/verified/done` 或执行任务已完成的成功执行记录。历史浮层参考变更集历史应用记录，支持标题栏拖拽，内部使用“记录列表 / 需求详情”两栏；记录列表只显示推导版本号和执行时间，详情复用只读 `BusinessStoryCard`。
 - `src/components/business-stories/BusinessStoryList.tsx`：当前有效敏捷业务需求池详情列表采用自然展开，不再使用独立滚动容器或分页控件；当前页面正常渲染该列表，索引定位逻辑保留。
@@ -43,14 +52,17 @@
 - `src/components/design-assets/DiffSummary.tsx`：方案资产版本差异通用展示组件；标准 `added/modified/removed` 差异会渲染为统计栏和新增/修改/删除分类卡片，顶部统计始终保留，0 项分类不渲染下方详情分组；字符串、空差异和历史非标准对象保留兼容展示。
 - `src/components/design-assets/VersionList.tsx`、`src/components/design-assets/AssetHeader.tsx`：版本列表和当前版本标识的通用展示组件；`AssetHeader` 支持传入与项目导航一致的 lucide 标题图标，详情卡创建日期显示在资产摘要文段下方。
 - `src/components/design-assets/visual-dashboard.tsx`：方案资产详情通用可视化组件，提供 `MetricStrip`、`VisualSection`、`FlowTimeline`、`RelationshipMap`、`SchemaPanel`、`StatusBadge`、`TextChips` 和 `JsonDebugCard`，不依赖额外图表库；核心阅读文本默认使用 `text-sm` 作为最小字号，代码、JSON、路径和装饰性序号可保留更小字号。
+- `FlowTimeline` 支持 `showConnectors` 可选参数控制步骤之间的竖向连接线，并支持 `variant="dotLabel"` 渲染无外部步骤标记的纯内容卡片；该变体在步骤标题左侧显示黑底白字的步骤文本 badge，badge 与标题文字水平居中对齐。UX 用户体验设计模块的业务逻辑流关闭连接线并使用该布局。
 - `src/app/projects/[projectId]/business-stories/page.tsx`、`src/app/projects/[projectId]/change-sets/page.tsx`、`src/app/projects/[projectId]/prompts/page.tsx`：新主链路的核心页面，其中 `change-sets/page.tsx` 同时承接当前方案资产和历史应用记录浮层详情，`prompts/page.tsx` 面向用户显示为“指令集合”。
 - `src/app/projects/[projectId]/prompts/page.tsx`：指令集合页面使用左侧版本列表、右侧详情的桌面两栏布局；版本列表左栏在 `xl` 断点使用 `minmax(220px,280px)`，为长提示词详情保留更多横向阅读空间；详情内前端/后端提示词卡片以“前端提示词/后端提示词”为主标题，具体实现标题作为说明层级显示，标题左侧分别使用前端面板和后端服务图标，不显示“需要修改/无需修改”状态 badge；提示词正文会解析 `1. ...` 形式的编号步骤，包括同一段中的段内编号，渲染为引导句加纵向步骤卡片，无法解析时回退纯文本展示；差异摘要使用 `DiffSummaryPanel` 可视化，支持对象分组和普通文本拆条展示；左侧版本列表启用创建时间显示。
 - `src/components/design-assets/VersionList.tsx`：版本列表通用组件，标题左侧使用历史图标；支持可选 `showCreatedAt` 开关在条目内显示“创建于”日期时间；指令集合页复用该组件展示 Prompt Pack 历史版本。
 - `src/app/projects/[projectId]/requirements/page.tsx`：原始用户需求页，使用带 `History` 图标的“用户需求历史”卡片承接历史列表，并在底部直接放置紧凑新需求输入框和图标提交按钮；桌面端滚动条只作用于用户需求历史卡片内容区，历史卡片优先占据更大纵向空间。
+- `src/app/projects/[projectId]/requirements/page.tsx`、`src/app/projects/[projectId]/business-stories/page.tsx`、`src/app/projects/[projectId]/change-sets/page.tsx`、`src/app/projects/[projectId]/prompts/page.tsx`、`src/components/design-assets/VersionedAssetPage.tsx`、`src/components/design-assets/CompositeVersionedAssetPage.tsx`：项目详情页高频刷新和长任务轮询都应带 `AbortSignal`，页面卸载时 abort，在途静默刷新未完成时跳过下一轮，且 state 更新前检查 mounted/aborted 状态。
 - `src/components/requirement/RequirementEditor.tsx`：原始用户需求输入组件，默认 placeholder 采用开放式表述，覆盖业务、功能、流程、架构、约束和技术上下文；`compact` 模式使用 `min-h-20` 输入高度和更小表单间距，适合嵌入项目详情页的紧凑卡片。
+- `src/components/project/ProjectCard.tsx`：`/projects` 页面项目卡片使用纵向 flex 布局，描述段落最多显示 3 行并省略溢出内容；创建时间使用更轻的 `Badge` 辅助元信息样式，当前为 `whitespace-nowrap text-xs font-normal`，并与进入/删除按钮一起贴近卡片底部对齐。
 - `src/components/ux-design/`、`src/lib/ux-design-contract.ts`：UX 用户体验设计新版字段契约和专用展示器。
 - `src/components/ux-design/UXDesignContentViewer.tsx`：新版 UX 内容查看器中，“页面低保真结构”按单列展示页面卡片，使每个页面结构卡占满右侧详情宽度；每个页面卡片的区域计数 badge 位于页面小标题右侧；信息优先级 badge 左侧显示从 1 开始的圆形序号以表达先后顺序；页面内部交互区域仍可按较小卡片网格展示。
-- `src/components/ui-design/`、`src/lib/ui-design-contract.ts`：UI 视觉设计新版字段契约和专用展示器，覆盖 `visual_system`、`layout_rules`、`component_style_rules` 及其嵌套字段。
+- `src/components/ui-design/`、`src/lib/ui-design-contract.ts`：UI 视觉设计新版字段契约和专用展示器，覆盖 `visual_system`、`layout_rules`、`component_style_rules` 及其嵌套字段；`UIDesignContentViewer` 现在包含 Token Catalog 可视化、交互状态矩阵、设计质量检查、证据来源、TBD、可访问性/响应式契约、布局详情和组件状态覆盖评审，legacy 内容仍回退通用分段展示。
 - `src/components/frontend-implementation/`、`src/lib/frontend-implementation-contract.ts`：前端实现版本资产新版字段契约和专用展示器，覆盖路由、目录、代码逻辑、环境变量、设计主题和依赖包。
 - `src/components/backend-implementation/`、`src/lib/backend-implementation-contract.ts`：后端实现版本资产新版字段契约和专用展示器，覆盖目录、代码逻辑、工具类、大模型交互模板、环境变量和依赖包。
 - `src/components/contract/ApiContractContentViewer.tsx`、`src/components/contract/ApiContractFieldDefinition.tsx`、`src/lib/api-contract-contract.ts`：API 契约新版字段元数据和专用展示器，覆盖 API 前缀、资源分组、接口、请求/响应结构和错误模式。
@@ -72,6 +84,8 @@
   - `pnpm build`
   - `pnpm start`
 - API 默认基址：`NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1`
+- 默认界面语言：`NEXT_PUBLIC_DEFAULT_LOCALE=zh-CN`，可选值为 `zh-CN` 或 `en`。
+- 本地开发建议统一使用 `http://localhost:3000` 访问 Next dev server；如果使用 `http://127.0.0.1:3000`，Next 16 会默认阻止 `/_next/webpack-hmr` 等 dev 资源的跨源访问，除非在 `next.config.ts` 中配置 `allowedDevOrigins`。
 
 ## Testing and Verification
 - 已执行：
@@ -106,18 +120,37 @@
   - 六个方案资产版本差异卡片结构化展示后，`pnpm exec tsc --noEmit`、目标文件 `eslint` 和 `git diff --check` 通过。
   - 版本差异卡片隐藏 0 项详情分组后，`pnpm exec tsc --noEmit`、目标文件 `eslint` 和 `git diff --check` 通过。
   - 登录失效跳转提示改造后，`pnpm exec tsc --noEmit`、目标文件 `pnpm exec eslint` 和 `git diff --check` 通过。
+  - 公开营销首页服务端化并移除营销 route loading 后，`pnpm lint`、`pnpm build` 通过；`curl http://localhost:3000/` 确认首页 HTML 不再包含 `(marketing)/loading.tsx`、固定全屏 loading 遮罩或 `ClientPageRoot`。
+  - LLM 任务运行时前端卡顿治理后，`pnpm lint`、`pnpm build` 和 `git diff --check` 通过；核心项目详情页轮询已具备卸载取消、静默刷新防重入和 mounted guard。
+  - 认证恢复超时兜底后，`pnpm lint`、`pnpm build` 通过；浏览器访问 `/projects` 可在认证恢复结束后跳转登录页，不再永久停留在全屏加载。
+  - 语言选择框架接入后，`pnpm lint`、`pnpm exec tsc --noEmit` 和 `git diff --check` 通过。
+  - 项目工作台右侧模块硬编码文案纳入语言选择后，`pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过；针对 `/projects/[projectId]` 右侧模块、业务故事组件、一致性组件、API/DB 旧版 viewer、前端实现 viewer 和差异组件的中文 UI 文案扫描无残留。
+  - 首页文案接入语言选择后，`pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过；针对根营销首页、`/projects` 项目首页、项目列表/卡片和创建项目表单的中文 UI 文案扫描无残留。
+  - 语言切换改为圆形地球 icon 按钮后，`pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过。
+  - 语言按钮移除当前语言文本、仅显示地球图标后，`pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过。
+  - 语言切换地球图标显式水平垂直居中后，`pnpm lint`、`pnpm exec tsc --noEmit`、`git diff --check` 通过。
+  - 首页刷新语言和登录态闪变修复后，`pnpm lint`、`pnpm exec tsc --noEmit`、`pnpm build`、`git diff --check` 通过。
+  - 语言偏好改为数据库驱动后，`pnpm lint`、`pnpm exec tsc --noEmit`、`pnpm build`、`git diff --check` 通过；确认前端语言模块无 `localStorage`、语言 cookie 或 `monoplanner-locale` 残留。
+  - 登录态恢复期间用户菜单稳定化后，`pnpm lint`、`pnpm exec tsc --noEmit`、`pnpm build`、`git diff --check` 通过。
+  - Admin 用户管理和 LLM 提示词模板页面接入语言切换后，`pnpm lint`、`pnpm exec tsc --noEmit` 通过；目标页面中文硬编码扫描无残留。
+  - LLM 提示词模板、用户管理、原始需求、敏捷业务需求池、变更集、六类方案资产页和指令集合页的静默自动刷新策略调整后，`pnpm exec next typegen && pnpm exec tsc --noEmit`、`pnpm lint` 通过。
+  - 自动刷新间隔按模块分层后，`pnpm lint`、`pnpm exec next typegen && pnpm exec tsc --noEmit` 通过；扫描确认 admin 模块保留 30 秒，项目工作台和方案资产模块使用 3 秒。
+  - UI 视觉设计页评审能力增强后，`pnpm lint` 和 `pnpm build` 通过。
 
 ## Current Decisions and Conventions
 - 项目列表入口统一使用“我的项目”文案；`/projects` 页面标题不再显示 `Projects` 英文副标题或 Project Blueprint 说明段落。
 - `/projects` 页面无项目空状态说明为“还没有项目，创建第一个项目开始编排你的web全栈程序”。
-- `/projects` 项目卡片显示项目描述和创建时间，不显示前端/后端技术栈；创建时间使用 outline `Badge` 展示；进入详情/工作台的按钮文案统一为“进入”。
+- `/projects` 项目卡片显示项目描述和创建时间，不显示前端/后端技术栈；描述最多显示 3 行，溢出内容用省略截断；创建时间使用 outline `Badge` 展示；进入详情/工作台的按钮文案统一为“进入”。
+- `/projects` 项目卡片的创建时间 badge 当前使用 `text-xs font-normal`，作为辅助元信息弱化呈现。
 - `/projects` 项目列表由后端按最近打开时间倒序返回；点击“进入”打开项目工作区时会上报打开事件，新建项目的初始打开时间等于创建时间。
 - `/projects` 项目卡片和具体项目页顶部都不显示项目状态 badge。
+- admin 角色与普通 user 共用项目工作台和登录后的默认路由；`RequireAuth` 不再对 admin 做特殊跳转，登录页和 `RedirectByRole` 的默认落点都是 `/projects`。admin 额外的用户管理和 LLM 提示词模板模块分别使用 `/users` 与 `/llm-prompt-templates`，页面内部通过 `RequireAdmin` 做模块级权限保护。
 - 具体项目区域不显示“工作台”模块入口。
 - 具体项目页最外层 `<main>` 固定为视口高度并隐藏溢出，不生成自身滚动条；普通页面仍使用 `min-h-screen` 承接自然页面滚动。
 - 具体项目页右侧主内容外壳桌面端不使用 `overflow-y-auto`，该容器固定且不出现自身滚动条。
 - 具体项目的项目配置页顶部只显示“项目配置”标题，不显示基础信息、技术栈、全局生成约束或只读展示说明句。
-- 具体项目配置页在桌面端使用固定高度布局，配置卡片显示带 `ClipboardList` 图标的“配置表单”标题，并采用 `CardHeader` + 可滚动 `CardContent` 承载项目名称、项目描述、前端技术栈和后端技术栈；移动端继续沿用页面自然滚动。
+- 具体项目配置页在桌面端使用固定高度布局，配置卡片显示带 `ClipboardList` 图标的“配置表单”标题，并采用 `CardHeader` + 可滚动 `CardContent` 承载项目名称、开发语言、项目描述、前端技术栈和后端技术栈；移动端继续沿用页面自然滚动。
+- 具体项目配置页中的“开发语言”展示在项目名称下方，作为项目创建后不可修改的只读配置；语言选项使用紧凑宽度横向排列，不铺满表单宽度；保存配置时仍带回当前项目的 `llm_prompt_language` 值，避免意外清空或改写。
 - 具体项目配置页中的项目名称、项目描述、前端技术栈和后端技术栈说明都改为 hover tooltip，不再常显说明段落；字段标题和对应字段区域悬停时显示冒泡提示。
 - 具体项目配置页的字段提示使用 portal 浮层渲染到 `document.body`，避免在固定高度卡片和滚动容器里被裁切。
 - 具体项目配置页的“项目名称”提示文案为“用于标识当前项目，需要与业务主题一致”。
@@ -145,6 +178,11 @@
 - 前端核心阅读文字的最小字号基线为 `text-sm`：页面正文、字段标签、说明文本、列表文本、按钮、badge 文本和常规元信息不应低于 14px；tooltip、代码、JSON、路径、schema 字段和纯装饰性序号允许保留 `text-xs` 或更小字号。
 - 通用 `Card` 默认圆角使用 `rounded-lg`，默认无阴影并使用灰色细边，让卡片视觉更克制；需要特殊圆角、边框或阴影的容器应在调用处显式覆盖。
 - 前端下拉框统一使用 `src/components/ui/select.tsx` 中的 Radix Select 封装，不再直接使用原生 `<select>`；需要“全部”这类空筛选值时，使用非空 sentinel 值并在业务层映射回空字符串。
+- 前端语言选择采用轻量客户端 i18n 框架，不引入路由级 i18n 库；语言偏好不保存在浏览器本地存储中，登录用户以数据库中的 `preferred_locale` 为准，未登录用户使用 `NEXT_PUBLIC_DEFAULT_LOCALE` 兜底；首期迁移顶部导航、用户菜单、项目工作台导航、主题/语言按钮、通用状态和首页等核心壳层文案。
+- 项目工作台右侧模块的前端 UI 文案也纳入轻量 i18n 字典：原始需求、敏捷业务需求池、变更集、方案资产版本页、指令集合和一致性检查中的标题、筛选器、按钮、空态、错误兜底、日期格式、badge 和旧版兼容 viewer 文案应从 `useLanguage()` 的 `t` 读取；后端返回的业务内容、LLM 生成正文、资产标题/摘要和 prompt 正文保持原文，不在前端自动翻译。
+- Admin 顶层模块 `/users` 和 `/llm-prompt-templates` 的页面级 UI 文案也从 `useLanguage()` 的 `t` 读取；后端返回的用户字段值、模板名、schema 名、run_type 和 prompt 正文保持原文展示，不在前端自动翻译。
+- 各业务模块应具备自动更新能力，但后台自动刷新必须静默：首次加载或用户显式重载可以显示 loading/error；定时刷新、轮询恢复或后台同步不应清空当前数据、不应切回骨架屏，也不应因短暂失败把当前内容替换成错误态。刷新成功后再更新数据并清理旧错误。刷新间隔按模块分层：项目工作台生成链路和方案资产页使用 3 秒静默刷新；低频 admin 模块如 `/users`、`/llm-prompt-templates` 使用 30 秒静默刷新；所有自动刷新页面在 `visibilitychange` 回到可见状态时应立即静默刷新一次。
+- 根营销首页、`/projects` 项目首页和 `/projects/new` 创建项目流程也应从 `useLanguage()` 读取 UI 文案；营销首页因依赖客户端语言状态已声明为客户端组件，能力卡和对比表内容来自 `t.marketing`。
 - 敏捷业务需求池的三个全局筛选控件（优先级、影响范围、关键词）在控件本体显式使用 `font-normal`，避免继承筛选标签的 `font-medium` 导致当前值或 placeholder 加粗。
 - 敏捷业务需求故事卡的“执行”按钮调用 `/business-stories/{story_id}/execute`，当前只入队 `generate_change_set` 后台任务生成分层变更集，不直接应用变更集；前端等待任务完成后停留在当前需求池页面，不自动跳转。
 - 敏捷业务需求故事卡在创建时间与影响范围之间显示执行任务实时进度条，进度数据来自对应 `GenerationRun` 的 `progress`、`message` 和 `status`；排队/运行显示主色，完成显示绿色，失败/取消显示红色。
@@ -178,12 +216,16 @@
 - 蓝图只保留历史兼容语义，不再出现在主导航和默认操作中。
 - `frontend-pages` / `frontend-tools` 与 `backend-services` / `backend-tools` 只作为历史兼容文案或旧路由重定向，不作为主入口。
 - 交付页在主链路里统一对应 `PromptPack` 数据，导航文案直接显示为“指令集合”。
+- `/llm-prompt-templates` 是 admin 侧只读模板中心，使用普通 `AppShell`，调用后端 `GET /api/v1/admin/llm-prompt-templates` 获取按模块分组的模板清单；每个任务展示任务名、模板名、schema 名和 system/user 两段源码，并提供复制按钮。
+- `/llm-prompt-templates` 页面进入后自动加载模板，并在页面可见时每 30 秒自动同步，切回前台时立即静默同步一次；只有首次加载显示骨架，后台自动同步保留当前内容并静默更新，避免页面抖动；页面不提供手动刷新按钮或模板总览卡片，长 prompt 使用断行和容器宽度约束避免横向溢出；页面标题“LLM 提示词模板”右侧提供唯一的“简体中文 / English”全局 toggle，标题在左、toggle 靠页面内容区右侧对齐，所有模板任务卡片共用该语言状态；标题区下方所有模块内容放入一个大 `Card`，滚动条作用于该大卡片的 `CardContent`，任务项使用轻量边框面板避免卡片嵌套；prompt 区复制按钮通过 `CopyButton className` 使用紧凑尺寸，不影响其他页面的默认复制按钮。
+- `ui_design` 后端资产契约已覆盖视觉系统、布局规则和组件样式规则；《特征设计.md》中的字段说明目前位于 `app/prompts/templates/ui_design/prompt.j2` 的 Prompt 文本中，不是独立的 Tooltip/冒泡文案字段，也不会作为单独元数据从 API 返回。
+- `/users` 是 admin 侧用户管理页面，使用普通 `AppShell`；两个额外模块通过顶部导航和用户菜单提供入口，不设置独立的 `/admin` 前端路由。
 - 具体项目配置页保存成功后使用右上角全局 toast 提示“项目配置已保存”，失败态仍保留页面内错误提示；保存按钮在 `saving` 期间保持“保存配置”文案，仅通过禁用态防止重复提交，避免按钮文字闪烁。
 - `/login` 页面顶部品牌文案为 `Monoplanner`，不再显示额外的登录说明句和 `CardDescription` 辅助文案；页面中的“登录”标题当前回到文案块的垂直中心位置。
 - `/login` 页面中的品牌胶囊当前使用较大的负向垂直位移，视觉上明显上移。
 - `/login` 页面中“登录账号”标题与邮箱输入框之间、密码输入框与登录按钮之间的垂直间距已加大。
 - `/login` 页面读取 `loginRequired=1` 查询参数时，通过全局 `sonner` 以 warning 级别提示“请先登录”；受保护页面和 API 401 跳转会保留 `redirectTo` 以便登录后回到原页面。
-- UI 视觉设计新版公开内容契约为 `visual_system/layout_rules/component_style_rules`；历史 `visual_hierarchy/layout_guidelines/badge_rules/button_rules/form_rules/responsive_rules/accessibility_visual_rules` 只作为旧资产展示兼容，不作为新版主展示字段。
+- UI 视觉设计新版公开内容契约为 `visual_system/layout_rules/component_style_rules`，并兼容扩展 `visual_quality_summary`、`visual_system.evidence_policy/source_references/tbd_items/accessibility_rules/responsive_contract`、token 级 `token_type/css_variable/validated_status/source_basis/contrast_notes`、布局级主行动/网格/重排/容器规则和组件级状态/响应式/可访问性/实现提示；历史 `visual_hierarchy/layout_guidelines/badge_rules/button_rules/form_rules/responsive_rules/accessibility_visual_rules` 只作为旧资产展示兼容，不作为新版主展示字段。
 - 前端实现版本资产新版公开内容契约为 `route_definitions/directory_structure/code_logic/environment_variables/design_theme/dependencies`；历史 `pages/components/data_flow/internal_utilities/install_commands` 只作为旧资产展示兼容。
 - 后端实现版本资产新版公开内容契约为 `directory_structure/code_logic/utility_classes/llm_interaction_templates/environment_variables/dependencies`；历史 `services/cross_cutting_rules/api_mappings/database_mappings/external_services/internal_utilities/install_commands` 只作为旧资产展示兼容。
 - API 契约新版公开内容契约为 `api_base_path/api_resource_groups/endpoints/request_schema/response_schema/error_model`；历史 `base_path/resources/schemas` 只作为旧资产展示兼容。

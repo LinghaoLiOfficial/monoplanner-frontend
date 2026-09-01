@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/common/ErrorState";
 import { LoadingState } from "@/components/common/LoadingState";
+import { useLanguage } from "@/components/language/language-provider";
 import { GenerationActionPanel } from "@/components/project/GenerationActionPanel";
 import { RequirementEditor } from "@/components/requirement/RequirementEditor";
 import { RequirementList } from "@/components/requirement/RequirementList";
@@ -44,6 +45,7 @@ function sortByVersionDesc<T extends { version: number; created_at: string; is_c
 export default function ProjectWorkspacePage() {
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
+  const { t } = useLanguage();
   const [project, setProject] = useState<Project | null>(null);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [businessStories, setBusinessStories] = useState<BusinessRequirementStory[]>([]);
@@ -85,7 +87,7 @@ export default function ProjectWorkspacePage() {
       setChangeSets(changeSetsData);
       setPromptPacks(promptPacksData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载项目失败");
+      setError(err instanceof Error ? err.message : t.projectPages.workspace.loadFailed);
     } finally {
       setLoading(false);
     }
@@ -112,11 +114,11 @@ export default function ProjectWorkspacePage() {
   }, [projectId]);
 
   if (loading) {
-    return <LoadingState label="正在加载项目..." />;
+    return <LoadingState label={t.projectPages.workspace.loading} />;
   }
 
   if (error || !project) {
-    return <ErrorState title="项目不可用" message={error || "项目不存在"} actionLabel="重新加载" onAction={loadWorkspace} />;
+    return <ErrorState title={t.projectPages.workspace.unavailable} message={error || t.projectPages.workspace.missing} actionLabel={t.common.reload} onAction={loadWorkspace} />;
   }
 
   return (
@@ -127,13 +129,13 @@ export default function ProjectWorkspacePage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href="/projects">返回我的项目</Link>
+            <Link href="/projects">{t.projectPages.workspace.backToProjects}</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
+            <Link href={`/projects/${projectId}/configuration`}>{t.projectNav.items.configuration}</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={`/projects/${projectId}/business-requirements`}>敏捷业务需求池</Link>
+            <Link href={`/projects/${projectId}/business-requirements`}>{t.projectNav.items.businessRequirements}</Link>
           </Button>
         </div>
       </div>
@@ -151,8 +153,8 @@ export default function ProjectWorkspacePage() {
           <RequirementEditor onSave={handleSaveRequirement} />
           <Card>
             <CardHeader>
-              <CardTitle>原始用户需求</CardTitle>
-              <CardDescription>最近保存的自然语言需求</CardDescription>
+              <CardTitle>{t.projectPages.workspace.rawRequirements}</CardTitle>
+              <CardDescription>{t.projectPages.workspace.recentRequirements}</CardDescription>
             </CardHeader>
             <CardContent>
               <RequirementList requirements={requirements} />
@@ -163,40 +165,40 @@ export default function ProjectWorkspacePage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>当前编排状态</CardTitle>
-              <CardDescription>以敏捷业务需求池、分层变更集、版本资产和指令集合为中心的主链路概览</CardDescription>
+              <CardTitle>{t.projectPages.workspace.orchestrationStatus}</CardTitle>
+              <CardDescription>{t.projectPages.workspace.orchestrationDescription}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-sm font-medium">敏捷业务需求池</p>
+                <p className="text-sm font-medium">{t.projectNav.items.businessRequirements}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {currentBusinessStories.length > 0 ? `${currentBusinessStories.length} 条当前有效故事` : "当前还没有有效业务故事"}
+                  {currentBusinessStories.length > 0 ? t.projectPages.workspace.storyPoolCount(currentBusinessStories.length) : t.projectPages.workspace.noStoryPool}
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-sm font-medium">分层变更集</p>
+                <p className="text-sm font-medium">{t.projectNav.items.changeSets}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {currentChangeSets.length > 0 ? `${currentChangeSets.length} 条当前有效变更集` : "当前还没有有效变更集"}
+                  {currentChangeSets.length > 0 ? t.projectPages.workspace.changeSetCount(currentChangeSets.length) : t.projectPages.workspace.noChangeSet}
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-sm font-medium">指令集合</p>
+                <p className="text-sm font-medium">{t.projectNav.items.delivery}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {currentPromptPack ? `当前有效版本：v${currentPromptPack.version}` : "暂无可用指令集合"}
+                  {currentPromptPack ? t.projectPages.workspace.currentPromptPack(currentPromptPack.version) : t.projectPages.workspace.noPromptPack}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button asChild variant="outline">
-                  <Link href={`/projects/${projectId}/configuration`}>项目配置</Link>
+                  <Link href={`/projects/${projectId}/configuration`}>{t.projectNav.items.configuration}</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href={`/projects/${projectId}/business-requirements`}>敏捷业务需求池</Link>
+                  <Link href={`/projects/${projectId}/business-requirements`}>{t.projectNav.items.businessRequirements}</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href={`/projects/${projectId}/change-sets`}>分层变更集</Link>
+                  <Link href={`/projects/${projectId}/change-sets`}>{t.projectNav.items.changeSets}</Link>
                 </Button>
                 <Button asChild>
-                  <Link href={`/projects/${projectId}/delivery`}>指令集合</Link>
+                  <Link href={`/projects/${projectId}/delivery`}>{t.projectNav.items.delivery}</Link>
                 </Button>
               </div>
             </CardContent>

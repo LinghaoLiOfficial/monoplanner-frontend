@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshCw, Search, Save } from "lucide-react";
 
-import { AdminShell } from "@/components/admin/AdminShell";
+import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { RequireAuth } from "@/components/auth/RequireAuth";
+import { AppShell } from "@/components/layout/AppShell";
+import { useLanguage } from "@/components/language/language-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,10 +43,15 @@ const nonAdminRoles: NonAdminUserRole[] = [
   "vip-pro-max",
 ];
 const allRoleFilterValue = "all";
+const ADMIN_REFRESH_INTERVAL_MS = 30_000;
 
-function formatDateTime(value?: string | null) {
+function formatDateTime(
+  value: string | null | undefined,
+  locale: string,
+  notRecordedLabel: string
+) {
   if (!value) {
-    return "未记录";
+    return notRecordedLabel;
   }
 
   const date = new Date(value);
@@ -52,7 +60,7 @@ function formatDateTime(value?: string | null) {
     return value;
   }
 
-  return date.toLocaleString("zh-CN", {
+  return date.toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -73,6 +81,7 @@ function UserRow({
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { locale, t } = useLanguage();
 
   const hasChanges = role !== user.role || displayName !== (user.display_name ?? "");
 
@@ -91,7 +100,7 @@ function UserRow({
       });
       onUpdated(updatedUser);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "保存用户失败");
+      setError(err instanceof Error ? err.message : t.adminUsers.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -111,7 +120,7 @@ function UserRow({
         : await enableAdminUser(user.id);
       onUpdated(updatedUser);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "更新用户状态失败");
+      setError(err instanceof Error ? err.message : t.adminUsers.statusUpdateFailed);
     } finally {
       setToggling(false);
     }
@@ -128,7 +137,7 @@ function UserRow({
         <Input
           value={displayName}
           onChange={(event) => setDisplayName(event.target.value)}
-          placeholder="显示名称"
+          placeholder={t.adminUsers.displayNamePlaceholder}
           disabled={saving || toggling}
         />
       </TableCell>
@@ -152,19 +161,19 @@ function UserRow({
       </TableCell>
       <TableCell>
         <Badge variant={user.is_active ? "secondary" : "destructive"}>
-          {user.is_active ? "已启用" : "已禁用"}
+          {user.is_active ? t.adminUsers.active : t.adminUsers.disabled}
         </Badge>
       </TableCell>
       <TableCell>
         <Badge variant={user.is_email_verified ? "secondary" : "outline"}>
-          {user.is_email_verified ? "已验证" : "未验证"}
+          {user.is_email_verified ? t.adminUsers.verified : t.adminUsers.unverified}
         </Badge>
       </TableCell>
       <TableCell className="min-w-44 text-muted-foreground">
-        {formatDateTime(user.created_at)}
+        {formatDateTime(user.created_at, locale, t.adminUsers.notRecorded)}
       </TableCell>
       <TableCell className="min-w-44 text-muted-foreground">
-        {formatDateTime(user.last_login_at)}
+        {formatDateTime(user.last_login_at, locale, t.adminUsers.notRecorded)}
       </TableCell>
       <TableCell>
         <div className="flex min-w-48 gap-2">
@@ -176,16 +185,16 @@ function UserRow({
             onClick={handleSave}
           >
             <Save className="size-4" />
-            保存
+            {t.adminUsers.save}
           </Button>
           <Button
             type="button"
             size="sm"
             variant={user.is_active ? "destructive" : "outline"}
-            disabled={saving || toggling}
-            onClick={handleToggleActive}
-          >
-            {user.is_active ? "禁用" : "启用"}
+          disabled={saving || toggling}
+          onClick={handleToggleActive}
+        >
+            {user.is_active ? t.adminUsers.disable : t.adminUsers.enable}
           </Button>
         </div>
       </TableCell>
@@ -193,7 +202,8 @@ function UserRow({
   );
 }
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -209,26 +219,44 @@ export default function AdminUsersPage() {
     [pageSize, total]
   );
 
-  const loadUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadUsers = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+      setError(null);
+    }
 
     try {
       const response = await listAdminUsers({
-        q: search.trim() || undefined,
-        role: role || undefined,
-        is_active: isActive === "all" ? undefined : isActive === "active",
         page,
         page_size: pageSize,
       });
-      setUsers(response.items);
-      setTotal(response.total);
+      const normalizedSearch = search.trim().toLowerCase();
+      const filteredUsers = response.filter((user) => {
+        const matchesSearch =
+          !normalizedSearch ||
+          user.username.toLowerCase().includes(normalizedSearch) ||
+          user.email.toLowerCase().includes(normalizedSearch);
+        const matchesRole = !role || user.role === role;
+        const matchesStatus =
+          isActive === "all" ||
+          (isActive === "active" ? user.is_active : !user.is_active);
+
+        return matchesSearch && matchesRole && matchesStatus;
+      });
+      const startIndex = (page - 1) * pageSize;
+      setUsers(filteredUsers.slice(startIndex, startIndex + pageSize));
+      setTotal(filteredUsers.length);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载用户列表失败");
+      if (!options?.silent) {
+        setError(err instanceof Error ? err.message : t.adminUsers.loadFailed);
+      }
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
-  }, [isActive, page, pageSize, role, search]);
+  }, [isActive, page, pageSize, role, search, t.adminUsers.loadFailed]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -238,6 +266,26 @@ export default function AdminUsersPage() {
     return () => window.clearTimeout(timer);
   }, [loadUsers]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadUsers({ silent: true });
+      }
+    }, ADMIN_REFRESH_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadUsers({ silent: true });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [loadUsers]);
+
   const handleUpdated = (updatedUser: AdminUser) => {
     setUsers((current) =>
       current.map((user) => (user.id === updatedUser.id ? updatedUser : user))
@@ -245,31 +293,30 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <AdminShell>
-      <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Admin Users</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">用户管理</h1>
+            <p className="text-sm text-muted-foreground">{t.adminUsers.kicker}</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight">{t.adminUsers.title}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-              管理所有非管理员用户，不允许设置 admin 角色。
+              {t.adminUsers.description}
             </p>
           </div>
           <Button variant="outline" onClick={() => void loadUsers()} disabled={loading}>
             <RefreshCw className="size-4" />
-            刷新
+            {t.adminUsers.refresh}
           </Button>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>筛选</CardTitle>
-            <CardDescription>按用户名、邮箱、角色和状态筛选用户</CardDescription>
+            <CardTitle>{t.adminUsers.filterTitle}</CardTitle>
+            <CardDescription>{t.adminUsers.filterDescription}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 lg:grid-cols-[1fr_180px_180px]">
               <div className="space-y-2">
-                <Label htmlFor="admin-user-search">搜索</Label>
+                <Label htmlFor="admin-user-search">{t.adminUsers.search}</Label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -280,13 +327,13 @@ export default function AdminUsersPage() {
                       setPage(1);
                     }}
                     className="pl-10"
-                    placeholder="搜索用户名或邮箱"
+                    placeholder={t.adminUsers.searchPlaceholder}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="admin-user-role">角色</Label>
+                <Label htmlFor="admin-user-role">{t.adminUsers.role}</Label>
                 <Select
                   value={role || allRoleFilterValue}
                   onValueChange={(value) => {
@@ -298,7 +345,7 @@ export default function AdminUsersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={allRoleFilterValue}>全部角色</SelectItem>
+                    <SelectItem value={allRoleFilterValue}>{t.adminUsers.allRoles}</SelectItem>
                     {nonAdminRoles.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
@@ -309,7 +356,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="admin-user-status">状态</Label>
+                <Label htmlFor="admin-user-status">{t.adminUsers.status}</Label>
                 <Select
                   value={isActive}
                   onValueChange={(value) => {
@@ -321,9 +368,9 @@ export default function AdminUsersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全部状态</SelectItem>
-                    <SelectItem value="active">已启用</SelectItem>
-                    <SelectItem value="disabled">已禁用</SelectItem>
+                    <SelectItem value="all">{t.adminUsers.allStatuses}</SelectItem>
+                    <SelectItem value="active">{t.adminUsers.active}</SelectItem>
+                    <SelectItem value="disabled">{t.adminUsers.disabled}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -339,29 +386,27 @@ export default function AdminUsersPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>用户列表</CardTitle>
-            <CardDescription>
-              共 {total} 个用户，当前第 {page} / {totalPages} 页
-            </CardDescription>
+            <CardTitle>{t.adminUsers.userList}</CardTitle>
+            <CardDescription>{t.adminUsers.userSummary(total, page, totalPages)}</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="rounded-[1.5rem] border border-border/70 bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-                正在加载用户列表...
+                {t.adminUsers.loadingUsers}
               </div>
             ) : users.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>用户名</TableHead>
-                    <TableHead>邮箱</TableHead>
-                    <TableHead>显示名称</TableHead>
-                    <TableHead>角色</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>邮箱</TableHead>
-                    <TableHead>注册时间</TableHead>
-                    <TableHead>最近登录</TableHead>
-                    <TableHead>操作</TableHead>
+                    <TableHead>{t.adminUsers.username}</TableHead>
+                    <TableHead>{t.adminUsers.email}</TableHead>
+                    <TableHead>{t.adminUsers.displayName}</TableHead>
+                    <TableHead>{t.adminUsers.role}</TableHead>
+                    <TableHead>{t.adminUsers.status}</TableHead>
+                    <TableHead>{t.adminUsers.emailVerification}</TableHead>
+                    <TableHead>{t.adminUsers.createdAt}</TableHead>
+                    <TableHead>{t.adminUsers.lastLoginAt}</TableHead>
+                    <TableHead>{t.adminUsers.actions}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -372,13 +417,13 @@ export default function AdminUsersPage() {
               </Table>
             ) : (
               <div className="rounded-[1.5rem] border border-border/70 bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-                暂无匹配用户
+                {t.adminUsers.noMatchedUsers}
               </div>
             )}
 
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm text-muted-foreground">
-                每页 {pageSize} 条
+                {t.adminUsers.pageSize(pageSize)}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -388,7 +433,7 @@ export default function AdminUsersPage() {
                   disabled={page <= 1 || loading}
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                 >
-                  上一页
+                  {t.common.previousPage}
                 </Button>
                 <Button
                   type="button"
@@ -397,13 +442,24 @@ export default function AdminUsersPage() {
                   disabled={page >= totalPages || loading}
                   onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                 >
-                  下一页
+                  {t.common.nextPage}
                 </Button>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
-    </AdminShell>
+    </div>
+  );
+}
+
+export default function AdminUsersPage() {
+  return (
+    <RequireAuth>
+      <AppShell>
+        <RequireAdmin>
+          <AdminUsersContent />
+        </RequireAdmin>
+      </AppShell>
+    </RequireAuth>
   );
 }

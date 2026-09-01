@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { History, List, ListChecks, PanelTopOpen, X } from "lucide-react";
 
@@ -14,6 +14,7 @@ import { LoadingState } from "@/components/common/LoadingState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/components/language/language-provider";
 import {
   Select,
   SelectContent,
@@ -29,11 +30,13 @@ import {
   updateBusinessStory,
 } from "@/lib/api/business-stories";
 import { getGenerationRun } from "@/lib/api/generation-runs";
+import { isAbortError, useInFlightRef, useMountedRef } from "@/lib/async-control";
 import {
-  businessStoryImpactScopeLabels,
   businessStoryImpactScopeOptions,
+  getBusinessStoryImpactScopeLabel,
   implementationScopeLabels,
 } from "@/lib/design-asset-labels";
+import type { I18nDictionary } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type {
   BusinessRequirementStory,
@@ -43,14 +46,14 @@ import type {
 } from "@/lib/types/business-story";
 import type { GenerationRun } from "@/lib/types/generation-run";
 
-function getBusinessStoryErrorMessage(err: unknown, fallback: string) {
+function getBusinessStoryErrorMessage(err: unknown, fallback: string, t: I18nDictionary) {
   if (err instanceof ApiError) {
     if (err.status === 400) {
-      return "请先提交用户需求后再生成业务故事";
+      return t.businessStories.apiErrors.needRequirement;
     }
 
     if (err.status === 503) {
-      return "LLM 服务未配置，请检查后端 LLM 配置后重试";
+      return t.businessStories.apiErrors.llmNotConfigured;
     }
 
     return err.message;
@@ -67,6 +70,7 @@ const successfulExecutionStatuses = new Set([
 ]);
 const generationRunPollIntervalMs = 2000;
 const generationRunMaxPolls = 180;
+const projectRefreshIntervalMs = 3000;
 const completedGenerationRunStatuses = new Set(["completed", "succeeded", "success"]);
 const failedGenerationRunStatuses = new Set(["failed", "error", "cancelled"]);
 
@@ -74,8 +78,8 @@ function sleep(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
-function formatHistoryDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function formatHistoryDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -156,12 +160,14 @@ function StoryIndexPanel({
   activeStoryId: string | null;
   onStorySelect: (storyId: string) => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <Card className="lg:sticky lg:top-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ListChecks className="size-5 text-muted-foreground" aria-hidden="true" />
-          需求列表
+          {t.businessStories.storyList}
         </CardTitle>
       </CardHeader>
       <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-4">
@@ -187,12 +193,12 @@ function StoryIndexPanel({
                   <span className="shrink-0">
                     <BusinessStoryPriorityBadge priority={story.priority} />
                   </span>
-                  {isActive ? <span className="sr-only">当前需求</span> : null}
+                  {isActive ? <span className="sr-only">{t.businessStories.currentStory}</span> : null}
                 </button>
               );
             })
           ) : (
-            <p className="text-xs text-muted-foreground">暂无可索引的需求</p>
+            <p className="text-xs text-muted-foreground">{t.businessStories.noIndexedStories}</p>
           )}
         </div>
       </CardContent>
@@ -219,6 +225,7 @@ function ExecutionHistoryCard({
   onClose: () => void;
   onRetry: () => void;
 }) {
+  const { locale, t } = useLanguage();
   const cardRef = useRef<HTMLDivElement>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const [dragPointerId, setDragPointerId] = useState<number | null>(null);
@@ -309,15 +316,15 @@ function ExecutionHistoryCard({
       >
         <div className="flex min-w-0 items-center gap-2">
           <History className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <CardTitle>历史执行记录</CardTitle>
+          <CardTitle>{t.businessStories.history}</CardTitle>
         </div>
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="size-8 shrink-0"
-          aria-label="关闭历史执行记录"
-          title="关闭历史执行记录"
+          aria-label={t.businessStories.closeHistory}
+          title={t.businessStories.closeHistory}
           onClick={onClose}
         >
           <X className="size-4" />
@@ -326,19 +333,19 @@ function ExecutionHistoryCard({
       <CardContent className="min-h-0 flex-1 overflow-y-auto p-4 lg:overflow-hidden">
         {loading ? (
           <div className="flex h-full min-h-48 items-center justify-center text-sm text-muted-foreground">
-            正在加载历史执行记录...
+            {t.businessStories.loadingHistory}
           </div>
         ) : null}
-        {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={onRetry} /> : null}
+        {!loading && error ? <ErrorState message={error} actionLabel={t.common.reload} onAction={onRetry} /> : null}
         {!loading && !error && stories.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">暂无成功执行记录</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t.businessStories.noHistory}</p>
         ) : null}
         {!loading && !error && stories.length > 0 ? (
           <div className="grid gap-4 lg:h-full lg:min-h-0 lg:grid-cols-[180px_minmax(0,1fr)] lg:items-stretch">
             <section className="min-h-0 space-y-3 lg:overflow-hidden">
               <div className="flex items-center gap-2">
                 <List className="size-5 text-muted-foreground" aria-hidden="true" />
-                <h3 className="text-base font-semibold">记录列表</h3>
+                <h3 className="text-base font-semibold">{t.businessStories.recordList}</h3>
               </div>
               <div className="space-y-2 lg:h-[calc(100%-2.5rem)] lg:overflow-y-auto lg:pr-2">
                 {stories.map((story) => {
@@ -360,7 +367,7 @@ function ExecutionHistoryCard({
                         </span>
                       </div>
                       <div className="mt-3 text-xs leading-5 text-muted-foreground">
-                        {formatHistoryDate(story.applied_at ?? story.updated_at)}
+                        {formatHistoryDate(story.applied_at ?? story.updated_at, locale)}
                       </div>
                     </button>
                   );
@@ -371,7 +378,7 @@ function ExecutionHistoryCard({
             <section className="min-h-0 space-y-3 lg:overflow-hidden">
               <div className="flex items-center gap-2">
                 <PanelTopOpen className="size-5 text-muted-foreground" aria-hidden="true" />
-                <h3 className="text-base font-semibold">需求详情</h3>
+                <h3 className="text-base font-semibold">{t.businessStories.storyDetails}</h3>
               </div>
               <div className="space-y-4 lg:h-[calc(100%-2.5rem)] lg:overflow-y-auto lg:pr-2">
                 {selectedStory ? (
@@ -382,7 +389,7 @@ function ExecutionHistoryCard({
                     onPriorityChange={async () => undefined}
                   />
                 ) : (
-                  <p className="text-sm leading-6 text-muted-foreground">暂无需求详情。</p>
+                  <p className="text-sm leading-6 text-muted-foreground">{t.businessStories.noStoryDetails}</p>
                 )}
               </div>
             </section>
@@ -396,6 +403,7 @@ function ExecutionHistoryCard({
 const allFilterValue = "all";
 
 export default function ProjectBusinessStoriesPage() {
+  const { locale, t } = useLanguage();
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
   const [stories, setStories] = useState<BusinessRequirementStory[]>([]);
@@ -421,7 +429,20 @@ export default function ProjectBusinessStoriesPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectedHistoryStoryId, setSelectedHistoryStoryId] = useState<string | null>(null);
+  const mountedRef = useMountedRef();
+  const refreshInFlightRef = useInFlightRef();
+  const abortControllersRef = useRef<Set<AbortController>>(new Set());
   const showCurrentStoryList = true;
+
+  const createTrackedController = useCallback(() => {
+    const controller = new AbortController();
+    abortControllersRef.current.add(controller);
+    return controller;
+  }, []);
+
+  const releaseTrackedController = useCallback((controller: AbortController) => {
+    abortControllersRef.current.delete(controller);
+  }, []);
 
   const currentStories = useMemo(
     () =>
@@ -472,49 +493,65 @@ export default function ProjectBusinessStoriesPage() {
     setStoryScrollRequestKey((current) => current + 1);
   };
 
-  const pollExecutionRun = async (storyId: string, initialRun: GenerationRun) => {
+  const pollExecutionRun = async (storyId: string, initialRun: GenerationRun, signal?: AbortSignal) => {
     let currentRun = initialRun;
-    setExecutionProgressByStoryId((current) => ({
-      ...current,
-      [storyId]: currentRun,
-    }));
+    if (mountedRef.current && !signal?.aborted) {
+      setExecutionProgressByStoryId((current) => ({
+        ...current,
+        [storyId]: currentRun,
+      }));
+    }
 
     if (
       !completedGenerationRunStatuses.has(currentRun.status) &&
-      !failedGenerationRunStatuses.has(currentRun.status)
+      !failedGenerationRunStatuses.has(currentRun.status) &&
+      mountedRef.current &&
+      !signal?.aborted
     ) {
       setExecutingStoryId(storyId);
     }
 
     try {
       for (let attempt = 0; attempt < generationRunMaxPolls; attempt += 1) {
+        if (signal?.aborted || !mountedRef.current) {
+          return currentRun;
+        }
+
         if (completedGenerationRunStatuses.has(currentRun.status)) {
           break;
         }
 
         if (failedGenerationRunStatuses.has(currentRun.status)) {
-          throw new Error(currentRun.error_message || currentRun.message || "生成分层变更集失败");
+          throw new Error(currentRun.error_message || currentRun.message || t.businessStories.generationFailed);
         }
 
         await sleep(generationRunPollIntervalMs);
-        currentRun = await getGenerationRun(initialRun.id);
-        setExecutionProgressByStoryId((current) => ({
-          ...current,
-          [storyId]: currentRun,
-        }));
+        currentRun = await getGenerationRun(initialRun.id, { signal });
+        if (mountedRef.current && !signal?.aborted) {
+          setExecutionProgressByStoryId((current) => ({
+            ...current,
+            [storyId]: currentRun,
+          }));
+        }
+      }
+
+      if (signal?.aborted || !mountedRef.current) {
+        return currentRun;
       }
 
       if (!completedGenerationRunStatuses.has(currentRun.status)) {
-        throw new Error("生成分层变更集超时，请稍后刷新变更集列表");
+        throw new Error(t.businessStories.generationTimeout);
       }
 
       return currentRun;
     } finally {
-      setExecutingStoryId((current) => (current === storyId ? null : current));
+      if (mountedRef.current && !signal?.aborted) {
+        setExecutingStoryId((current) => (current === storyId ? null : current));
+      }
     }
   };
 
-  const restoreExecutionProgress = async (nextStories: BusinessRequirementStory[]) => {
+  const restoreExecutionProgress = async (nextStories: BusinessRequirementStory[], signal?: AbortSignal) => {
     const storiesWithExecutionRuns = nextStories.filter(
       (story) => story.execution_generation_run_id
     );
@@ -528,7 +565,7 @@ export default function ProjectBusinessStoriesPage() {
         try {
           return {
             storyId: story.id,
-            run: await getGenerationRun(story.execution_generation_run_id as string),
+            run: await getGenerationRun(story.execution_generation_run_id as string, { signal }),
           };
         } catch {
           return null;
@@ -541,25 +578,50 @@ export default function ProjectBusinessStoriesPage() {
         .filter((item): item is { storyId: string; run: GenerationRun } => item !== null)
         .map(async ({ storyId, run }) => {
           try {
-            await pollExecutionRun(storyId, run);
+            await pollExecutionRun(storyId, run, signal);
           } catch (err) {
-            setExecuteError(err instanceof Error ? err.message : "恢复执行进度失败");
+            if (!isAbortError(err) && mountedRef.current && !signal?.aborted) {
+              setExecuteError(err instanceof Error ? err.message : t.businessStories.restoreExecutionFailed);
+            }
           }
         })
     );
   };
 
-  const loadStories = async () => {
-    setLoading(true);
-    setError(null);
+  const loadStories = async (options?: { silent?: boolean; signal?: AbortSignal }) => {
+    if (options?.silent && refreshInFlightRef.current) {
+      return;
+    }
+    if (options?.silent) {
+      refreshInFlightRef.current = true;
+    }
+    if (!options?.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      const nextStories = await listBusinessStories(projectId);
-      setStories(nextStories);
-      void restoreExecutionProgress(nextStories);
+      const nextStories = await listBusinessStories(projectId, undefined, {
+        signal: options?.signal,
+      });
+      if (mountedRef.current && !options?.signal?.aborted) {
+        setStories(nextStories);
+        setError(null);
+        void restoreExecutionProgress(nextStories, options?.signal);
+      }
     } catch (err) {
-      setError(getBusinessStoryErrorMessage(err, "加载敏捷业务需求池失败"));
+      if (isAbortError(err)) {
+        return;
+      }
+      if (!options?.silent && mountedRef.current) {
+        setError(getBusinessStoryErrorMessage(err, t.businessStories.loadFailed, t));
+      }
     } finally {
-      setLoading(false);
+      if (options?.silent) {
+        refreshInFlightRef.current = false;
+      }
+      if (!options?.silent && mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -595,34 +657,40 @@ export default function ProjectBusinessStoriesPage() {
       setStories((current) => current.filter((story) => story.id !== storyToDelete.id));
       setStoryToDelete(null);
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "删除业务故事失败");
+      setDeleteError(err instanceof Error ? err.message : t.businessStories.deleteFailed);
     } finally {
       setDeleteLoading(false);
     }
   };
 
   const handleExecuteStory = async (story: BusinessRequirementStory) => {
+    const controller = createTrackedController();
     setExecutingStoryId(story.id);
     setExecuteError(null);
     try {
-      const queuedRun = await executeBusinessStory(story.id);
-      await pollExecutionRun(story.id, queuedRun);
-      await loadStories();
+      const queuedRun = await executeBusinessStory(story.id, { signal: controller.signal });
+      await pollExecutionRun(story.id, queuedRun, controller.signal);
+      await loadStories({ silent: true, signal: controller.signal });
       if (historyOpen) {
         await loadHistoryStories();
       }
     } catch (err) {
-      setExecuteError(err instanceof Error ? err.message : "生成分层变更集失败");
+      if (!isAbortError(err) && mountedRef.current && !controller.signal.aborted) {
+        setExecuteError(err instanceof Error ? err.message : t.businessStories.generationFailed);
+      }
     } finally {
-      setExecutingStoryId(null);
+      releaseTrackedController(controller);
+      if (mountedRef.current && !controller.signal.aborted) {
+        setExecutingStoryId(null);
+      }
     }
   };
 
-  const loadHistoryStories = async () => {
+  const loadHistoryStories = async (signal?: AbortSignal) => {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const allStories = await listBusinessStories(projectId, { include_history: true });
+      const allStories = await listBusinessStories(projectId, { include_history: true }, { signal });
       const storiesWithExecutionRuns = await Promise.all(
         allStories.map(async (story) => {
           const knownRun = executionProgressByStoryId[story.id];
@@ -633,7 +701,7 @@ export default function ProjectBusinessStoriesPage() {
           try {
             return {
               story,
-              run: await getGenerationRun(story.execution_generation_run_id),
+              run: await getGenerationRun(story.execution_generation_run_id, { signal }),
             };
           } catch {
             return { story, run: undefined };
@@ -645,16 +713,22 @@ export default function ProjectBusinessStoriesPage() {
           .filter(({ story, run }) => isSuccessfullyExecutedStory(story, run))
           .map(({ story }) => story)
       );
-      setHistoryStories(successfulHistoryStories);
-      setSelectedHistoryStoryId((current) =>
-        current && successfulHistoryStories.some((story) => story.id === current)
-          ? current
-          : successfulHistoryStories[0]?.id ?? null
-      );
+      if (mountedRef.current && !signal?.aborted) {
+        setHistoryStories(successfulHistoryStories);
+        setSelectedHistoryStoryId((current) =>
+          current && successfulHistoryStories.some((story) => story.id === current)
+            ? current
+            : successfulHistoryStories[0]?.id ?? null
+        );
+      }
     } catch (err) {
-      setHistoryError(getBusinessStoryErrorMessage(err, "加载历史执行记录失败"));
+      if (!isAbortError(err) && mountedRef.current) {
+        setHistoryError(getBusinessStoryErrorMessage(err, t.projectPages.changeSets.historyLoadFailed, t));
+      }
     } finally {
-      setHistoryLoading(false);
+      if (mountedRef.current && !signal?.aborted) {
+        setHistoryLoading(false);
+      }
     }
   };
 
@@ -662,18 +736,47 @@ export default function ProjectBusinessStoriesPage() {
     const nextOpen = !historyOpen;
     setHistoryOpen(nextOpen);
     if (nextOpen && !historyLoading) {
-      void loadHistoryStories();
+      const controller = createTrackedController();
+      void loadHistoryStories(controller.signal).finally(() => releaseTrackedController(controller));
     }
   };
 
   useEffect(() => {
+    const controller = createTrackedController();
     const timer = window.setTimeout(() => {
-      void loadStories();
+      void loadStories({ signal: controller.signal });
     }, 0);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadStories({ silent: true, signal: controller.signal });
+      }
+    }, projectRefreshIntervalMs);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadStories({ silent: true, signal: controller.signal });
+      }
+    };
 
-    return () => window.clearTimeout(timer);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      controller.abort();
+      releaseTrackedController(controller);
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  useEffect(() => {
+    const abortControllers = abortControllersRef.current;
+
+    return () => {
+      abortControllers.forEach((controller) => controller.abort());
+      abortControllers.clear();
+    };
+  }, []);
 
   return (
     <div className="relative space-y-6 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
@@ -687,11 +790,11 @@ export default function ProjectBusinessStoriesPage() {
           onClick={handleToggleHistory}
         >
           <History className="size-4" aria-hidden="true" />
-          历史执行记录
+          {t.businessStories.history}
         </Button>
         <div className="flex flex-col gap-1 pt-12 md:flex-row md:flex-wrap md:items-start md:gap-4 md:pt-0 md:pr-44">
           <label className="flex w-fit max-w-full flex-col gap-1.5 text-xs font-medium text-muted-foreground">
-            <span>优先级</span>
+            <span>{t.businessStories.priority}</span>
             <Select
               value={priorityFilter || allFilterValue}
               onValueChange={(value) => {
@@ -702,7 +805,7 @@ export default function ProjectBusinessStoriesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={allFilterValue}>全部</SelectItem>
+                <SelectItem value={allFilterValue}>{t.businessStories.all}</SelectItem>
                 <SelectItem value="p1_must">P1</SelectItem>
                 <SelectItem value="p2_should">P2</SelectItem>
                 <SelectItem value="p3_could">P3</SelectItem>
@@ -711,7 +814,7 @@ export default function ProjectBusinessStoriesPage() {
             </Select>
           </label>
           <label className="flex w-fit max-w-full flex-col gap-1.5 text-xs font-medium text-muted-foreground">
-            <span>影响范围</span>
+            <span>{t.businessStories.impactScope}</span>
               <Select
               value={scopeFilter || allFilterValue}
               onValueChange={(value) => {
@@ -726,24 +829,24 @@ export default function ProjectBusinessStoriesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={allFilterValue}>全部</SelectItem>
+                <SelectItem value={allFilterValue}>{t.businessStories.all}</SelectItem>
                 {businessStoryImpactScopeOptions.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {businessStoryImpactScopeLabels[value]}
+                    {getBusinessStoryImpactScopeLabel(value, locale)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </label>
           <label className="flex w-fit max-w-full flex-col gap-1.5 text-xs font-medium text-muted-foreground">
-            <span>关键词</span>
+            <span>{t.businessStories.keyword}</span>
             <Input
               className="h-8 w-80 rounded-xl px-2 py-1 font-normal"
               value={keyword}
               onChange={(event) => {
                 setKeyword(event.target.value);
               }}
-              placeholder="搜索标题、用户故事"
+              placeholder={t.businessStories.searchPlaceholder}
             />
           </label>
         </div>
@@ -758,13 +861,13 @@ export default function ProjectBusinessStoriesPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PanelTopOpen className="size-5 text-muted-foreground" aria-hidden="true" />
-                  需求详情
+                  {t.businessStories.storyDetails}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-4">
-                {executeError ? <ErrorState title="执行失败" message={executeError} /> : null}
-                {loading ? <LoadingState label="正在加载敏捷业务需求池..." /> : null}
-                {!loading && error ? <ErrorState message={error} actionLabel="重新加载" onAction={loadStories} /> : null}
+                {executeError ? <ErrorState title={t.businessStories.executeFailed} message={executeError} /> : null}
+                {loading ? <LoadingState label={t.businessStories.loadingStories} /> : null}
+                {!loading && error ? <ErrorState message={error} actionLabel={t.common.reload} onAction={loadStories} /> : null}
                 {showCurrentStoryList && !loading && !error ? (
                   <BusinessStoryList
                     stories={filteredCurrentStories}
@@ -788,10 +891,10 @@ export default function ProjectBusinessStoriesPage() {
 
       <ConfirmDialog
         open={Boolean(storyToDelete)}
-        title="确认删除业务故事？"
-        description={`删除后，“${storyToDelete?.title ?? "该业务故事"}”将从当前列表中移除，此操作不可撤销`}
-        confirmText="确认删除"
-        cancelText="取消"
+        title={t.businessStories.deleteTitle}
+        description={t.businessStories.deleteDescription(storyToDelete?.title ?? t.businessStories.fallbackStory)}
+        confirmText={t.businessStories.confirmDelete}
+        cancelText={t.businessStories.cancel}
         loading={deleteLoading}
         destructive
         error={deleteError}

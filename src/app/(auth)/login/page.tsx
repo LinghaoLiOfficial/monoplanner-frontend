@@ -61,12 +61,12 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const user = await loginWithPassword({
+      await loginWithPassword({
         email: normalizedEmail,
         password,
       });
       const redirectTo = new URLSearchParams(window.location.search).get("redirectTo");
-      router.replace(user.role === "admin" ? "/admin" : redirectTo || "/projects");
+      router.replace(redirectTo || "/projects");
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败");
     } finally {

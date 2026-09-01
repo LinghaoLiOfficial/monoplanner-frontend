@@ -4,10 +4,12 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { VersionedAssetPage } from "@/components/design-assets/VersionedAssetPage";
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 import { getProjectBlueprints, summarizeProjectBlueprint } from "@/lib/api/blueprints";
 
 function SummarizeBlueprintButton() {
+  const { t } = useLanguage();
   const params = useParams<{ projectId: string }>();
   const projectId = params.projectId;
   const [loading, setLoading] = useState(false);
@@ -24,30 +26,33 @@ function SummarizeBlueprintButton() {
 
   return (
     <Button type="button" onClick={() => void handleSummarize()} disabled={loading}>
-      {loading ? "重新总结中..." : "重新总结项目蓝图"}
+      {loading ? t.designAssets.pages.projectBlueprint.resummarizing : t.designAssets.pages.projectBlueprint.resummarize}
     </Button>
   );
 }
 
 export default function ProjectBlueprintPage() {
+  const { t } = useLanguage();
+  const page = t.designAssets.pages.projectBlueprint;
+
   return (
     <VersionedAssetPage
-      title="项目蓝图"
-      description="项目蓝图是当前所有设计资产的聚合摘要，不是唯一源头。"
-      emptyDescription="应用变更集后，项目蓝图会在这里形成版本化聚合摘要。"
+      title={page.title}
+      description={page.description}
+      emptyDescription={page.emptyDescription}
       listAssets={getProjectBlueprints}
       action={<SummarizeBlueprintButton />}
       sections={[
-        { key: "project_overview", title: "项目概览" },
-        { key: "current_product_scope", title: "当前产品范围" },
-        { key: "business_capability_summary", title: "业务能力摘要" },
-        { key: "ux_summary", title: "UX 摘要" },
-        { key: "ui_summary", title: "UI 摘要" },
-        { key: "frontend_summary", title: "前端摘要" },
-        { key: "backend_summary", title: "后端摘要" },
-        { key: "architecture_notes", title: "架构说明" },
-        { key: "risks", title: "风险" },
-        { key: "open_questions", title: "待确认问题" },
+        { key: "project_overview", title: page.sections.projectOverview },
+        { key: "current_product_scope", title: page.sections.currentProductScope },
+        { key: "business_capability_summary", title: page.sections.businessCapabilitySummary },
+        { key: "ux_summary", title: page.sections.uxSummary },
+        { key: "ui_summary", title: page.sections.uiSummary },
+        { key: "frontend_summary", title: page.sections.frontendSummary },
+        { key: "backend_summary", title: page.sections.backendSummary },
+        { key: "architecture_notes", title: page.sections.architectureNotes },
+        { key: "risks", title: page.sections.risks },
+        { key: "open_questions", title: page.sections.openQuestions },
       ]}
     />
   );

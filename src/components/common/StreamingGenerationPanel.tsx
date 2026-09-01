@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CircleStop, Sparkles } from "lucide-react";
 
 import { StreamingOutputViewer } from "@/components/common/StreamingOutputViewer";
@@ -68,6 +68,12 @@ export function StreamingGenerationPanel({
   const [messages, setMessages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const appendMessage = (message: string) => {
     setMessages((current) => [...current, message]);

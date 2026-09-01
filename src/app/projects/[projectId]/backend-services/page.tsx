@@ -1,21 +1,25 @@
 "use client";
 
 import { VersionedAssetPage } from "@/components/design-assets/VersionedAssetPage";
+import { useLanguage } from "@/components/language/language-provider";
 import { listBackendServiceDesigns } from "@/lib/api/backend-service-designs";
 
 export default function BackendServicesPage() {
+  const { t } = useLanguage();
+  const page = t.designAssets.pages.backendServices;
+
   return (
     <VersionedAssetPage
-      title="后端服务设计"
-      description="查看 Service 列表、方法、业务规则、权限规则、事务边界和关联资源。"
-      emptyDescription="应用涉及后端服务的变更集后，会在这里沉淀服务设计版本。"
+      title={page.title}
+      description={page.description}
+      emptyDescription={page.emptyDescription}
       listAssets={listBackendServiceDesigns}
       sections={[
-        { key: "services", title: "Service 列表" },
-        { key: "cross_cutting_rules", title: "横切规则" },
-        { key: "api_mappings", title: "关联 API" },
-        { key: "database_mappings", title: "关联数据库实体" },
-        { key: "diff", title: "版本差异" },
+        { key: "services", title: t.designAssets.legacySections.services },
+        { key: "cross_cutting_rules", title: t.designAssets.legacySections.crossCuttingRules },
+        { key: "api_mappings", title: t.designAssets.legacySections.apiMappings },
+        { key: "database_mappings", title: t.designAssets.legacySections.databaseMappings },
+        { key: "diff", title: t.designAssets.legacySections.diff },
       ]}
     />
   );

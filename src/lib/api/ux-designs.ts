@@ -7,8 +7,10 @@ type UpdateDesignAssetInput = {
   content?: unknown;
 };
 
-export function listUXDesigns(projectId: string) {
-  return apiRequest<UXDesign[]>(`/projects/${projectId}/ux-designs`);
+export function listUXDesigns(projectId: string, options?: { signal?: AbortSignal }) {
+  return apiRequest<UXDesign[]>(`/projects/${projectId}/ux-designs`, {
+    signal: options?.signal,
+  });
 }
 
 export function getUXDesign(uxDesignId: string) {

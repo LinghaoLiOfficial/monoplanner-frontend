@@ -19,6 +19,7 @@ export type LoginInput = {
 export type UpdateMeInput = {
   username?: string;
   display_name?: string | null;
+  preferred_locale?: "zh-CN" | "en";
   password?: string;
 };
 

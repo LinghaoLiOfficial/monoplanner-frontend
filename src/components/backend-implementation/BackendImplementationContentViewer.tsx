@@ -13,6 +13,7 @@ import {
   visualIcons,
 } from "@/components/design-assets/visual-dashboard";
 import { FieldHint } from "@/components/ui/field-hint";
+import { useLanguage } from "@/components/language/language-provider";
 import {
   isNewBackendImplementationContent,
   type BackendImplementationContent,
@@ -21,10 +22,13 @@ import {
 import { backendImplementationLegacySections } from "@/lib/backend-implementation-contract";
 
 function RequiredBadge({ value }: { value: boolean | undefined }) {
-  return <Badge variant={value === false ? "secondary" : "outline"}>{value === false ? "可选" : "必需"}</Badge>;
+  const { t } = useLanguage();
+  return <Badge variant={value === false ? "secondary" : "outline"}>{value === false ? t.common.optional : t.common.required}</Badge>;
 }
 
 function NewBackendImplementationContentView({ content }: { content: NewBackendImplementationContent }) {
+  const { t } = useLanguage();
+  const labels = t.designAssets.viewer;
   const directoryStructure = content.directory_structure ?? [];
   const codeLogic = content.code_logic ?? [];
   const utilityClasses = content.utility_classes ?? [];
@@ -36,18 +40,18 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
     <div className="space-y-4">
       <MetricStrip
         items={[
-          { label: "目录项", value: directoryStructure.length, description: "路由、模型、服务与迁移文件" },
-          { label: "服务逻辑", value: codeLogic.length, description: "流程、校验、事务和错误处理" },
-          { label: "工具 / 模板", value: `${utilityClasses.length} / ${llmTemplates.length}`, description: "复用工具与 LLM 交互模板" },
-          { label: "依赖 / 环境", value: `${dependencies.length} / ${environmentVariables.length}`, description: content.version_summary },
+          { label: labels.directoryItems, value: directoryStructure.length, description: labels.backendFilesDescription },
+          { label: labels.serviceLogic, value: codeLogic.length, description: labels.backendLogicDescription },
+          { label: `${labels.utilityClasses} / ${labels.llmTemplates}`, value: `${utilityClasses.length} / ${llmTemplates.length}`, description: labels.backendUtilityDescription },
+          { label: labels.dependenciesAndEnv, value: `${dependencies.length} / ${environmentVariables.length}`, description: content.version_summary },
         ]}
       />
 
       <VisualSection
         title={
           <FieldHint
-            label="后端目录结构"
-            hint="展示服务、路由、schema、模型与基础设施文件职责。"
+            label={labels.backendDirectory}
+            hint={labels.backendDirectoryHint}
             labelClassName="text-base font-semibold leading-6"
           />
         }
@@ -59,13 +63,13 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
               <section key={`${entry.path}-${index}`} className="rounded-lg border border-border/70 bg-background/70 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="font-mono text-xs text-muted-foreground">{entry.path}</p>
-                  <StatusBadge label="目录项" tone="muted" />
+                  <StatusBadge label={labels.directoryItem} tone="muted" />
                 </div>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{entry.purpose}</p>
               </section>
             ))
           ) : (
-            <p className="text-sm leading-6 text-muted-foreground">暂无目录结构</p>
+            <p className="text-sm leading-6 text-muted-foreground">{labels.noDirectoryStructure}</p>
           )}
         </div>
       </VisualSection>
@@ -73,8 +77,8 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
       <VisualSection
         title={
           <FieldHint
-            label="服务逻辑矩阵"
-            hint="按目标模块比较服务流程、校验、事务和错误处理。"
+            label={labels.serviceLogicMatrix}
+            hint={labels.serviceLogicHint}
             labelClassName="text-base font-semibold leading-6"
           />
         }
@@ -86,36 +90,36 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
               <section key={`${logic.target}-${index}`} className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold">{logic.target}</h3>
-                  <StatusBadge label="服务逻辑" tone="muted" />
+                  <StatusBadge label={labels.serviceLogic} tone="muted" />
                 </div>
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">服务流程</p>
+                    <p className="text-sm font-medium text-muted-foreground">{labels.serviceFlow}</p>
                     <TextChips values={Array.isArray(logic.service_flow) ? logic.service_flow : []} />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">校验逻辑</p>
+                    <p className="text-sm font-medium text-muted-foreground">{labels.validationLogic}</p>
                     <TextChips values={Array.isArray(logic.validation_logic) ? logic.validation_logic : []} />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">事务处理</p>
+                    <p className="text-sm font-medium text-muted-foreground">{labels.transactionHandling}</p>
                     <TextChips values={Array.isArray(logic.transaction_handling) ? logic.transaction_handling : []} />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">错误处理</p>
+                    <p className="text-sm font-medium text-muted-foreground">{labels.errorHandling}</p>
                     <TextChips values={Array.isArray(logic.error_handling) ? logic.error_handling : []} />
                   </div>
                 </div>
               </section>
             ))
           ) : (
-            <p className="text-sm leading-6 text-muted-foreground">暂无代码逻辑</p>
+            <p className="text-sm leading-6 text-muted-foreground">{labels.noCodeLogic}</p>
           )}
         </div>
       </VisualSection>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <VisualSection title="工具类" icon={visualIcons.dot}>
+        <VisualSection title={labels.utilityClasses} icon={visualIcons.dot}>
           <div className="space-y-3">
             {utilityClasses.length > 0 ? (
               utilityClasses.map((utility, index) => (
@@ -123,16 +127,16 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
                   <h3 className="text-sm font-semibold">{utility.name}</h3>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{utility.purpose}</p>
                   <div className="mt-3">
-                    <TextChips values={Array.isArray(utility.usage) ? utility.usage : []} emptyText="暂无使用场景" />
+                    <TextChips values={Array.isArray(utility.usage) ? utility.usage : []} emptyText={labels.noUsageScenarios} />
                   </div>
                 </section>
               ))
             ) : (
-              <p className="text-sm leading-6 text-muted-foreground">暂无工具类</p>
+              <p className="text-sm leading-6 text-muted-foreground">{labels.noUtilityClasses}</p>
             )}
           </div>
         </VisualSection>
-        <VisualSection title="LLM 交互模板" icon={visualIcons.workflow}>
+        <VisualSection title={labels.llmTemplates} icon={visualIcons.workflow}>
           <div className="space-y-3">
             {llmTemplates.length > 0 ? (
               llmTemplates.map((template, index) => (
@@ -140,29 +144,29 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
                   <h3 className="text-sm font-semibold">{template.template_name}</h3>
                   <div className="grid gap-3 md:grid-cols-3">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">输入结构</p>
+                      <p className="text-sm font-medium text-muted-foreground">{labels.inputStructure}</p>
                       <TextChips values={Array.isArray(template.input_structure) ? template.input_structure : []} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">输出结构</p>
+                      <p className="text-sm font-medium text-muted-foreground">{labels.outputStructure}</p>
                       <TextChips values={Array.isArray(template.output_structure) ? template.output_structure : []} />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">解析规则</p>
+                      <p className="text-sm font-medium text-muted-foreground">{labels.parsingRules}</p>
                       <TextChips values={Array.isArray(template.parsing_rules) ? template.parsing_rules : []} />
                     </div>
                   </div>
                 </section>
               ))
             ) : (
-              <p className="text-sm leading-6 text-muted-foreground">暂无大模型交互模板</p>
+              <p className="text-sm leading-6 text-muted-foreground">{labels.noLlmTemplates}</p>
             )}
           </div>
         </VisualSection>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <VisualSection title="环境变量" icon={visualIcons.dot}>
+        <VisualSection title={labels.environmentVariables} icon={visualIcons.dot}>
           {environmentVariables.length > 0 ? (
             <KeyValueTable
               rows={environmentVariables.map((variable) => ({
@@ -170,13 +174,13 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
                 value: variable.purpose,
                 meta: <RequiredBadge value={variable.required} />,
               }))}
-              columns={["变量名", "用途", "必需"]}
+              columns={[labels.variableName, labels.purpose, t.common.required]}
             />
           ) : (
-            <p className="text-sm leading-6 text-muted-foreground">暂无环境变量</p>
+            <p className="text-sm leading-6 text-muted-foreground">{labels.noEnvironmentVariables}</p>
           )}
         </VisualSection>
-        <VisualSection title="依赖包" icon={visualIcons.branch}>
+        <VisualSection title={labels.dependencies} icon={visualIcons.branch}>
           {dependencies.length > 0 ? (
             <KeyValueTable
               rows={dependencies.map((dependency) => ({
@@ -184,32 +188,32 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
                 value: dependency.purpose,
                 meta: <RequiredBadge value={dependency.required} />,
               }))}
-              columns={["包名", "用途", "必需"]}
+              columns={[labels.packageName, labels.purpose, t.common.required]}
             />
           ) : (
-            <p className="text-sm leading-6 text-muted-foreground">暂无依赖包</p>
+            <p className="text-sm leading-6 text-muted-foreground">{labels.noDependencies}</p>
           )}
         </VisualSection>
       </div>
 
-      <VisualSection title="后端模块关系" icon={visualIcons.route}>
+      <VisualSection title={labels.backendModuleMap} icon={visualIcons.route}>
         <RelationshipMap
           nodes={[
             ...codeLogic.map((logic) => ({
               id: `logic:${logic.target}`,
               title: logic.target,
-              subtitle: "服务逻辑",
-              badge: <StatusBadge label="服务" />,
+              subtitle: labels.serviceLogic,
+              badge: <StatusBadge label={labels.service} />,
               tone: "accent" as const,
             })),
             ...utilityClasses.map((utility) => ({
               id: `utility:${utility.name}`,
               title: utility.name,
               subtitle: utility.purpose,
-              badge: <StatusBadge label="工具" tone="muted" />,
+              badge: <StatusBadge label={labels.utility} tone="muted" />,
             })),
           ]}
-          emptyText="暂无后端模块关系"
+          emptyText={labels.noBackendModuleMap}
         />
       </VisualSection>
 
@@ -218,11 +222,13 @@ function NewBackendImplementationContentView({ content }: { content: NewBackendI
 }
 
 function LegacyBackendImplementationContentView({ content }: { content: BackendImplementationContent }) {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-4">
       <Alert>
         <AlertDescription>
-          这是历史后端工程实现内容，保留兼容读取。新版资产会使用目录结构、代码逻辑、工具类、大模型交互模板、环境变量和依赖包契约。
+          {t.designAssets.viewer.legacyBackend}
         </AlertDescription>
       </Alert>
       <AssetContentSections content={content as Record<string, unknown>} sections={backendImplementationLegacySections} />

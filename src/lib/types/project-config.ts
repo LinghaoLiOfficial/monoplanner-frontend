@@ -1,4 +1,5 @@
 import type { TechStackItem } from "@/lib/types/tech-stack";
+import type { LLMPromptLanguage } from "@/lib/types/project";
 
 export type ProjectConfig = {
   id: string;
@@ -18,6 +19,7 @@ export type ProjectConfig = {
   coding_preferences: string[];
   code_preferences: string[];
   prompt_preferences: string[];
+  llm_prompt_language: LLMPromptLanguage;
   status: string;
   created_at?: string;
   updated_at?: string;
@@ -38,4 +40,5 @@ export type ProjectConfigUpdateInput = {
   target_frontend_stack?: string;
   target_backend_stack?: string;
   code_preferences?: string[];
+  llm_prompt_language?: LLMPromptLanguage | null;
 };

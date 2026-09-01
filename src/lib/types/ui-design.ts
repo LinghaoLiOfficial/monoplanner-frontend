@@ -21,22 +21,61 @@ export type UIThemeConfiguration = {
   default_theme: string;
 };
 
+export type UIVisualToken = {
+  token_name: string;
+  token_value: string;
+  semantic_role: string;
+  usage_context: string;
+  anti_usage: string[];
+  token_type?: string | null;
+  css_variable?: string | null;
+  validated_status?: string | null;
+  source_basis?: string[];
+  contrast_notes?: string | null;
+};
+
+export type UIVisualTokenGroup = {
+  group_name: string;
+  description?: string | null;
+  tokens: UIVisualToken[];
+};
+
+export type UIInteractionStateRule = {
+  state_name: string;
+  visual_cues: string[];
+  usage_context: string[];
+  constraints: string[];
+};
+
 export type UIVisualSystem = {
   design_style: UIDesignStyle;
+  brand_anchor?: string | null;
+  style_tags?: string[];
   design_principles: string[];
   theme_configuration: UIThemeConfiguration;
+  evidence_policy?: string | null;
+  source_references?: string[];
+  tbd_items?: string[];
+  accessibility_rules?: string[];
+  responsive_contract?: string[];
   color_system: string[];
   typography_system: string[];
   spacing_system: string[];
   shape_system: string[];
   elevation_system: string[];
   interaction_visual_system: string[];
+  token_catalog?: UIVisualTokenGroup[];
+  interaction_state_matrix?: UIInteractionStateRule[];
 };
 
 export type UILayoutRule = {
   target_screen: string;
   desktop_layout: string;
   mobile_layout: string;
+  primary_action?: string | null;
+  desktop_grid?: string | null;
+  mobile_reflow?: string | null;
+  container_rules?: string[];
 };
 
 export type UIVisualPriority = {
@@ -52,6 +91,10 @@ export type UIComponentStyleRule = {
   component_name: string;
   visual_priority: UIVisualPriority;
   style_rules: string[];
+  states?: UIInteractionStateRule[];
+  responsive_behavior?: string[];
+  accessibility_notes?: string[];
+  implementation_hint?: string | null;
 };
 
 export type NewUIDesignContent = {

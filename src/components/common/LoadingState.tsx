@@ -1,10 +1,15 @@
+"use client";
+
+import { useLanguage } from "@/components/language/language-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoaderCircle } from "lucide-react";
 
-export function LoadingState({ label = "正在加载..." }: { label?: string }) {
+export function LoadingState({ label }: { label?: string }) {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-4 rounded-[1.75rem] border border-border/60 bg-card p-6">
-      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="text-sm text-muted-foreground">{label ?? t.common.loading}</div>
       <Skeleton className="h-8 w-2/3" />
       <Skeleton className="h-24 w-full" />
       <Skeleton className="h-10 w-40" />
@@ -12,16 +17,18 @@ export function LoadingState({ label = "正在加载..." }: { label?: string }) 
   );
 }
 
-export function FullScreenLoadingState({ label = "正在加载..." }: { label?: string }) {
+export function FullScreenLoadingState({ label }: { label?: string }) {
+  const { t } = useLanguage();
+
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-background"
+      className="fixed inset-0 z-[100] flex h-dvh w-full items-center justify-center bg-white/50 backdrop-blur-[2px]"
     >
-      <div className="flex flex-col items-center gap-4 text-muted-foreground">
-        <LoaderCircle className="size-10 animate-spin text-primary" aria-hidden="true" />
-        <span className="text-sm font-medium">{label}</span>
+      <div className="flex flex-col items-center gap-5 text-black/20">
+        <LoaderCircle className="size-16 animate-spin text-black/20" aria-hidden="true" />
+        <span className="text-base font-medium">{label ?? t.common.loading}</span>
       </div>
     </div>
   );

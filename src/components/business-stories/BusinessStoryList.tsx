@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 
 import { BusinessStoryCard } from "@/components/business-stories/BusinessStoryCard";
 import { EmptyState } from "@/components/common/EmptyState";
+import { useLanguage } from "@/components/language/language-provider";
 import type {
   BusinessRequirementStory,
   BusinessStoryPriority,
@@ -37,6 +38,7 @@ export function BusinessStoryList({
   failedExecutionStatuses?: string[];
   onDeleteStory?: (story: BusinessRequirementStory) => void;
 }) {
+  const { t } = useLanguage();
   const storyRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -56,8 +58,8 @@ export function BusinessStoryList({
     return (
       <EmptyState
         icon={ListChecks}
-        title="当前项目还没有敏捷业务需求"
-        description="从原始需求生成业务故事后，会在这里按优先级展示当前有效敏捷业务需求池"
+        title={t.businessStories.noStoriesTitle}
+        description={t.businessStories.noStoriesDescription}
       />
     );
   }

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/language/language-provider";
 import { FieldHint } from "@/components/ui/field-hint";
 import type { BusinessRequirementFieldDefinition } from "@/lib/types/business-story";
 
@@ -13,17 +14,21 @@ export function FieldDefinitionHeading({
   titleClassName?: string;
   showMeaning?: boolean;
 }) {
+  const { locale } = useLanguage();
+  const label = locale === "en" ? definition.englishName : definition.name;
+  const hint = locale === "en" ? undefined : definition.meaning;
+
   return (
     <div className={cn("space-y-1", className)}>
       <div className={cn("flex flex-wrap items-baseline gap-x-2 gap-y-1", titleClassName)}>
-        {showMeaning ? (
+        {showMeaning && hint ? (
           <FieldHint
-            label={definition.name}
-            hint={definition.meaning}
+            label={label}
+            hint={hint}
             labelClassName="text-inherit"
           />
         ) : (
-          <span>{definition.name}</span>
+          <span>{label}</span>
         )}
       </div>
     </div>

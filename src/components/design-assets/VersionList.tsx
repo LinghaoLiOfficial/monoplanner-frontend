@@ -2,6 +2,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, History } from "lucide-react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,6 +93,7 @@ function VersionListItem<T extends VersionedDesignAsset>({
 }) {
   const titleRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
+  const { locale, t } = useLanguage();
 
   return (
     <Button
@@ -117,7 +119,7 @@ function VersionListItem<T extends VersionedDesignAsset>({
         {showCreatedAt ? (
           <span className="flex items-center gap-1.5 text-sm leading-6 text-muted-foreground">
             <Calendar className="size-3.5 shrink-0" aria-hidden="true" />
-            <span className="truncate">创建于 {formatDateTime(asset.created_at)}</span>
+            <span className="truncate">{t.common.createdAt} {formatDateTime(asset.created_at, locale)}</span>
           </span>
         ) : null}
       </span>
@@ -129,7 +131,7 @@ function VersionListItem<T extends VersionedDesignAsset>({
 export function VersionList<T extends VersionedDesignAsset>({
   assets,
   selectedId,
-  title = "版本列表",
+  title,
   description,
   onSelect,
   showCreatedAt = false,
@@ -141,18 +143,21 @@ export function VersionList<T extends VersionedDesignAsset>({
   onSelect: (id: string) => void;
   showCreatedAt?: boolean;
 }) {
+  const { t } = useLanguage();
+  const resolvedTitle = title ?? t.designAssets.versions.listTitle;
+
   return (
     <Card className="lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <History className="size-5 text-muted-foreground" aria-hidden="true" />
-          {title}
+          {resolvedTitle}
         </CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
       <CardContent className="space-y-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-4">
         {assets.length === 0 ? (
-          <p className="text-sm leading-6 text-muted-foreground">暂无版本</p>
+          <p className="text-sm leading-6 text-muted-foreground">{t.designAssets.versions.empty}</p>
         ) : null}
         {assets.map((asset) => {
           const active = selectedId === asset.id;

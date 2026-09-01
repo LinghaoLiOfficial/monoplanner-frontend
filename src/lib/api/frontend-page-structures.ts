@@ -2,16 +2,18 @@ import { apiRequest } from "@/lib/api/client";
 import type { FrontendPageStructure } from "@/lib/types/frontend-page-structure";
 import type { FrontendImplementation } from "@/lib/types/frontend-implementation";
 
-export function listFrontendImplementationVersions(projectId: string) {
-  return apiRequest<FrontendImplementation[]>(`/projects/${projectId}/frontend-implementations`);
+export function listFrontendImplementationVersions(projectId: string, options?: { signal?: AbortSignal }) {
+  return apiRequest<FrontendImplementation[]>(`/projects/${projectId}/frontend-implementations`, {
+    signal: options?.signal,
+  });
 }
 
-export function listFrontendPageStructures(projectId: string) {
-  return listFrontendImplementationVersions(projectId);
+export function listFrontendPageStructures(projectId: string, options?: { signal?: AbortSignal }) {
+  return listFrontendImplementationVersions(projectId, options);
 }
 
-export function listFrontendImplementations(projectId: string) {
-  return listFrontendImplementationVersions(projectId);
+export function listFrontendImplementations(projectId: string, options?: { signal?: AbortSignal }) {
+  return listFrontendImplementationVersions(projectId, options);
 }
 
 export function getFrontendImplementationVersion(id: string) {

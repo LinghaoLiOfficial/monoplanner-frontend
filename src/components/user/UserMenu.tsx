@@ -2,18 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LogOut, Settings, Shield, UserRound } from "lucide-react";
+import { FileText, LogOut, Settings, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useLanguage } from "@/components/language/language-provider";
 import { UserAvatar } from "@/components/user/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function UserMenu() {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const { user, isAdmin, logoutUser } = useAuth();
+  const { user, loading, isAdmin, logoutUser } = useAuth();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -28,14 +31,18 @@ export function UserMenu() {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, []);
 
+  if (loading) {
+    return <Skeleton className="h-9 w-[5.25rem] rounded-full" aria-hidden="true" />;
+  }
+
   if (!user) {
     return (
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="sm">
-          <Link href="/login">登录</Link>
+          <Link href="/login">{t.userMenu.login}</Link>
         </Button>
         <Button asChild size="sm">
-          <Link href="/register">注册</Link>
+          <Link href="/register">{t.userMenu.register}</Link>
         </Button>
       </div>
     );
@@ -97,26 +104,26 @@ export function UserMenu() {
           <div className="mt-2 space-y-1">
             {isAdmin ? (
               <Button asChild variant="ghost" className="w-full justify-start">
-                <Link href="/admin" onClick={() => setOpen(false)}>
-                  <Shield className="size-4" />
-                  管理员控制面板
+                <Link href="/users" onClick={() => setOpen(false)}>
+                  <Settings className="size-4" />
+                  {t.userMenu.users}
+                </Link>
+              </Button>
+            ) : null}
+            {isAdmin ? (
+              <Button asChild variant="ghost" className="w-full justify-start">
+                <Link href="/llm-prompt-templates" onClick={() => setOpen(false)}>
+                  <FileText className="size-4" />
+                  {t.userMenu.promptTemplates}
                 </Link>
               </Button>
             ) : null}
             <Button asChild variant="ghost" className="w-full justify-start">
               <Link href="/account" onClick={() => setOpen(false)}>
                 <UserRound className="size-4" />
-                个人资料
+                {t.userMenu.account}
               </Link>
             </Button>
-            {isAdmin ? (
-              <Button asChild variant="ghost" className="w-full justify-start">
-                <Link href="/admin/users" onClick={() => setOpen(false)}>
-                  <Settings className="size-4" />
-                  用户管理
-                </Link>
-              </Button>
-            ) : null}
             <Button
               type="button"
               variant="ghost"
@@ -125,7 +132,7 @@ export function UserMenu() {
               onClick={handleLogout}
             >
               <LogOut className="size-4" />
-              {loggingOut ? "正在退出..." : "退出登录"}
+              {loggingOut ? t.userMenu.loggingOut : t.userMenu.logout}
             </Button>
           </div>
         </div>

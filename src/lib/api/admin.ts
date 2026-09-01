@@ -1,10 +1,10 @@
 import { apiRequest } from "@/lib/api/client";
 import type {
   AdminUser,
-  AdminUserListResponse,
   NonAdminUserRole,
   UserRole,
 } from "@/lib/types/user";
+import type { LLMPromptTemplateModule } from "@/lib/types/llm-prompt-template";
 
 export type ListAdminUsersParams = {
   q?: string;
@@ -21,7 +21,7 @@ export type UpdateAdminUserInput = {
 };
 
 export function listAdminUsers(params?: ListAdminUsersParams) {
-  return apiRequest<AdminUserListResponse>("/admin/users", {
+  return apiRequest<AdminUser[]>("/admin/users", {
     query: params,
   });
 }
@@ -34,13 +34,13 @@ export function updateAdminUser(userId: string, input: UpdateAdminUserInput) {
 }
 
 export function enableAdminUser(userId: string) {
-  return apiRequest<AdminUser>(`/admin/users/${userId}/enable`, {
-    method: "POST",
-  });
+  return updateAdminUser(userId, { is_active: true });
 }
 
 export function disableAdminUser(userId: string) {
-  return apiRequest<AdminUser>(`/admin/users/${userId}/disable`, {
-    method: "POST",
-  });
+  return updateAdminUser(userId, { is_active: false });
+}
+
+export function listAdminLLMPromptTemplates() {
+  return apiRequest<LLMPromptTemplateModule[]>("/admin/llm-prompt-templates");
 }

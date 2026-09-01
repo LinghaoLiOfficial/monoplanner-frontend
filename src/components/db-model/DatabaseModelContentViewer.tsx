@@ -2,6 +2,7 @@
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/language-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AssetContentSections } from "@/components/design-assets/AssetContentSections";
 import {
@@ -30,8 +31,11 @@ function relationshipTitle(relationship: DbRelationship) {
 }
 
 function FieldTable({ fields }: { fields: DatabaseField[] }) {
+  const { t } = useLanguage();
+  const labels = t.designAssets.viewer;
+
   if (fields.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">暂无字段</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{labels.noFields}</p>;
   }
 
   return (
@@ -39,12 +43,12 @@ function FieldTable({ fields }: { fields: DatabaseField[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>字段</TableHead>
-            <TableHead>类型</TableHead>
-            <TableHead>主键</TableHead>
-            <TableHead>必填</TableHead>
-            <TableHead>可空</TableHead>
-            <TableHead>说明</TableHead>
+            <TableHead>{labels.fields}</TableHead>
+            <TableHead>{t.designAssets.visual.type}</TableHead>
+            <TableHead>{labels.primaryKey}</TableHead>
+            <TableHead>{t.designAssets.visual.required}</TableHead>
+            <TableHead>{labels.nullable}</TableHead>
+            <TableHead>{t.designAssets.visual.description}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -52,9 +56,9 @@ function FieldTable({ fields }: { fields: DatabaseField[] }) {
             <TableRow key={field.name}>
               <TableCell className="font-mono text-xs">{field.name}</TableCell>
               <TableCell className="font-mono text-xs">{field.type}</TableCell>
-              <TableCell>{field.primary_key ? "是" : "否"}</TableCell>
-              <TableCell>{field.required ? "是" : "否"}</TableCell>
-              <TableCell>{field.nullable ? "是" : "否"}</TableCell>
+              <TableCell>{field.primary_key ? t.common.yes : t.common.no}</TableCell>
+              <TableCell>{field.required ? t.common.yes : t.common.no}</TableCell>
+              <TableCell>{field.nullable ? t.common.yes : t.common.no}</TableCell>
               <TableCell className="min-w-48 text-muted-foreground">{field.description || "-"}</TableCell>
             </TableRow>
           ))}
@@ -65,8 +69,10 @@ function FieldTable({ fields }: { fields: DatabaseField[] }) {
 }
 
 function IndexList({ indexes }: { indexes: DbIndex[] }) {
+  const { t } = useLanguage();
+
   if (indexes.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">暂无索引</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{t.designAssets.viewer.noIndexes}</p>;
   }
 
   return (
@@ -85,8 +91,10 @@ function IndexList({ indexes }: { indexes: DbIndex[] }) {
 }
 
 function RelationshipList({ relationships }: { relationships: DbRelationship[] }) {
+  const { t } = useLanguage();
+
   if (relationships.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">暂无关系</p>;
+    return <p className="text-sm leading-6 text-muted-foreground">{t.designAssets.visual.noRelationship}</p>;
   }
   return (
     <div className="flex flex-wrap gap-2">
@@ -98,6 +106,8 @@ function RelationshipList({ relationships }: { relationships: DbRelationship[] }
 }
 
 function NewDatabaseModelContentView({ content }: { content: NewDbModelContent }) {
+  const { t } = useLanguage();
+  const labels = t.designAssets.viewer;
   const tables = Array.isArray(content.database_tables) ? content.database_tables : [];
   const relationships = Array.isArray(content.relationships) ? content.relationships : [];
   const indexes = Array.isArray(content.indexes) ? content.indexes : [];
@@ -111,18 +121,18 @@ function NewDatabaseModelContentView({ content }: { content: NewDbModelContent }
     <div className="space-y-4">
       <MetricStrip
         items={[
-          { label: "数据表", value: tables.length, description: content.database?.engine || "未指定数据库引擎" },
-          { label: "字段", value: fieldCount, description: "所有表字段总数" },
-          { label: "关系", value: allRelationships.length, description: "全局关系 + 表内关系" },
-          { label: "索引 / 迁移", value: `${indexes.length + tableIndexes.length} / ${migrationNotes.length}`, description: `${content.database?.orm || "ORM 未指定"} · ${content.database?.migration_tool || "迁移工具未指定"}` },
+          { label: labels.databaseTables, value: tables.length, description: content.database?.engine || labels.databaseEngineUnspecified },
+          { label: labels.fields, value: fieldCount, description: labels.totalFields },
+          { label: labels.relationships, value: allRelationships.length, description: labels.globalAndTableRelationships },
+          { label: labels.indexesAndMigrations, value: `${indexes.length + tableIndexes.length} / ${migrationNotes.length}`, description: `${content.database?.orm || labels.ormUnspecified} · ${content.database?.migration_tool || labels.migrationToolUnspecified}` },
         ]}
       />
 
       <VisualSection
         title={
           <FieldHint
-            label="数据库关系图"
-            hint="以表为节点展示关系、索引和迁移关注点。"
+            label={labels.databaseRelationshipMap}
+            hint={labels.databaseRelationshipHint}
             labelClassName="text-base font-semibold leading-6"
           />
         }
@@ -132,8 +142,8 @@ function NewDatabaseModelContentView({ content }: { content: NewDbModelContent }
           nodes={tables.map((table) => ({
             id: table.table_name ?? table.name,
             title: table.name,
-            subtitle: table.description || table.table_name || "暂无表说明",
-            badge: <StatusBadge label={`${table.fields?.length ?? 0} 字段`} tone="muted" />,
+            subtitle: table.description || table.table_name || labels.noTableDescription,
+            badge: <StatusBadge label={`${table.fields?.length ?? 0} ${labels.fields}`} tone="muted" />,
             tone: "accent" as const,
           }))}
           edges={allRelationships.map((relationship) => ({
@@ -141,15 +151,15 @@ function NewDatabaseModelContentView({ content }: { content: NewDbModelContent }
             to: relationship.to ?? relationship.target ?? "",
             label: relationship.type,
           })).filter((edge) => edge.from && edge.to)}
-          emptyText="暂无数据表"
+          emptyText={labels.noDatabaseTables}
         />
       </VisualSection>
 
       <VisualSection
         title={
           <FieldHint
-            label="实体与字段"
-            hint="展示每张表的字段、关系、索引和迁移说明。"
+            label={labels.entityFields}
+            hint={labels.entityFieldsHint}
             labelClassName="text-base font-semibold leading-6"
           />
         }
@@ -162,42 +172,42 @@ function NewDatabaseModelContentView({ content }: { content: NewDbModelContent }
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold">{table.name}</h3>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{table.description || "暂无表说明"}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{table.description || labels.noTableDescription}</p>
                   </div>
                   {table.table_name ? <Badge variant="outline">{table.table_name}</Badge> : null}
                 </div>
                 <FieldTable fields={Array.isArray(table.fields) ? table.fields : []} />
                 <div className="grid gap-3 xl:grid-cols-3">
                   <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
-                    <p className="text-sm font-medium text-muted-foreground">表内关系</p>
+                    <p className="text-sm font-medium text-muted-foreground">{labels.tableRelationships}</p>
                     <RelationshipList relationships={Array.isArray(table.relationships) ? table.relationships : []} />
                   </div>
                   <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
-                    <p className="text-sm font-medium text-muted-foreground">表内索引</p>
+                    <p className="text-sm font-medium text-muted-foreground">{labels.tableIndexes}</p>
                     <IndexList indexes={Array.isArray(table.indexes) ? table.indexes : []} />
                   </div>
                   <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
-                    <p className="text-sm font-medium text-muted-foreground">迁移说明</p>
-                    <TextChips values={Array.isArray(table.migration_notes) ? table.migration_notes : []} emptyText="暂无迁移说明" />
+                    <p className="text-sm font-medium text-muted-foreground">{labels.migrationNotes}</p>
+                    <TextChips values={Array.isArray(table.migration_notes) ? table.migration_notes : []} emptyText={labels.noMigrationNotes} />
                   </div>
                 </div>
               </section>
             ))
           ) : (
-            <p className="text-sm leading-6 text-muted-foreground">暂无数据表</p>
+            <p className="text-sm leading-6 text-muted-foreground">{labels.noDatabaseTables}</p>
           )}
         </div>
       </VisualSection>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <VisualSection title="全局关系" icon={visualIcons.branch}>
+        <VisualSection title={labels.globalRelationships} icon={visualIcons.branch}>
           <RelationshipList relationships={relationships} />
         </VisualSection>
-        <VisualSection title="全局索引" icon={visualIcons.dot}>
+        <VisualSection title={labels.globalIndexes} icon={visualIcons.dot}>
           <IndexList indexes={indexes} />
         </VisualSection>
-        <VisualSection title="迁移说明" icon={visualIcons.workflow}>
-          <TextChips values={migrationNotes} emptyText="暂无迁移说明" />
+        <VisualSection title={labels.migrationNotes} icon={visualIcons.workflow}>
+          <TextChips values={migrationNotes} emptyText={labels.noMigrationNotes} />
         </VisualSection>
       </div>
 
@@ -206,11 +216,13 @@ function NewDatabaseModelContentView({ content }: { content: NewDbModelContent }
 }
 
 function LegacyDatabaseModelContentView({ content }: { content: DbModelContent }) {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-4">
       <Alert>
         <AlertDescription>
-          这是历史数据库模型内容结构，保留兼容读取。新版资产会使用数据库模型、数据表、表、字段集合和字段契约。
+          {t.designAssets.viewer.legacyDatabase}
         </AlertDescription>
       </Alert>
       <AssetContentSections content={content as Record<string, unknown>} sections={databaseModelLegacySections} />

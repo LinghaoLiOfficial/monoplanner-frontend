@@ -1,10 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/components/language/language-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { LegacyApiSchema } from "@/lib/types/api-contract";
 
 export function SchemaList({ schemas }: { schemas: LegacyApiSchema[] }) {
+  const { t } = useLanguage();
+
   if (schemas.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无 schemas</p>;
+    return <p className="text-sm text-muted-foreground">{t.designAssets.viewer.noApiSummary}</p>;
   }
 
   return (
@@ -29,7 +32,7 @@ export function SchemaList({ schemas }: { schemas: LegacyApiSchema[] }) {
                   <TableRow key={`${schema.name}-${field.name}`}>
                     <TableCell className="font-medium">{field.name}</TableCell>
                     <TableCell className="font-mono text-xs">{field.type}</TableCell>
-                    <TableCell>{field.required ? "Yes" : "No"}</TableCell>
+                    <TableCell>{field.required ? t.common.yes : t.common.no}</TableCell>
                     <TableCell className="text-muted-foreground">{field.description || "-"}</TableCell>
                   </TableRow>
                 ))}

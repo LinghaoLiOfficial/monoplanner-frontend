@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/language-provider";
 import type { ConsistencyCheckItem } from "@/lib/types/consistency";
 
 const levelVariant: Record<ConsistencyCheckItem["level"], "default" | "secondary" | "outline" | "destructive"> = {
@@ -8,8 +9,10 @@ const levelVariant: Record<ConsistencyCheckItem["level"], "default" | "secondary
 };
 
 export function ConsistencyItemList({ items }: { items: ConsistencyCheckItem[] }) {
+  const { t } = useLanguage();
+
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">暂无检查项</p>;
+    return <p className="text-sm text-muted-foreground">{t.consistency.noItems}</p>;
   }
 
   return (

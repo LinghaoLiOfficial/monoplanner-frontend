@@ -4,24 +4,27 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { JsonViewer } from "@/components/common/JsonViewer";
 import { EntityTable } from "@/components/db-model/EntityTable";
 import { IndexList, RelationshipList } from "@/components/db-model/RelationshipList";
+import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DbModelDraft, LegacyDbModelContent } from "@/lib/types/db-model";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
 export function DbModelViewer({ model }: { model: DbModelDraft | null }) {
+  const { locale, t } = useLanguage();
+
   if (!model) {
     return (
       <EmptyState
         icon={Database}
-        title="还没有数据库模型"
-        description="请先生成项目蓝图，建议再生成 API 契约。"
+        title={t.designAssets.pages.databaseModel.title}
+        description={t.designAssets.pages.databaseModel.emptyDescription}
       />
     );
   }
@@ -46,17 +49,17 @@ export function DbModelViewer({ model }: { model: DbModelDraft | null }) {
           </div>
         </CardHeader>
         <CardContent className="grid gap-2 text-sm text-muted-foreground md:grid-cols-4">
-          <div>创建时间：{formatDate(model.created_at)}</div>
-          <div>Engine：{database?.engine || "未指定"}</div>
-          <div>ORM：{database?.orm || "未指定"}</div>
-          <div>Migration：{database?.migration_tool || "未指定"}</div>
+          <div>{t.common.createdAt}: {formatDate(model.created_at, locale)}</div>
+          <div>Engine: {database?.engine || t.common.unspecified}</div>
+          <div>ORM: {database?.orm || t.common.unspecified}</div>
+          <div>Migration: {database?.migration_tool || t.common.unspecified}</div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Entities</CardTitle>
-          <CardDescription>核心数据实体与字段草案</CardDescription>
+          <CardDescription>{t.designAssets.viewer.entityFieldsHint}</CardDescription>
         </CardHeader>
         <CardContent>
           <EntityTable entities={entities} />
@@ -97,7 +100,7 @@ export function DbModelViewer({ model }: { model: DbModelDraft | null }) {
         </Card>
       ) : null}
 
-      <JsonViewer data={model} title="完整 DB Model JSON" />
+      <JsonViewer data={model} title={`${t.designAssets.pages.databaseModel.title} ${t.designAssets.versions.fullJson}`} />
     </div>
   );
 }

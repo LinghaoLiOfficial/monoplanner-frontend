@@ -10,7 +10,8 @@ import {
   Plus,
 } from "lucide-react";
 
-import { affectedLayerLabels } from "@/lib/design-asset-labels";
+import { useLanguage } from "@/components/language/language-provider";
+import { getAffectedLayerLabel } from "@/lib/design-asset-labels";
 import type { ChangeSet } from "@/lib/types/change-set";
 import type { ModuleChangeGroup } from "@/lib/types/design-asset";
 import { cn } from "@/lib/utils";
@@ -33,48 +34,29 @@ type NormalizedChangeItem = {
 };
 
 const operationMeta: Record<ChangeOperation, {
-  label: string;
   icon: typeof Plus;
   iconClass: string;
   accentClass: string;
   surfaceClass: string;
 }> = {
   added: {
-    label: "新增",
     icon: Plus,
     iconClass: "text-emerald-700 dark:text-emerald-300",
     accentClass: "border-l-emerald-500",
     surfaceClass: "bg-emerald-50/60 dark:bg-emerald-950/20",
   },
   modified: {
-    label: "修改",
     icon: Pencil,
     iconClass: "text-orange-700 dark:text-orange-300",
     accentClass: "border-l-orange-500",
     surfaceClass: "bg-orange-50/60 dark:bg-orange-950/20",
   },
   removed: {
-    label: "删除",
     icon: Minus,
     iconClass: "text-red-700 dark:text-red-300",
     accentClass: "border-l-red-500",
     surfaceClass: "bg-red-50/60 dark:bg-red-950/20",
   },
-};
-
-const moduleLabels: Record<string, string> = {
-  ux_design: affectedLayerLabels.ux_design,
-  ui_design: affectedLayerLabels.ui_design,
-  frontend_implementation: affectedLayerLabels.frontend_implementation,
-  frontend_pages: affectedLayerLabels.frontend_pages,
-  frontend_tools: affectedLayerLabels.frontend_tools,
-  api_contract: affectedLayerLabels.api_contract,
-  backend_implementation: affectedLayerLabels.backend_implementation,
-  backend_services: affectedLayerLabels.backend_services,
-  backend_tools: affectedLayerLabels.backend_tools,
-  database_model: affectedLayerLabels.database_model,
-  db_model: affectedLayerLabels.db_model,
-  database_models: affectedLayerLabels.database_models,
 };
 
 const moduleOrder = [
@@ -96,9 +78,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stringifyValue(value: unknown) {
+function stringifyValue(value: unknown, missingLabel = "未提供") {
   if (value === null || value === undefined) {
-    return "未提供";
+    return missingLabel;
   }
 
   if (typeof value === "string") {
@@ -116,9 +98,9 @@ function stringifyValue(value: unknown) {
   }
 }
 
-function compactValue(value: unknown) {
+function compactValue(value: unknown, missingLabel = "未提供") {
   if (value === null || value === undefined) {
-    return "未提供";
+    return missingLabel;
   }
 
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
@@ -132,20 +114,20 @@ function compactValue(value: unknown) {
     }
   }
 
-  return stringifyValue(value);
+  return stringifyValue(value, missingLabel);
 }
 
-function selectorLabel(selector: Record<string, unknown>) {
+function selectorLabel(selector: Record<string, unknown>, missingLabel = "未提供") {
   return Object.entries(selector)
-    .map(([key, value]) => `${key}: ${compactValue(value)}`)
+    .map(([key, value]) => `${key}: ${compactValue(value, missingLabel)}`)
     .join(" · ");
 }
 
-function normalizeItem(item: unknown, operation: ChangeOperation): NormalizedChangeItem {
+function normalizeItem(item: unknown, operation: ChangeOperation, labels: { unnamedChange: string; missing: string }): NormalizedChangeItem {
   if (!isRecord(item)) {
     return {
       raw: item,
-      title: compactValue(item),
+      title: compactValue(item, labels.missing),
       field: null,
       selector: {},
       before: operation === "removed" ? item : null,
@@ -164,7 +146,7 @@ function normalizeItem(item: unknown, operation: ChangeOperation): NormalizedCha
     raw: item,
     title: typeof titleValue === "string" || typeof titleValue === "number"
       ? String(titleValue)
-      : selectorLabel(selector) || "未命名变更",
+      : selectorLabel(selector, labels.missing) || labels.unnamedChange,
     field: typeof item.field === "string" ? item.field : null,
     selector,
     before: item.before,
@@ -182,16 +164,17 @@ function hasValue(value: unknown) {
 
 function CopyButton({ value }: { value: unknown }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <button
       type="button"
       className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={copied ? "已复制" : "复制变更内容"}
-      title={copied ? "已复制" : "复制变更内容"}
+      aria-label={copied ? t.designAssets.moduleChanges.copied : t.designAssets.moduleChanges.copyChange}
+      title={copied ? t.designAssets.moduleChanges.copied : t.designAssets.moduleChanges.copyChange}
       onClick={async () => {
         try {
-          await navigator.clipboard.writeText(stringifyValue(value));
+          await navigator.clipboard.writeText(stringifyValue(value, t.common.missing));
           setCopied(true);
           window.setTimeout(() => setCopied(false), 1400);
         } catch {
@@ -205,6 +188,8 @@ function CopyButton({ value }: { value: unknown }) {
 }
 
 function ValueBlock({ label, value, tone }: { label: string; value: unknown; tone: "before" | "after" | "neutral" }) {
+  const { t } = useLanguage();
+
   return (
     <div className={cn(
       "min-w-0 rounded-md border p-3",
@@ -217,13 +202,14 @@ function ValueBlock({ label, value, tone }: { label: string; value: unknown; ton
         <CopyButton value={value} />
       </div>
       <pre className="mt-2 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-5 text-foreground">
-        {stringifyValue(value)}
+        {stringifyValue(value, t.common.missing)}
       </pre>
     </div>
   );
 }
 
 function ObjectDiff({ before, after }: { before: Record<string, unknown>; after: Record<string, unknown> }) {
+  const { t } = useLanguage();
   const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
 
   return (
@@ -231,7 +217,7 @@ function ObjectDiff({ before, after }: { before: Record<string, unknown>; after:
       {keys.map((key) => {
         const hasBefore = Object.prototype.hasOwnProperty.call(before, key);
         const hasAfter = Object.prototype.hasOwnProperty.call(after, key);
-        const changed = stringifyValue(before[key]) !== stringifyValue(after[key]);
+        const changed = stringifyValue(before[key], t.common.missing) !== stringifyValue(after[key], t.common.missing);
 
         if (!changed && hasBefore && hasAfter) {
           return null;
@@ -241,8 +227,8 @@ function ObjectDiff({ before, after }: { before: Record<string, unknown>; after:
           <div key={key} className="grid gap-2 border-b border-border/60 p-3 last:border-b-0 md:grid-cols-[minmax(7rem,0.4fr)_minmax(0,1fr)]">
             <span className="break-words text-sm font-medium text-muted-foreground">{key}</span>
             <div className="grid min-w-0 gap-2">
-              {hasBefore ? <ValueBlock label="修改前" value={before[key]} tone="before" /> : null}
-              {hasAfter ? <ValueBlock label="修改后" value={after[key]} tone="after" /> : null}
+              {hasBefore ? <ValueBlock label={t.designAssets.moduleChanges.before} value={before[key]} tone="before" /> : null}
+              {hasAfter ? <ValueBlock label={t.designAssets.moduleChanges.after} value={after[key]} tone="after" /> : null}
             </div>
           </div>
         );
@@ -252,11 +238,12 @@ function ObjectDiff({ before, after }: { before: Record<string, unknown>; after:
 }
 
 function ChangeDetails({ item }: { item: NormalizedChangeItem }) {
+  const { t } = useLanguage();
   const details = [
-    ["原因", item.reason ? [item.reason] : []],
-    ["约束", item.constraints],
-    ["依赖", item.dependencies],
-    ["验收条件", item.acceptanceCriteria],
+    [t.designAssets.moduleChanges.reason, item.reason ? [item.reason] : []],
+    [t.designAssets.moduleChanges.constraints, item.constraints],
+    [t.designAssets.moduleChanges.dependencies, item.dependencies],
+    [t.designAssets.moduleChanges.acceptanceCriteria, item.acceptanceCriteria],
   ] as const;
   const visibleDetails = details.filter(([, values]) => values.length > 0);
 
@@ -270,7 +257,7 @@ function ChangeDetails({ item }: { item: NormalizedChangeItem }) {
         <div key={label}>
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <ul className="mt-1 space-y-1 text-sm leading-6 text-foreground">
-            {values.map((value, index) => <li key={index} className="break-words">{compactValue(value)}</li>)}
+            {values.map((value, index) => <li key={index} className="break-words">{compactValue(value, t.common.missing)}</li>)}
           </ul>
         </div>
       ))}
@@ -280,8 +267,10 @@ function ChangeDetails({ item }: { item: NormalizedChangeItem }) {
 
 function ChangeItem({ operation, item }: { operation: ChangeOperation; item: NormalizedChangeItem }) {
   const meta = operationMeta[operation];
+  const { t } = useLanguage();
   const Icon = meta.icon;
-  const selector = selectorLabel(item.selector);
+  const selector = selectorLabel(item.selector, t.common.missing);
+  const operationLabel = t.designAssets.diff[operation];
 
   return (
     <article className={cn("border-l-4 p-3", meta.accentClass, meta.surfaceClass)}>
@@ -293,11 +282,11 @@ function ChangeItem({ operation, item }: { operation: ChangeOperation; item: Nor
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">{meta.label}</span>
+                <span className="text-sm font-medium text-muted-foreground">{operationLabel}</span>
                 <h4 className="break-words text-sm font-medium text-foreground">{item.title}</h4>
               </div>
-              {item.field ? <p className="mt-1 break-words text-sm text-muted-foreground">字段：{item.field}</p> : null}
-              {selector && selector !== item.title ? <p className="mt-1 break-words text-sm text-muted-foreground">定位：{selector}</p> : null}
+              {item.field ? <p className="mt-1 break-words text-sm text-muted-foreground">{t.designAssets.moduleChanges.field}: {item.field}</p> : null}
+              {selector && selector !== item.title ? <p className="mt-1 break-words text-sm text-muted-foreground">{t.designAssets.moduleChanges.selector}: {selector}</p> : null}
             </div>
             <CopyButton value={item.raw} />
           </div>
@@ -308,15 +297,15 @@ function ChangeItem({ operation, item }: { operation: ChangeOperation; item: Nor
                 <ObjectDiff before={item.before} after={item.after} />
               ) : (
                 <div className="grid gap-2 md:grid-cols-2">
-                  <ValueBlock label="修改前" value={item.before} tone="before" />
-                  <ValueBlock label="修改后" value={item.after} tone="after" />
+                  <ValueBlock label={t.designAssets.moduleChanges.before} value={item.before} tone="before" />
+                  <ValueBlock label={t.designAssets.moduleChanges.after} value={item.after} tone="after" />
                 </div>
               )}
             </div>
           ) : null}
 
-          {operation === "added" && hasValue(item.after) ? <ValueBlock label="新增内容" value={item.after} tone="neutral" /> : null}
-          {operation === "removed" && hasValue(item.before) ? <ValueBlock label="移除内容" value={item.before} tone="before" /> : null}
+          {operation === "added" && hasValue(item.after) ? <ValueBlock label={t.designAssets.moduleChanges.addedContent} value={item.after} tone="neutral" /> : null}
+          {operation === "removed" && hasValue(item.before) ? <ValueBlock label={t.designAssets.moduleChanges.removedContent} value={item.before} tone="before" /> : null}
           <ChangeDetails item={item} />
         </div>
       </div>
@@ -327,7 +316,9 @@ function ChangeItem({ operation, item }: { operation: ChangeOperation; item: Nor
 function OperationSummary({ operation, count, active, onClick }: { operation: FilterOperation; count: number; active: boolean; onClick: () => void }) {
   const isAll = operation === "all";
   const meta = isAll ? null : operationMeta[operation];
+  const { t } = useLanguage();
   const Icon = meta?.icon ?? FilePlus2;
+  const label = isAll ? t.designAssets.moduleChanges.all : t.designAssets.diff[operation];
 
   return (
     <button
@@ -340,7 +331,7 @@ function OperationSummary({ operation, count, active, onClick }: { operation: Fi
       )}
     >
       <Icon className={cn("size-4 shrink-0", meta?.iconClass ?? "text-muted-foreground")} aria-hidden="true" />
-      <span className="min-w-0 text-sm font-medium">{meta?.label ?? "全部"}</span>
+      <span className="min-w-0 text-sm font-medium">{label}</span>
       <span className="ml-auto text-sm font-semibold tabular-nums">{count}</span>
     </button>
   );
@@ -357,6 +348,7 @@ function ModuleSection({
   filter: FilterOperation;
   version?: number;
 }) {
+  const { locale, t } = useLanguage();
   const visibleOperations = (Object.keys(operationMeta) as ChangeOperation[]).filter(
     (operation) => filter === "all" || filter === operation,
   );
@@ -371,11 +363,11 @@ function ModuleSection({
     <section className="overflow-hidden rounded-lg border border-border/70">
       <div className="flex w-full items-center gap-3 px-4 py-3 text-left">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          <span className="min-w-0 break-words text-sm font-semibold">{moduleLabels[moduleKey] ?? moduleKey}</span>
+          <span className="min-w-0 break-words text-sm font-semibold">{getAffectedLayerLabel(moduleKey, locale)}</span>
           {version !== undefined ? <Badge variant="outline">v{version}</Badge> : null}
         </div>
-        <span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{total} 项变更</span>
-        <div className="flex shrink-0 items-center gap-1.5" aria-label="变更数量">
+        <span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{t.designAssets.moduleChanges.itemCount(total)}</span>
+        <div className="flex shrink-0 items-center gap-1.5" aria-label={t.designAssets.moduleChanges.changeCountLabel}>
           {counts.added > 0 ? <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">+{counts.added}</span> : null}
           {counts.modified > 0 ? <span className="text-sm font-medium text-orange-700 dark:text-orange-300">~{counts.modified}</span> : null}
           {counts.removed > 0 ? <span className="text-sm font-medium text-red-700 dark:text-red-300">-{counts.removed}</span> : null}
@@ -391,12 +383,12 @@ function ModuleSection({
           return (
             <div key={operation}>
               <div className="mb-2 flex items-center gap-2">
-                <span className={cn("text-sm font-semibold", operationMeta[operation].iconClass)}>{operationMeta[operation].label}</span>
+                <span className={cn("text-sm font-semibold", operationMeta[operation].iconClass)}>{t.designAssets.diff[operation]}</span>
                 <span className="text-sm text-muted-foreground">{items.length}</span>
               </div>
               <div className="space-y-2">
                 {items.map((item, index) => (
-                  <ChangeItem key={`${operation}-${index}`} operation={operation} item={normalizeItem(item, operation)} />
+                  <ChangeItem key={`${operation}-${index}`} operation={operation} item={normalizeItem(item, operation, { unnamedChange: t.designAssets.diff.unnamedChange, missing: t.common.missing })} />
                 ))}
               </div>
             </div>
@@ -414,6 +406,7 @@ export function ModuleChangeViewer({
   moduleChanges: ChangeSet["module_changes"];
   version?: number;
 }) {
+  const { t } = useLanguage();
   const entries = useMemo(() => {
     const knownKeys = moduleOrder.filter((key) => Boolean(moduleChanges[key as keyof ChangeSet["module_changes"]]));
     const extraKeys = Object.keys(moduleChanges).filter((key) => !moduleOrder.includes(key));
@@ -447,16 +440,16 @@ export function ModuleChangeViewer({
       <div className="rounded-lg border border-border/70 p-4">
         <div className="flex items-center gap-2">
           <FilePlus2 className="size-4 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-sm font-semibold">模块变更</h3>
+          <h3 className="text-sm font-semibold">{t.designAssets.moduleChanges.moduleChanges}</h3>
         </div>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">暂无模块变更明细</p>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{t.designAssets.moduleChanges.empty}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="筛选变更类型">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t.designAssets.moduleChanges.filterLabel}>
         <OperationSummary operation="all" count={total} active={filter === "all"} onClick={() => setFilter("all")} />
         <OperationSummary operation="added" count={totals.added} active={filter === "added"} onClick={() => setFilter("added")} />
         <OperationSummary operation="modified" count={totals.modified} active={filter === "modified"} onClick={() => setFilter("modified")} />

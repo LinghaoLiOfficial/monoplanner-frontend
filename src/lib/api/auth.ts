@@ -43,9 +43,10 @@ export function logout() {
   });
 }
 
-export function getCurrentUser() {
+export function getCurrentUser(options?: { signal?: AbortSignal }) {
   return apiRequest<CurrentUser>("/auth/me", {
     redirectOnUnauthorized: false,
+    signal: options?.signal,
   });
 }
 
