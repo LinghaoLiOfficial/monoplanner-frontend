@@ -81,7 +81,7 @@ export default function LoginPage() {
           <section className="flex flex-col justify-center rounded-[1.75rem] border border-border/60 bg-card/80 p-8 shadow-sm">
             <div className="inline-flex w-fit -translate-y-6 items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm text-muted-foreground">
               <LogIn className="size-4" />
-              Monoplanner
+              Monaryn
             </div>
             <h1 className="mt-0 max-w-xl text-4xl font-semibold tracking-tight">
               登录

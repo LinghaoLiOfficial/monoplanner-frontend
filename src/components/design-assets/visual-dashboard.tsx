@@ -53,16 +53,14 @@ const dotToneClasses = {
   muted: "border-muted-foreground bg-muted-foreground",
 };
 
-export function MetricStrip({ items, className }: { items: MetricItem[]; className?: string }) {
+export function MetricStrip({ items }: { items: MetricItem[] }) {
   return (
-    <div className={cn("grid gap-3 sm:grid-cols-2 xl:grid-cols-4", className)}>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => (
         <div key={item.label} className="rounded-lg border border-border/70 bg-muted/20 p-4">
           <p className="text-sm font-medium text-muted-foreground">{item.label}</p>
           <div className="mt-2 text-2xl font-semibold leading-none">{item.value}</div>
-          {item.description ? (
-            <div className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</div>
-          ) : null}
+          {item.description ? <div className="mt-3 text-sm leading-6 text-muted-foreground">{item.description}</div> : null}
         </div>
       ))}
     </div>

@@ -23,21 +23,24 @@ export type UIThemeConfiguration = {
 
 export type UIVisualToken = {
   token_name: string;
-  token_value: string;
+  token_type: string;
+  token_value: string | Record<string, unknown>;
+  description: string;
   semantic_role: string;
   usage_context: string;
   anti_usage: string[];
-  token_type?: string | null;
   css_variable?: string | null;
+  tailwind_variable?: string | null;
   validated_status?: string | null;
   source_basis?: string[];
   contrast_notes?: string | null;
 };
 
-export type UIVisualTokenGroup = {
-  group_name: string;
+export type UIDesignTokenSystem = {
   description?: string | null;
+  rules: string[];
   tokens: UIVisualToken[];
+  tbd_items?: string[];
 };
 
 export type UIInteractionStateRule = {
@@ -49,7 +52,6 @@ export type UIInteractionStateRule = {
 
 export type UIVisualSystem = {
   design_style: UIDesignStyle;
-  brand_anchor?: string | null;
   style_tags?: string[];
   design_principles: string[];
   theme_configuration: UIThemeConfiguration;
@@ -58,13 +60,13 @@ export type UIVisualSystem = {
   tbd_items?: string[];
   accessibility_rules?: string[];
   responsive_contract?: string[];
-  color_system: string[];
-  typography_system: string[];
-  spacing_system: string[];
-  shape_system: string[];
-  elevation_system: string[];
-  interaction_visual_system: string[];
-  token_catalog?: UIVisualTokenGroup[];
+  color_system: UIDesignTokenSystem;
+  typography_system: UIDesignTokenSystem;
+  spacing_system: UIDesignTokenSystem;
+  shape_system: UIDesignTokenSystem;
+  elevation_system: UIDesignTokenSystem;
+  interaction_visual_system: UIDesignTokenSystem;
+  tailwind_theme_css?: string | null;
   interaction_state_matrix?: UIInteractionStateRule[];
 };
 

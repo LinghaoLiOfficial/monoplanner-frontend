@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Braces, Code2, Database, FileJson, Workflow } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Code2, Database, FileJson, Workflow } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,9 +17,20 @@ export default function MarketingPage() {
     <div className="space-y-12 pb-20">
       <section className="grid min-h-[460px] items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-4 py-2 text-sm text-muted-foreground">
-            <Braces className="size-4" />
-            {marketing.eyebrow}
+          <div className="inline-flex items-center gap-4">
+            <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/70 bg-background shadow-sm">
+              <Image
+                src="/logo.svg"
+                alt=""
+                width={56}
+                height={56}
+                className="size-full rounded-full object-cover"
+                priority
+              />
+            </span>
+            <span className="text-3xl font-semibold tracking-normal text-foreground">
+              {t.topNav.brandKicker}
+            </span>
           </div>
           <div className="space-y-5">
             <h1 className="max-w-4xl text-5xl font-semibold tracking-tight md:text-6xl">

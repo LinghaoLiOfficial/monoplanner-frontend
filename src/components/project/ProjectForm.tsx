@@ -107,8 +107,7 @@ export function ProjectForm({ onSubmit }: ProjectFormProps) {
 
           <fieldset className="space-y-2" disabled={locked}>
             <legend className="text-sm font-medium">{t.projectForm.developmentLanguage}</legend>
-            <p className="text-sm text-muted-foreground">{t.projectForm.developmentLanguageHint}</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid max-w-xs gap-2 sm:grid-cols-2">
               {([
                 { value: "zh-CN", label: t.projectForm.languageZh },
                 { value: "en", label: t.projectForm.languageEn },

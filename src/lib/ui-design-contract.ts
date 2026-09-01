@@ -30,12 +30,6 @@ export const uiDesignFieldDefinitions = {
     englishName: "design_style",
     meaning: "产品整体视觉气质、风格方向和识别特征。",
   },
-  brand_anchor: {
-    key: "brand_anchor",
-    chineseName: "品牌锚点",
-    englishName: "brand_anchor",
-    meaning: "可复用的品牌识别短语或视觉锚点。",
-  },
   style_tags: {
     key: "style_tags",
     chineseName: "风格标签",
@@ -138,17 +132,17 @@ export const uiDesignFieldDefinitions = {
     englishName: "interaction_visual_system",
     meaning: "聚焦、悬停、禁用、加载、错误和动效等交互状态的视觉规则。",
   },
-  token_catalog: {
-    key: "token_catalog",
-    chineseName: "Token 目录",
-    englishName: "token_catalog",
-    meaning: "按分组整理的设计 token 目录。",
+  token_system: {
+    key: "token_system",
+    chineseName: "Token 系统",
+    englishName: "token_system",
+    meaning: "颜色、字体、间距、形状、阴影或交互视觉系统内部的结构化设计 token 集合。",
   },
-  token_group: {
-    key: "token_group",
-    chineseName: "Token 分组",
-    englishName: "token_group",
-    meaning: "一组主题相关的设计 token。",
+  tailwind_theme_css: {
+    key: "tailwind_theme_css",
+    chineseName: "Tailwind v4 全局 CSS",
+    englishName: "tailwind_theme_css",
+    meaning: "可复制到全局样式中的 Tailwind v4 @theme CSS 变量定义。",
   },
   token_name: {
     key: "token_name",
@@ -182,7 +176,7 @@ export const uiDesignFieldDefinitions = {
   },
   interaction_state_matrix: {
     key: "interaction_state_matrix",
-    chineseName: "交互状态矩阵",
+    chineseName: "交互状态",
     englishName: "interaction_state_matrix",
     meaning: "default、hover、active、focus、disabled、loading 等状态的视觉规则。",
   },
@@ -200,9 +194,9 @@ export const uiDesignFieldDefinitions = {
   },
   state_usage_context: {
     key: "usage_context",
-    chineseName: "适用场景",
+    chineseName: "适用条件",
     englishName: "usage_context",
-    meaning: "一个状态适用的场景。",
+    meaning: "一个状态适用的触发条件或业务条件。",
   },
   constraints: {
     key: "constraints",

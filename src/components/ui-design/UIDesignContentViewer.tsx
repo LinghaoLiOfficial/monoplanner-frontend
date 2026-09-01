@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Palette, PanelTop, Shapes, SlidersHorizontal, Type } from "lucide-react";
+import { Palette, PanelTop, Shapes, SlidersHorizontal, Type } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AssetContentSections } from "@/components/design-assets/AssetContentSections";
@@ -19,16 +19,18 @@ import { FieldHint } from "@/components/ui/field-hint";
 import { cn } from "@/lib/utils";
 import {
   isNewUIDesignContent,
+  type UIDesignTokenSystem,
   type UIComponentStyleRule,
   type UIInteractionStateRule,
   type UILayoutRule,
   type UIVisualToken,
-  type UIVisualTokenGroup,
   type UIDesignContent,
 } from "@/lib/types/ui-design";
 import { uiDesignLegacySections } from "@/lib/ui-design-contract";
 
-const canonicalStates = ["default", "hover", "pressed", "focus-visible", "selected", "disabled", "loading", "error"];
+type TokenSystemInput = UIDesignTokenSystem | string[] | undefined | null;
+
+const componentStateCoverageNames = ["default", "hover", "pressed", "focus-visible", "selected", "disabled", "loading", "error"];
 
 function asArray<T>(value: T[] | undefined | null) {
   return Array.isArray(value) ? value : [];
@@ -42,13 +44,16 @@ function looksLikeColor(value: string) {
     || /^var\(--/i.test(value.trim());
 }
 
-function tokenKind(token: UIVisualToken) {
+function tokenKind(token: UIVisualToken, fallbackKind?: string) {
   const explicit = token.token_type?.toLowerCase();
   if (explicit) {
     return explicit;
   }
+  if (fallbackKind) {
+    return fallbackKind;
+  }
   const name = `${token.token_name} ${token.semantic_role}`.toLowerCase();
-  if (looksLikeColor(token.token_value) || name.includes("color") || name.includes("颜色")) {
+  if ((typeof token.token_value === "string" && looksLikeColor(token.token_value)) || name.includes("color") || name.includes("颜色")) {
     return "color";
   }
   if (name.includes("font") || name.includes("type") || name.includes("字体")) {
@@ -66,12 +71,41 @@ function tokenKind(token: UIVisualToken) {
   return "semantic";
 }
 
-function splitTokenValue(value: string) {
-  return value.split(/\s+/).filter(Boolean);
+function displayTokenValue(value: UIVisualToken["token_value"]) {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function tokenValueObject(value: UIVisualToken["token_value"]) {
+  return typeof value === "object" && value !== null ? value as Record<string, unknown> : null;
+}
+
+function tokenValueString(value: UIVisualToken["token_value"] | string) {
+  return typeof value === "string" ? value : "";
+}
+
+function splitTokenValue(value: UIVisualToken["token_value"] | string) {
+  return tokenValueString(value).split(/\s+/).filter(Boolean);
 }
 
 function colorPreviewValue(value: string) {
   return value.startsWith("var(") ? "var(--muted)" : value;
+}
+
+function normalizeTokenSystem(value: TokenSystemInput): UIDesignTokenSystem {
+  if (value && !Array.isArray(value)) {
+    return {
+      description: value.description,
+      rules: asArray(value.rules),
+      tokens: asArray(value.tokens),
+      tbd_items: asArray(value.tbd_items),
+    };
+  }
+  return {
+    description: null,
+    rules: asArray(value),
+    tokens: [],
+    tbd_items: [],
+  };
 }
 
 function MetricNameList({ names, emptyText }: { names: string[]; emptyText: string }) {
@@ -81,13 +115,13 @@ function MetricNameList({ names, emptyText }: { names: string[]; emptyText: stri
 
   return (
     <div className="max-h-24 overflow-y-auto pr-1">
-      <ul className="space-y-1.5">
+      <div className="flex flex-col items-start gap-1.5">
         {names.map((name, index) => (
-          <li key={`${name}-${index}`} className="truncate text-sm leading-5 text-muted-foreground">
+          <Badge key={`${name}-${index}`} variant="outline" className="max-w-full items-center justify-center bg-transparent px-2 py-0.5 text-center leading-5">
             {name}
-          </li>
+          </Badge>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
@@ -108,9 +142,9 @@ function StyleTagList({ tags }: { tags: string[] }) {
   );
 }
 
-function TokenPreview({ token }: { token: UIVisualToken }) {
-  const kind = tokenKind(token);
-  const value = token.token_value;
+function TokenPreview({ token, fallbackKind }: { token: UIVisualToken; fallbackKind?: string }) {
+  const kind = tokenKind(token, fallbackKind);
+  const value = displayTokenValue(token.token_value);
   if (kind === "color") {
     return (
       <div className="flex items-center gap-3">
@@ -124,9 +158,17 @@ function TokenPreview({ token }: { token: UIVisualToken }) {
     );
   }
   if (kind === "typography") {
+    const typedValue = tokenValueObject(token.token_value);
+    const style = {
+      fontFamily: typeof typedValue?.fontFamily === "string" ? typedValue.fontFamily : undefined,
+      fontSize: typeof typedValue?.fontSize === "string" ? typedValue.fontSize : undefined,
+      fontWeight: typeof typedValue?.fontWeight === "number" || typeof typedValue?.fontWeight === "string" ? typedValue.fontWeight : undefined,
+      lineHeight: typeof typedValue?.lineHeight === "string" ? typedValue.lineHeight : undefined,
+      letterSpacing: typeof typedValue?.letterSpacing === "string" ? typedValue.letterSpacing : undefined,
+    };
     return (
       <div className="space-y-1">
-        <p className="text-lg font-semibold leading-tight">Ag 字体样张</p>
+        <p className="break-words text-lg font-semibold leading-tight" style={style}>The quick brown fox jumps</p>
         <p className="break-all font-mono text-xs text-muted-foreground">{value}</p>
       </div>
     );
@@ -136,7 +178,7 @@ function TokenPreview({ token }: { token: UIVisualToken }) {
     return (
       <div className="space-y-2">
         <div className="h-3 max-w-full rounded-full bg-muted">
-          <div className="h-3 max-w-full rounded-full bg-foreground/70" style={{ width: first }} />
+          <div className="h-3 max-w-full rounded-full bg-foreground/70" style={{ width: first || "0px" }} />
         </div>
         <p className="break-all font-mono text-xs text-muted-foreground">{value}</p>
       </div>
@@ -158,40 +200,58 @@ function TokenPreview({ token }: { token: UIVisualToken }) {
       </div>
     );
   }
+  if (kind === "interaction") {
+    return (
+      <div className="rounded-lg border border-border bg-background p-3 shadow-[var(--shadow-sm)]">
+        <div className="inline-flex min-h-9 items-center rounded-md border border-foreground/20 px-3 text-sm font-medium" style={{ boxShadow: value.includes("0 0") ? value : undefined }}>
+          focus-visible
+        </div>
+        <p className="mt-2 break-all font-mono text-xs text-muted-foreground">{value}</p>
+      </div>
+    );
+  }
   return <p className="break-all font-mono text-xs text-muted-foreground">{value}</p>;
 }
 
-function TokenCatalogPanel({ groups }: { groups: UIVisualTokenGroup[] }) {
+function TokenSystemPanel({
+  title,
+  system,
+  fallbackKind,
+}: {
+  title: string;
+  system: UIDesignTokenSystem;
+  fallbackKind: string;
+}) {
   const { t } = useLanguage();
   const labels = t.designAssets.ui;
 
-  if (groups.length === 0) {
-    return <p className="text-sm leading-6 text-muted-foreground">{labels.noTokenCatalog}</p>;
-  }
-
   return (
-    <div className="space-y-4">
-      {groups.map((group, groupIndex) => (
-        <section key={`${group.group_name}-${groupIndex}`} className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold">{group.group_name || labels.unnamedGroup}</h3>
-              {group.description ? <p className="mt-1 text-sm leading-6 text-muted-foreground">{group.description}</p> : null}
-            </div>
-            <StatusBadge label={labels.itemCount(group.tokens.length)} tone="muted" />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {group.tokens.map((token, tokenIndex) => (
+    <section className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          {system.description ? <p className="mt-1 text-sm leading-6 text-muted-foreground">{system.description}</p> : null}
+        </div>
+        <StatusBadge label={labels.itemCount(system.tokens.length)} tone={system.tokens.length > 0 ? "success" : "muted"} />
+      </div>
+      <TextChips values={system.rules} emptyText={t.common.empty} />
+      {system.tokens.length > 0 ? (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {system.tokens.map((token, tokenIndex) => {
+            const copyValue = `${token.css_variable || token.tailwind_variable || token.token_name}: ${displayTokenValue(token.token_value)}`;
+            return (
               <article key={`${token.token_name}-${tokenIndex}`} className="flex min-h-64 flex-col justify-between gap-4 rounded-lg border border-border/70 bg-card p-4">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="break-words font-mono text-sm font-semibold">{token.token_name || labels.noToken}</p>
+                      {token.description ? <p className="mt-1 text-sm leading-5 text-muted-foreground">{token.description}</p> : null}
                       {token.css_variable ? <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{token.css_variable}</p> : null}
+                      {token.tailwind_variable && token.tailwind_variable !== token.css_variable ? <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{token.tailwind_variable}</p> : null}
                     </div>
                     {token.validated_status ? <StatusBadge label={token.validated_status} tone={token.validated_status === "tbd" ? "warning" : "muted"} /> : null}
                   </div>
-                  <TokenPreview token={token} />
+                  <TokenPreview token={token} fallbackKind={fallbackKind} />
                   <div className="grid gap-2 text-sm">
                     <p><span className="font-medium">{labels.semanticRole}：</span>{token.semantic_role || t.common.empty}</p>
                     <p className="text-muted-foreground"><span className="font-medium text-foreground">{labels.usageContext}：</span>{token.usage_context || t.common.empty}</p>
@@ -200,63 +260,43 @@ function TokenCatalogPanel({ groups }: { groups: UIVisualTokenGroup[] }) {
                   <TextChips values={asArray(token.anti_usage)} emptyText={labels.noConstraints} />
                   <TextChips values={asArray(token.source_basis)} emptyText={t.common.empty} />
                 </div>
-                <CopyButton
-                  value={`${token.css_variable ? `${token.css_variable}: ` : ""}${token.token_name}: ${token.token_value}`}
-                  label={t.common.copy}
-                  className="w-full"
-                />
+                <CopyButton value={copyValue} label={t.common.copy} className="w-full" />
               </article>
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
+            );
+          })}
+        </div>
+      ) : null}
+      <TextChips values={asArray(system.tbd_items)} emptyText={t.common.empty} />
+    </section>
   );
 }
 
 function StateMatrixPanel({ states }: { states: UIInteractionStateRule[] }) {
   const { t } = useLanguage();
   const labels = t.designAssets.ui;
-  const byName = new Map(states.map((state) => [state.state_name, state]));
 
   if (states.length === 0) {
     return <p className="text-sm leading-6 text-muted-foreground">{labels.noInteractionStateMatrix}</p>;
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="max-h-80 overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{labels.interactionStateMatrix}</TableHead>
+            <TableHead>{labels.states}</TableHead>
             <TableHead>{labels.visualCues}</TableHead>
-            <TableHead>{labels.usageContext}</TableHead>
+            <TableHead>{labels.usageCondition}</TableHead>
             <TableHead>{labels.constraints}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {canonicalStates.map((name) => {
-            const state = byName.get(name);
-            return (
-              <TableRow key={name}>
-                <TableCell className="font-mono text-xs">
-                  <div className="flex items-center gap-2">
-                    {state ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-amber-600" />}
-                    {name}
-                  </div>
-                </TableCell>
-                <TableCell className="min-w-56"><TextChips values={asArray(state?.visual_cues)} emptyText={labels.noVisualCues} /></TableCell>
-                <TableCell className="min-w-56"><TextChips values={asArray(state?.usage_context)} emptyText={labels.noUsageContext} /></TableCell>
-                <TableCell className="min-w-56"><TextChips values={asArray(state?.constraints)} emptyText={labels.noConstraints} /></TableCell>
-              </TableRow>
-            );
-          })}
-          {states.filter((state) => !canonicalStates.includes(state.state_name)).map((state) => (
-            <TableRow key={state.state_name}>
-              <TableCell className="font-mono text-xs">{state.state_name || labels.unnamedState}</TableCell>
-              <TableCell className="min-w-56"><TextChips values={asArray(state.visual_cues)} emptyText={labels.noVisualCues} /></TableCell>
-              <TableCell className="min-w-56"><TextChips values={asArray(state.usage_context)} emptyText={labels.noUsageContext} /></TableCell>
-              <TableCell className="min-w-56"><TextChips values={asArray(state.constraints)} emptyText={labels.noConstraints} /></TableCell>
+          {states.map((state, stateIndex) => (
+            <TableRow key={`${state.state_name || "state"}-${stateIndex}`}>
+              <TableCell className="min-w-36 font-mono text-xs">{state.state_name || labels.unnamedState}</TableCell>
+              <TableCell className="min-w-56"><TextChips values={asArray(state.visual_cues)} emptyText="/" /></TableCell>
+              <TableCell className="min-w-56"><TextChips values={asArray(state.usage_context)} emptyText="/" /></TableCell>
+              <TableCell className="min-w-56"><TextChips values={asArray(state.constraints)} emptyText="/" /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -327,7 +367,7 @@ function ComponentRuleCard({ rule }: { rule: UIComponentStyleRule }) {
         <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
           <StatusBadge label={labels.states} tone={coveredStates.size >= 4 ? "success" : "warning"} />
           <div className="flex flex-wrap gap-1.5">
-            {canonicalStates.map((state) => (
+            {componentStateCoverageNames.map((state) => (
               <Badge key={state} variant="outline" className={cn("font-mono text-[11px]", coveredStates.has(state) ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-border bg-background text-muted-foreground")}>
                 {state}
               </Badge>
@@ -353,22 +393,19 @@ function ComponentRuleCard({ rule }: { rule: UIComponentStyleRule }) {
 function DesignStyleChips({
   description,
   traits,
-  brandAnchor,
   styleTags,
 }: {
   description?: string;
   traits: string[];
-  brandAnchor?: string | null;
   styleTags: string[];
 }) {
   const { t } = useLanguage();
   const labels = t.designAssets.ui;
   const hasDescription = Boolean(description);
   const hasTraits = traits.length > 0;
-  const hasBrandAnchor = Boolean(brandAnchor);
   const hasStyleTags = styleTags.length > 0;
 
-  if (!hasDescription && !hasTraits && !hasBrandAnchor && !hasStyleTags) {
+  if (!hasDescription && !hasTraits && !hasStyleTags) {
     return <p className="text-sm leading-6 text-muted-foreground">{labels.noStyleInfo}</p>;
   }
 
@@ -384,21 +421,15 @@ function DesignStyleChips({
           </Badge>
         </div>
       ) : null}
-      {hasBrandAnchor ? (
-        <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{labels.brandAnchor}</p>
-          <p className="mt-1 text-sm leading-6 text-foreground">{brandAnchor}</p>
-        </div>
-      ) : null}
       {hasStyleTags ? (
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{labels.styleTags}</p>
+          <p className="text-sm font-semibold">{labels.styleTags}</p>
           <StyleTagList tags={styleTags} />
         </div>
       ) : null}
       {hasTraits ? (
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{labels.traits}</p>
+          <p className="text-sm font-semibold">{labels.traits}</p>
           <TextChips values={traits} />
         </div>
       ) : null}
@@ -412,26 +443,28 @@ function NewUIDesignContentView({ content }: { content: Extract<UIDesignContent,
   const visualSystem = content.visual_system;
   const layoutRules = content.layout_rules ?? [];
   const componentStyleRules = content.component_style_rules ?? [];
-  const tokenCatalog = visualSystem?.token_catalog ?? [];
   const stateMatrix = visualSystem?.interaction_state_matrix ?? [];
+  const colorSystem = normalizeTokenSystem(visualSystem?.color_system);
+  const typographySystem = normalizeTokenSystem(visualSystem?.typography_system);
+  const spacingSystem = normalizeTokenSystem(visualSystem?.spacing_system);
+  const shapeSystem = normalizeTokenSystem(visualSystem?.shape_system);
+  const elevationSystem = normalizeTokenSystem(visualSystem?.elevation_system);
+  const interactionVisualSystem = normalizeTokenSystem(visualSystem?.interaction_visual_system);
+  const visualTokenSystems = [
+    { title: labels.colorSystem, system: colorSystem, fallbackKind: "color", icon: <Palette className="h-4 w-4" /> },
+    { title: labels.typographySystem, system: typographySystem, fallbackKind: "typography", icon: <Type className="h-4 w-4" /> },
+    { title: labels.spacingSystem, system: spacingSystem, fallbackKind: "spacing", icon: <PanelTop className="h-4 w-4" /> },
+    { title: labels.shapeSystem, system: shapeSystem, fallbackKind: "radius", icon: <Shapes className="h-4 w-4" /> },
+    { title: labels.elevationSystem, system: elevationSystem, fallbackKind: "elevation", icon: visualIcons.dot },
+    { title: labels.interactionVisualSystem, system: interactionVisualSystem, fallbackKind: "interaction", icon: visualIcons.workflow },
+  ];
   const pageNames = layoutRules.map((rule) => rule.target_screen || t.designAssets.ux.unnamedScreen);
   const componentNames = componentStyleRules.map((rule) => rule.component_name || labels.noComponents);
-  const tokenGroupNames = tokenCatalog.map((group) => group.group_name || labels.unnamedGroup);
   const stateNames = stateMatrix.map((state) => state.state_name || labels.unnamedState);
-
-  const tokenGroups = [
-    { title: labels.colorSystem, values: visualSystem?.color_system ?? [], icon: <Palette className="h-4 w-4" /> },
-    { title: labels.typographySystem, values: visualSystem?.typography_system ?? [], icon: <Type className="h-4 w-4" /> },
-    { title: labels.spacingSystem, values: visualSystem?.spacing_system ?? [], icon: <PanelTop className="h-4 w-4" /> },
-    { title: labels.shapeSystem, values: visualSystem?.shape_system ?? [], icon: <Shapes className="h-4 w-4" /> },
-    { title: labels.elevationSystem, values: visualSystem?.elevation_system ?? [], icon: visualIcons.dot },
-    { title: labels.interactionVisualSystem, values: visualSystem?.interaction_visual_system ?? [], icon: visualIcons.workflow },
-  ];
 
   return (
     <div className="space-y-4">
       <MetricStrip
-        className="xl:grid-cols-4"
         items={[
           {
             label: t.designAssets.ux.screens,
@@ -442,11 +475,6 @@ function NewUIDesignContentView({ content }: { content: Extract<UIDesignContent,
             label: labels.components,
             value: componentStyleRules.length,
             description: <MetricNameList names={componentNames} emptyText={labels.noComponents} />,
-          },
-          {
-            label: labels.tokenGroups,
-            value: tokenCatalog.length,
-            description: <MetricNameList names={tokenGroupNames} emptyText={labels.noTokenGroups} />,
           },
           {
             label: labels.states,
@@ -473,7 +501,6 @@ function NewUIDesignContentView({ content }: { content: Extract<UIDesignContent,
               <DesignStyleChips
                 description={visualSystem?.design_style?.style_description}
                 traits={visualSystem?.design_style?.signature_traits ?? []}
-                brandAnchor={visualSystem?.brand_anchor}
                 styleTags={visualSystem?.style_tags ?? []}
               />
             </div>
@@ -499,52 +526,33 @@ function NewUIDesignContentView({ content }: { content: Extract<UIDesignContent,
           <div className="space-y-4 rounded-lg border border-border/70 bg-background/70 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">{labels.designPrinciples}</h3>
-              <StatusBadge label={labels.summary} tone="muted" />
             </div>
             <TextChips values={visualSystem?.design_principles ?? []} emptyText={labels.noDesignPrinciples} />
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
-              <h3 className="text-sm font-semibold">Evidence</h3>
-              {visualSystem?.evidence_policy ? <p className="text-sm leading-6 text-muted-foreground">{visualSystem.evidence_policy}</p> : null}
-              <TextChips values={asArray(visualSystem?.source_references)} emptyText={t.common.empty} />
-            </div>
-            <div className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
-              <h3 className="text-sm font-semibold">Accessibility / Responsive</h3>
-              <TextChips values={asArray(visualSystem?.accessibility_rules)} emptyText={t.common.empty} />
-              <TextChips values={asArray(visualSystem?.responsive_contract)} emptyText={t.common.empty} />
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {tokenGroups.map((group) => (
-              <div key={group.title} className="rounded-lg border border-border/70 bg-background/70 p-4">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="text-muted-foreground">{group.icon}</span>
-                  {group.title}
-                </div>
-                <div className="mt-3">
-                  <TextChips values={group.values} emptyText={t.common.empty} />
-                </div>
-              </div>
+          <div className="space-y-3">
+            {visualTokenSystems.map((group) => (
+              <TokenSystemPanel
+                key={group.title}
+                title={group.title}
+                system={group.system}
+                fallbackKind={group.fallbackKind}
+              />
             ))}
           </div>
-        </div>
-      </VisualSection>
 
-      <VisualSection
-        title={
-          <FieldHint
-            label={labels.tokenCatalog}
-            hint={labels.tokenCatalogHint}
-            labelClassName="text-base font-semibold leading-6"
-          />
-        }
-        icon={<Palette className="h-4 w-4" />}
-        empty={tokenCatalog.length === 0 ? labels.noTokenCatalog : false}
-      >
-        <TokenCatalogPanel groups={tokenCatalog} />
+          {visualSystem?.tailwind_theme_css ? (
+            <div className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">{labels.tailwindThemeCss}</h3>
+                <CopyButton value={visualSystem.tailwind_theme_css} label={t.common.copy} />
+              </div>
+              <pre className="max-h-80 overflow-auto rounded-lg bg-muted/40 p-3 text-xs leading-5">
+                <code>{visualSystem.tailwind_theme_css}</code>
+              </pre>
+            </div>
+          ) : null}
+        </div>
       </VisualSection>
 
       <VisualSection
