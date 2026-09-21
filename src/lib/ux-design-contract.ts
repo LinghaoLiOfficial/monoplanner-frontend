@@ -22,7 +22,7 @@ export const uxDesignFieldDefinitions = {
     key: "low_fidelity_screen_structure",
     chineseName: "页面低保真结构",
     englishName: "low_fidelity_screen_structure",
-    meaning: "以页面和区域为单位描述低保真线框图的信息架构。",
+    meaning: "以页面为单位描述页面名称、页面功能、信息优先级和交互区域。",
   },
   ux_screen: {
     key: "ux_screen",
@@ -136,13 +136,13 @@ export const uxDesignFieldDefinitions = {
     key: "involved_elements",
     chineseName: "涉及元素",
     englishName: "involved_elements",
-    meaning: "该步骤涉及的页面区域、按钮、表单、卡片或其他交互对象。",
+    meaning: "该步骤涉及的页面、区域和元素引用。",
   },
-  user_action: {
-    key: "user_action",
-    chineseName: "用户行为",
-    englishName: "user_action",
-    meaning: "用户在该步骤中执行的动作。",
+  step_results: {
+    key: "step_results",
+    chineseName: "结果分支",
+    englishName: "step_results",
+    meaning: "该步骤可能产生的成功、失败、阻塞、空状态或下一步分支集合。",
   },
   step_system_feedback: {
     key: "step_system_feedback",
@@ -180,21 +180,4 @@ export const uxDesignFieldDefinitions = {
     englishName: "system_feedback",
     meaning: "系统在该步骤或分支中向用户展示的响应、提示、状态或结果。",
   },
-  ux_notes: {
-    key: "ux_notes",
-    chineseName: "UX说明",
-    englishName: "ux_notes",
-    meaning: "该业务逻辑流中需要特别遵守的用户体验注意事项。",
-  },
 } as const;
-
-export const uxDesignLegacySections = [
-  { key: "version_summary", title: "当前版本摘要" },
-  { key: "user_goals", title: "用户目标" },
-  { key: "user_flows", title: "用户流程" },
-  { key: "interaction_states", title: "交互状态" },
-  { key: "empty_states", title: "空状态" },
-  { key: "error_states", title: "错误状态" },
-  { key: "permission_experience", title: "权限体验" },
-  { key: "accessibility_requirements", title: "可访问性要求" },
-];

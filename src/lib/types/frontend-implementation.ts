@@ -1,10 +1,10 @@
 import type { VersionedDesignAsset } from "@/lib/types/design-asset";
 
 export type FrontendRouteDefinition = {
-  path: string;
-  page_name: string;
-  dynamic_params: string[];
-  permission_requirement: string;
+  route_name: string;
+  route_path: string;
+  route_params: string[];
+  route_target_component: string;
 };
 
 export type FrontendDirectoryEntry = {
@@ -14,70 +14,40 @@ export type FrontendDirectoryEntry = {
 
 export type FrontendCodeLogicItem = {
   target: string;
-  state_management: string[];
-  events: string[];
-  data_flow: string[];
-  error_handling: string[];
+  logic_description: string;
 };
 
 export type FrontendEnvironmentVariable = {
-  name: string;
-  purpose: string;
-  required: boolean;
+  variable_name: string;
+  variable_description: string;
+  default_value: string;
 };
 
 export type FrontendDependency = {
   package_name: string;
-  purpose: string;
-  required: boolean;
+  package_description: string;
 };
 
-export type NewFrontendImplementationContent = {
-  version_summary?: string;
-  route_definitions?: FrontendRouteDefinition[];
-  directory_structure?: FrontendDirectoryEntry[];
-  code_logic?: FrontendCodeLogicItem[];
-  environment_variables?: FrontendEnvironmentVariable[];
-  design_theme?: string[];
-  dependencies?: FrontendDependency[];
-  diff?: unknown;
-  [key: string]: unknown;
+export type FrontendInterfaceDefinition = {
+  interface_name: string;
+  interface_description: string;
 };
 
-export type LegacyFrontendImplementationContent = {
-  version_summary?: string;
-  route_definitions?: unknown[];
-  pages?: unknown[];
-  components?: unknown[];
-  directory_structure?: unknown;
-  code_logic?: unknown;
-  data_flow?: unknown;
-  environment_variables?: string[];
-  design_theme?: unknown;
-  dependencies?: unknown[];
-  dependency_packages?: unknown[];
-  internal_utilities?: unknown[];
-  install_commands?: string[];
-  utilities?: unknown[];
-  notes?: string[];
-  diff?: unknown;
-  [key: string]: unknown;
+export type FrontendImplementationContent = {
+  version_summary: string;
+  environment_variables: FrontendEnvironmentVariable[];
+  route_definitions: FrontendRouteDefinition[];
+  directory_structure: FrontendDirectoryEntry[];
+  layout_library: string;
+  component_library: string;
+  dependency_package_management: FrontendDependency[];
+  page_code_logic: FrontendCodeLogicItem[];
+  frontend_interfaces: FrontendInterfaceDefinition[];
+  diff: {
+    added: unknown[];
+    modified: unknown[];
+    removed: unknown[];
+  };
 };
-
-export type FrontendImplementationContent =
-  | NewFrontendImplementationContent
-  | LegacyFrontendImplementationContent;
 
 export type FrontendImplementation = VersionedDesignAsset<FrontendImplementationContent>;
-
-export function isNewFrontendImplementationContent(
-  content: FrontendImplementationContent
-): content is NewFrontendImplementationContent {
-  return (
-    "route_definitions" in content ||
-    "code_logic" in content ||
-    "environment_variables" in content ||
-    "design_theme" in content ||
-    ("dependencies" in content && !("internal_utilities" in content))
-  );
-}

@@ -1,7 +1,6 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AssetContentSections } from "@/components/design-assets/AssetContentSections";
-import { useLanguage } from "@/components/language/language-provider";
 import { Badge } from "@/components/ui/badge";
+import { FieldHint } from "@/components/ui/field-hint";
+import { useLanguage } from "@/components/language/language-provider";
 import {
   FlowTimeline,
   MetricStrip,
@@ -9,13 +8,10 @@ import {
   TextChips,
   VisualSection,
   visualIcons,
-  type TimelineStep,
 } from "@/components/design-assets/visual-dashboard";
-import { FieldHint } from "@/components/ui/field-hint";
-import { isNewUXDesignContent, type UXBranchStatus, type UXDesignContent } from "@/lib/types/ux-design";
-import { uxDesignLegacySections } from "@/lib/ux-design-contract";
+import type { UXBranchStatus, UXDesignContent, UXInvolvedElementReference } from "@/lib/types/ux-design";
 
-function branchTone(status: UXBranchStatus): TimelineStep["tone"] {
+function branchTone(status: UXBranchStatus) {
   if (status === "success") return "success";
   if (status === "error") return "error";
   if (status === "blocked" || status === "empty") return "warning";
@@ -30,67 +26,6 @@ function statusLabel(status: UXBranchStatus, labels: ReturnType<typeof useLangua
     empty: labels.emptyState,
     next_action: labels.nextAction,
   }[status] ?? status;
-}
-
-function isTechnicalIdentifier(value: string) {
-  if (/[\u4e00-\u9fff]/.test(value)) return false;
-  return (
-    /^[A-Za-z][A-Za-z0-9]*(?:[_-][A-Za-z0-9]+)+$/.test(value) ||
-    /^[a-z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/.test(value)
-  );
-}
-
-function shortReadableText(value: string) {
-  return value.trim().replace(/[。！？；：,.!?;:].*$/, "");
-}
-
-function getReadableUXName(value: string | undefined, fallback: string | undefined, defaultLabel: string) {
-  const trimmedValue = value?.trim();
-  if (trimmedValue && !isTechnicalIdentifier(trimmedValue)) {
-    return { label: trimmedValue, source: "value" as const };
-  }
-
-  const trimmedFallback = fallback?.trim();
-  if (trimmedFallback && !isTechnicalIdentifier(trimmedFallback)) {
-    return { label: shortReadableText(trimmedFallback), source: "fallback" as const };
-  }
-
-  return { label: defaultLabel, source: "default" as const };
-}
-
-function getFlowTitle(value: string | undefined, fallback: string | undefined) {
-  const trimmedValue = value?.trim();
-  if (trimmedValue) {
-    return { label: trimmedValue, source: "value" as const };
-  }
-
-  const trimmedFallback = fallback?.trim();
-  if (trimmedFallback) {
-    return { label: shortReadableText(trimmedFallback), source: "fallback" as const };
-  }
-
-  return { label: "", source: "default" as const };
-}
-
-function UXNotesTextBlock({ notes }: { notes: string[] }) {
-  const { t } = useLanguage();
-
-  return (
-    <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3">
-      <p className="text-sm font-medium text-muted-foreground">{t.designAssets.ux.uxNotes}</p>
-      {notes.length > 0 ? (
-        <ul className="list-disc space-y-2 pl-5">
-          {notes.map((note, index) => (
-            <li key={`${note}-${index}`} className="pl-1 text-sm leading-6 text-muted-foreground">
-              {note}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm leading-6 text-muted-foreground">{t.designAssets.ux.noUxNotes}</p>
-      )}
-    </div>
-  );
 }
 
 function MetricNameList({ names, emptyText }: { names: string[]; emptyText: string }) {
@@ -134,16 +69,17 @@ function InformationPriorityList({ values }: { values: string[] }) {
   );
 }
 
-function NewUXDesignContentView({ content }: { content: Extract<UXDesignContent, { low_fidelity_screen_structure: unknown }> }) {
+function involvedElementText(reference: UXInvolvedElementReference) {
+  return [reference.screen, reference.region, reference.element].filter(Boolean).join(" / ");
+}
+
+export function UXDesignContentViewer({ content }: { content: UXDesignContent }) {
   const { t } = useLanguage();
   const labels = t.designAssets.ux;
   const screens = content.low_fidelity_screen_structure ?? [];
   const flows = content.business_flows ?? [];
-  const screenNames = screens.map((screen) => getReadableUXName(screen.screen_name, screen.screen_purpose, labels.unnamedScreen).label);
-  const flowNames = flows.map((flow) => {
-    const flowTitle = getFlowTitle(flow.flow_name, flow.flow_goal);
-    return flowTitle.label || labels.unnamedFlow;
-  });
+  const screenNames = screens.map((screen) => screen.screen_name || labels.unnamedScreen);
+  const flowNames = flows.map((flow) => flow.flow_name || labels.unnamedFlow);
 
   return (
     <div className="space-y-4">
@@ -174,44 +110,32 @@ function NewUXDesignContentView({ content }: { content: Extract<UXDesignContent,
         empty={screens.length === 0 ? labels.lowFidelityStructure : false}
       >
         <div className="grid gap-3">
-          {screens.map((screen, screenIndex) => {
-            const screenTitle = getReadableUXName(screen.screen_name, screen.screen_purpose, labels.unnamedScreen);
-            return (
-              <section key={`${screen.screen_name}-${screenIndex}`} className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
-                <div className="flex flex-wrap items-start gap-2">
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <h3 className="min-w-0 whitespace-normal break-words text-sm font-semibold">{screenTitle.label}</h3>
-                      <StatusBadge label={labels.regionCount(screen.interaction_regions?.length ?? 0)} tone="muted" />
+          {screens.map((screen, screenIndex) => (
+            <section key={`${screen.screen_name}-${screenIndex}`} className="space-y-3 rounded-lg border border-border/70 bg-background/70 p-4">
+              <div className="min-w-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <h3 className="min-w-0 whitespace-normal break-words text-sm font-semibold">{screen.screen_name || labels.unnamedScreen}</h3>
+                  <StatusBadge label={labels.regionCount(screen.interaction_regions?.length ?? 0)} tone="muted" />
+                </div>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{screen.screen_purpose || labels.noScreenPurpose}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">{labels.informationPriority}</p>
+                <InformationPriorityList values={Array.isArray(screen.information_priority) ? screen.information_priority : []} />
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {(screen.interaction_regions ?? []).map((region, regionIndex) => (
+                  <div key={`${region.region_name}-${regionIndex}`} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                    <div className="text-sm font-medium">{region.region_name || labels.unnamedRegion}</div>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{region.region_purpose || labels.noRegionPurpose}</p>
+                    <div className="mt-3">
+                      <TextChips values={Array.isArray(region.content_elements) ? region.content_elements : []} emptyText={labels.noContentElements} />
                     </div>
-                    {screenTitle.source !== "fallback" ? (
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">{screen.screen_purpose || labels.noScreenPurpose}</p>
-                    ) : null}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">{labels.informationPriority}</p>
-                  <InformationPriorityList values={Array.isArray(screen.information_priority) ? screen.information_priority : []} />
-                </div>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {(screen.interaction_regions ?? []).map((region, regionIndex) => {
-                    const regionTitle = getReadableUXName(region.region_name, region.region_purpose, labels.unnamedRegion);
-                    return (
-                      <div key={`${region.region_name}-${regionIndex}`} className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                        <div className="text-sm font-medium">{regionTitle.label}</div>
-                        {regionTitle.source !== "fallback" ? (
-                          <p className="mt-1 text-sm leading-6 text-muted-foreground">{region.region_purpose || labels.noRegionPurpose}</p>
-                        ) : null}
-                        <div className="mt-3">
-                          <TextChips values={Array.isArray(region.content_elements) ? region.content_elements : []} emptyText={labels.noContentElements} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       </VisualSection>
 
@@ -227,76 +151,50 @@ function NewUXDesignContentView({ content }: { content: Extract<UXDesignContent,
         empty={flows.length === 0 ? labels.businessLogicFlow : false}
       >
         <div className="space-y-4">
-          {flows.map((flow, flowIndex) => {
-            const flowTitle = getFlowTitle(flow.flow_name, flow.flow_goal);
-            return (
-              <section key={`${flow.flow_name}-${flowIndex}`} className="space-y-4 rounded-lg border border-border/70 bg-background/70 p-4">
-                <div>
-                  <h3 className="text-sm font-semibold">{flowTitle.label || labels.unnamedFlow}</h3>
-                  {flowTitle.source !== "fallback" ? (
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{flow.flow_goal || labels.noFlowGoal}</p>
-                  ) : null}
-                  <div className="mt-3 space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      <StatusBadge label={getReadableUXName(flow.primary_actor, undefined, labels.unspecifiedUser).label} tone="default" />
-                    </div>
-                    <TextChips values={Array.isArray(flow.preconditions) ? flow.preconditions : []} emptyText={labels.noPreconditions} />
+          {flows.map((flow, flowIndex) => (
+            <section key={`${flow.flow_name}-${flowIndex}`} className="space-y-4 rounded-lg border border-border/70 bg-background/70 p-4">
+              <div>
+                <h3 className="text-sm font-semibold">{flow.flow_name || labels.unnamedFlow}</h3>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{flow.flow_goal || labels.noFlowGoal}</p>
+                <div className="mt-3 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge label={flow.primary_actor || labels.unspecifiedUser} tone="default" />
                   </div>
+                  <TextChips values={Array.isArray(flow.preconditions) ? flow.preconditions : []} emptyText={labels.noPreconditions} />
                 </div>
-                <FlowTimeline
-                  showConnectors={false}
-                  variant="dotLabel"
-                  steps={(flow.steps ?? []).map((step) => ({
-                    title: step.user_action || labels.undescribedUserAction,
-                    meta: labels.step(step.step_order),
-                    description: step.system_feedback || labels.noSystemFeedback,
-                    details: (
-                      <div className="space-y-3">
-                        <TextChips values={Array.isArray(step.involved_elements) ? step.involved_elements : []} emptyText={labels.noInvolvedElements} />
-                        <div className="grid gap-2 md:grid-cols-2">
-                          {(step.branches ?? []).map((branch, branchIndex) => (
-                            <div key={`${branch.branch_status}-${branchIndex}`} className="rounded-lg border border-border/60 bg-muted/20 p-3">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <StatusBadge label={statusLabel(branch.branch_status, labels)} tone={branchTone(branch.branch_status)} />
-                                <span className="text-sm text-muted-foreground">{branch.branch_description || labels.noBranchDescription}</span>
-                              </div>
-                              <p className="mt-2 text-sm leading-6 text-muted-foreground">{branch.system_feedback || labels.noFeedback}</p>
+              </div>
+              <FlowTimeline
+                showConnectors={false}
+                variant="dotLabel"
+                steps={(flow.steps ?? []).map((step) => ({
+                  title: labels.step(step.step_order),
+                  meta: labels.step(step.step_order),
+                  description: step.system_feedback || labels.noSystemFeedback,
+                  details: (
+                    <div className="space-y-3">
+                      <TextChips
+                        values={Array.isArray(step.involved_elements) ? step.involved_elements.map(involvedElementText) : []}
+                        emptyText={labels.noInvolvedElements}
+                      />
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {(step.step_results ?? []).map((result, resultIndex) => (
+                          <div key={`${result.branch_status}-${resultIndex}`} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <StatusBadge label={statusLabel(result.branch_status, labels)} tone={branchTone(result.branch_status)} />
+                              <span className="text-sm text-muted-foreground">{result.branch_description || labels.noBranchDescription}</span>
                             </div>
-                          ))}
-                        </div>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.system_feedback || labels.noFeedback}</p>
+                          </div>
+                        ))}
                       </div>
-                    ),
-                  }))}
-                />
-                <UXNotesTextBlock notes={Array.isArray(flow.ux_notes) ? flow.ux_notes : []} />
-              </section>
-            );
-          })}
+                    </div>
+                  ),
+                }))}
+              />
+            </section>
+          ))}
         </div>
       </VisualSection>
     </div>
   );
-}
-
-function LegacyUXDesignContentView({ content }: { content: UXDesignContent }) {
-  const { t } = useLanguage();
-
-  return (
-    <div className="space-y-4">
-      <Alert>
-        <AlertDescription>
-          {t.designAssets.ux.legacy}
-        </AlertDescription>
-      </Alert>
-      <AssetContentSections content={content as Record<string, unknown>} sections={uxDesignLegacySections} />
-    </div>
-  );
-}
-
-export function UXDesignContentViewer({ content }: { content: UXDesignContent }) {
-  if (isNewUXDesignContent(content)) {
-    return <NewUXDesignContentView content={content} />;
-  }
-
-  return <LegacyUXDesignContentView content={content} />;
 }

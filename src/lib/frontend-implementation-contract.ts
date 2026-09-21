@@ -22,7 +22,7 @@ export const frontendImplementationFieldDefinitions = {
     key: "route_definitions",
     chineseName: "路由定义",
     englishName: "route_definitions",
-    meaning: "前端访问路径、动态参数、页面归属和权限要求。",
+    meaning: "前端访问路径、动态参数和目标组件。",
   },
   route_definition: {
     key: "route_definition",
@@ -36,23 +36,23 @@ export const frontendImplementationFieldDefinitions = {
     englishName: "path",
     meaning: "前端用户访问该页面时使用的 URL 路径。",
   },
-  page_name: {
-    key: "page_name",
-    chineseName: "页面归属",
-    englishName: "page_name",
-    meaning: "该路由对应的前端页面或产品页面名称。",
+  route_name: {
+    key: "route_name",
+    chineseName: "路由名称",
+    englishName: "route_name",
+    meaning: "该访问路径的业务名称。",
   },
-  dynamic_params: {
-    key: "dynamic_params",
-    chineseName: "动态参数",
-    englishName: "dynamic_params",
+  route_params: {
+    key: "route_params",
+    chineseName: "路由参数",
+    englishName: "route_params",
     meaning: "该路由中需要从 URL 中读取的动态参数集合。",
   },
-  permission_requirement: {
-    key: "permission_requirement",
-    chineseName: "权限要求",
-    englishName: "permission_requirement",
-    meaning: "访问该路由前必须满足的登录、角色或数据权限要求。",
+  route_target_component: {
+    key: "route_target_component",
+    chineseName: "目标组件",
+    englishName: "route_target_component",
+    meaning: "该路由对应的前端组件或页面实现。",
   },
   directory_structure: {
     key: "directory_structure",
@@ -82,7 +82,7 @@ export const frontendImplementationFieldDefinitions = {
     key: "code_logic",
     chineseName: "代码逻辑",
     englishName: "code_logic",
-    meaning: "前端页面和组件中的核心状态、事件、数据流和错误处理逻辑。",
+    meaning: "前端页面和组件中的核心实现逻辑。",
   },
   logic_item: {
     key: "logic_item",
@@ -96,29 +96,11 @@ export const frontendImplementationFieldDefinitions = {
     englishName: "target",
     meaning: "该段代码逻辑对应的页面、组件或前端模块。",
   },
-  state_management: {
-    key: "state_management",
-    chineseName: "核心状态",
-    englishName: "state_management",
-    meaning: "该目标对象需要维护的主要 UI 状态和业务状态。",
-  },
-  events: {
-    key: "events",
-    chineseName: "事件",
-    englishName: "events",
-    meaning: "用户操作、生命周期或系统事件触发的前端行为。",
-  },
-  data_flow: {
-    key: "data_flow",
-    chineseName: "数据流",
-    englishName: "data_flow",
-    meaning: "前端页面、组件、API client 和后端接口之间的数据流向。",
-  },
-  error_handling: {
-    key: "error_handling",
-    chineseName: "错误处理",
-    englishName: "error_handling",
-    meaning: "请求失败、校验失败、权限失败或空状态时的处理方式。",
+  logic_description: {
+    key: "logic_description",
+    chineseName: "逻辑描述",
+    englishName: "logic_description",
+    meaning: "页面、组件、布局库、组件库、依赖包管理或接口定义的实现要点。",
   },
   environment_variables: {
     key: "environment_variables",
@@ -132,35 +114,53 @@ export const frontendImplementationFieldDefinitions = {
     englishName: "environment_variable",
     meaning: "一个前端运行或构建环境变量。",
   },
-  env_name: {
-    key: "env_name",
+  variable_name: {
+    key: "variable_name",
     chineseName: "变量名",
-    englishName: "name",
+    englishName: "variable_name",
     meaning: "环境变量的名称。",
   },
-  env_purpose: {
-    key: "env_purpose",
-    chineseName: "变量用途",
-    englishName: "purpose",
+  variable_description: {
+    key: "variable_description",
+    chineseName: "变量说明",
+    englishName: "variable_description",
     meaning: "该环境变量在前端工程中的用途。",
   },
-  env_required: {
-    key: "env_required",
-    chineseName: "是否必需",
-    englishName: "required",
-    meaning: "该环境变量是否为运行或构建必需配置。",
+  default_value: {
+    key: "default_value",
+    chineseName: "默认值",
+    englishName: "default_value",
+    meaning: "该环境变量的默认值或推荐值。",
   },
-  design_theme: {
-    key: "design_theme",
-    chineseName: "设计主题",
-    englishName: "design_theme",
-    meaning: "前端工程中承载 UI 视觉系统的主题配置或样式 token。",
+  layout_library: {
+    key: "layout_library",
+    chineseName: "布局库",
+    englishName: "layout_library",
+    meaning: "前端页面与布局组件的实现说明。",
   },
-  theme_item: {
-    key: "theme_item",
-    chineseName: "主题项",
-    englishName: "theme_item",
-    meaning: "一个主题配置、样式 token 或视觉系统落地规则。",
+  component_library: {
+    key: "component_library",
+    chineseName: "组件库",
+    englishName: "component_library",
+    meaning: "前端组件的实现说明。",
+  },
+  dependency_package_management: {
+    key: "dependency_package_management",
+    chineseName: "依赖包管理",
+    englishName: "dependency_package_management",
+    meaning: "第三方依赖包及其用途说明。",
+  },
+  page_code_logic: {
+    key: "page_code_logic",
+    chineseName: "页面代码逻辑",
+    englishName: "page_code_logic",
+    meaning: "前端页面和组件中的实现逻辑规划。",
+  },
+  frontend_interfaces: {
+    key: "frontend_interfaces",
+    chineseName: "前端接口",
+    englishName: "frontend_interfaces",
+    meaning: "前端内部接口、共享契约和模块之间的边界说明。",
   },
   dependencies: {
     key: "dependencies",
@@ -186,22 +186,4 @@ export const frontendImplementationFieldDefinitions = {
     englishName: "purpose",
     meaning: "该依赖包在前端工程中的使用原因。",
   },
-  dependency_required: {
-    key: "dependency_required",
-    chineseName: "是否必需",
-    englishName: "required",
-    meaning: "该依赖包是否为实现该前端工程规划的必需依赖。",
-  },
 } as const;
-
-export const frontendImplementationLegacySections = [
-  { key: "version_summary", title: "版本摘要" },
-  { key: "pages", title: "历史页面结构（兼容）" },
-  { key: "components", title: "历史组件结构（兼容）" },
-  { key: "directory_structure", title: "目录结构" },
-  { key: "data_flow", title: "数据流" },
-  { key: "dependencies", title: "依赖包" },
-  { key: "internal_utilities", title: "内部工具" },
-  { key: "install_commands", title: "安装命令" },
-  { key: "diff", title: "版本差异" },
-];
