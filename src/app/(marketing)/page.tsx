@@ -1,17 +1,24 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Code2, Database, FileJson, Workflow } from "lucide-react";
+import { useEffect } from "react";
 
+import { useLanguage } from "@/components/language/language-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { defaultLocale, getDictionary } from "@/lib/i18n";
 
 const capabilityIcons = [FileJson, Workflow, Database, Code2] as const;
 
 export default function MarketingPage() {
-  const t = getDictionary(defaultLocale);
+  const { t } = useLanguage();
   const marketing = t.marketing;
+
+  useEffect(() => {
+    document.title = t.app.name;
+  }, [t.app.name]);
 
   return (
     <div className="space-y-12 pb-20">

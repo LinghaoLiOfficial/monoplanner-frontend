@@ -8,10 +8,10 @@ export type NavItem = {
 };
 
 export const siteConfig = {
-  name: "全栈上下文编排器",
+  name: "Full-Stack Context Orchestrator",
   description:
-    "将自然语言业务需求转化为适合 vibe coding 工具使用的结构化开发上下文和指令集合",
-  tagline: "面向全栈开发的上下文编排工作台",
+    "Turn natural-language business requirements into structured development context and prompts for vibe coding tools.",
+  tagline: "A context orchestration workspace for full-stack development",
   links: {
     docs: "https://nextjs.org/docs",
     ui: "https://ui.shadcn.com/docs",
