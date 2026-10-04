@@ -1,56 +1,58 @@
-## 全栈上下文编排器前端
+## Full-Stack Context Orchestrator Frontend
 
-基于 `Next.js + React + TypeScript + Tailwind CSS 4 + shadcn/ui + pnpm` 构建的可联调前端工作台。
+A collaboration-ready frontend workspace built with `Next.js + React + TypeScript + Tailwind CSS 4 + shadcn/ui + pnpm`.
 
-## 当前能力
+## Current Capabilities
 
-- 首页产品介绍
-- 项目列表与创建项目
-- 项目工作台与项目内导航
-- 需求输入与需求历史
-- 调用后端占位接口生成 Project Blueprint
-- 查看和复制格式化 Blueprint JSON
-- 生成、查看、复制 API 契约草案
-- 生成、查看、复制数据库模型草案
-- 生成 Context Packs / Codex Prompts
-- 复制 prompt_text，并导出 Markdown
-- 查看一致性检查结果
+- Product overview homepage
+- Project listing and project creation
+- Project workspace and project navigation
+- Requirement input and requirement history
+- Project Blueprint generation through the backend API
+- Viewing and copying formatted Blueprint JSON
+- API contract draft generation, viewing, and copying
+- Database model draft generation, viewing, and copying
+- Context Pack / Codex Prompt generation
+- Copying `prompt_text` and exporting Markdown
+- Viewing consistency check results
+- English and Simplified Chinese interface locales, with English as the default
 
-## 环境变量
+## Environment Variables
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_DEFAULT_LOCALE=en
 ```
 
-如果需要覆盖前端地址，也可以设置：
+Optional application settings:
 
 ```env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=全栈上下文编排器
+NEXT_PUBLIC_APP_NAME=Full-Stack Context Orchestrator
 ```
 
-## 启动
+## Getting Started
 
 ```bash
 pnpm dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)。
+Open [http://localhost:3000](http://localhost:3000).
 
-## 联调流程
+## Frontend/Backend Workflow
 
-1. 启动后端服务，确保接口前缀为 `http://localhost:8000/api/v1`。
-2. 启动前端：`pnpm dev`。
-3. 打开首页，进入项目列表。
-4. 创建或进入一个项目。
-5. 保存自然语言需求。
-6. 点击“生成蓝图草案”。
-7. 点击“生成 API 契约草案”，进入 API 契约页面查看 endpoint 表格和 JSON。
-8. 点击“生成数据库模型草案”，进入数据库模型页面查看 entities、fields、relationships 和 JSON。
-9. 点击“生成 Context Packs”，进入 Prompts 页面查看、复制 prompt_text，并导出 Markdown。
-10. 进入一致性检查页面，查看检查结果。
+1. Start the backend service and make sure the API prefix is `http://localhost:8000/api/v1`.
+2. Start the frontend with `pnpm dev`.
+3. Open the homepage and go to the project list.
+4. Create or open a project.
+5. Save a natural-language requirement.
+6. Select **Generate Blueprint Draft**.
+7. Select **Generate API Contract Draft**, then review the endpoint table and JSON on the API Contract page.
+8. Select **Generate Database Model Draft**, then review entities, fields, relationships, and JSON on the Database Model page.
+9. Select **Generate Context Packs**, then review and copy `prompt_text` or export Markdown on the Prompts page.
+10. Open the Consistency Check page to review validation results.
 
-## 常用命令
+## Common Commands
 
 ```bash
 pnpm dev
